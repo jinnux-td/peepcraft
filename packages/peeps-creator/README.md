@@ -15,6 +15,7 @@ import { PeepCreator } from '@kit/peeps-creator'
 ```
 
 - **Parts:** a tab per category (type, body, hair, face, facial hair, accessories), each an option grid of small pictures on the current figure.
+- **Figures:** a last tab with the 38 whole illustrations of [`@kit/transhumans`](../transhumans) (and a tile to go back to building a peep). A figure replaces the peep on the stage; colours, scale, rotate, flip, background and both exports work on it, parts do not apply, and the dice of the tab picks another figure.
 - **Dice:** one per tab changes that tab only (never to the same choice twice); **Shuffle all** changes every part. A transparent background is left alone by Shuffle.
 - **Look:** background (a colour, or **transparent**), foreground and paper colours, scale, rotate, flip (also the `F` key), undo / redo / reset.
 - **Export:** SVG and PNG at 1024 px. Transparent stays transparent in both (no rectangle in the SVG, alpha in the PNG).
@@ -29,4 +30,4 @@ src/components/                                          PeepCreator (the whole)
 ```
 Each piece is exported, so a dashboard can use the whole creator or only, say, `PartPicker` with its own state.
 
-Depends on `@kit/peeps`; peer dependencies `react` and `react-dom` (>= 18). Node >= 22.23.4 for the tests; the components are `.tsx` and need a bundler (esbuild, Vite). `npm test` and `npm run typecheck` run inside the copy (copy `peeps` with it). The browser test is `examples/peeps/e2e.test.ts`.
+Depends on `@kit/peeps` and `@kit/transhumans`; peer dependencies `react` and `react-dom` (>= 18). Node >= 22.23.4 for the tests; the components are `.tsx` and need a bundler (esbuild, Vite). `npm test` and `npm run typecheck` run inside the copy (copy `peeps` and `transhumans` with it). The browser test is `examples/peeps/e2e.test.ts`.

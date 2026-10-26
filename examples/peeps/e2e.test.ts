@@ -119,3 +119,29 @@ test('a phone: no sideways scroll, the options are reachable', async () => {
   assert.ok(await page.locator('#full').getByRole('radio', { name: /Glasses/ }).first().isVisible());
   await page.close();
 });
+
+test('whole figures from Transhumans: pick one, roll another, export it, go back to the peep builder', async () => {
+  const page = await open(); const full = page.locator('#full');
+  await full.getByRole('tab', { name: 'Figures', exact: true }).click();
+  assert.equal(await full.getByRole('radio').count(), 39, 'the peep tile and 38 figures');
+  await full.getByRole('radio', { name: 'Runner', exact: true }).click();
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-figure=runner]').count(), 1);
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-slot]').count(), 0, 'no peep parts under a figure');
+
+  await full.getByRole('button', { name: 'Random figures' }).click();
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-figure=runner]').count(), 0, 'the dice picked another figure');
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-figure]').count(), 1);
+
+  await full.getByRole('tab', { name: 'Hair', exact: true }).click();
+  assert.ok(await full.getByRole('button', { name: 'Random hair' }).isDisabled(), 'no parts to roll on a figure');
+  const [svg] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as SVG' }).click()]);
+  const text = readFileSync((await svg.path())!, 'utf8');
+  assert.match(text, /data-figure="/); assert.doesNotMatch(text, /data-slot=/);
+
+  await full.getByRole('button', { name: 'Back to the peep builder' }).click();
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-figure]').count(), 0);
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-slot]').count(), 5);
+  await full.getByRole('button', { name: 'Undo' }).click();
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-figure]').count(), 1, 'undo puts the figure back');
+  await page.close();
+});

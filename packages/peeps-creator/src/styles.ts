@@ -25,9 +25,9 @@ export const creatorCss = `
 .pc-btn.pc-wide{width:100%;padding:10px 14px}
 .pc-btn[aria-pressed=true]{background:var(--pc-accent);color:var(--pc-on-accent);border-color:transparent}
 .pc-main{display:grid;grid-template-columns:minmax(300px,390px) minmax(0,1fr) minmax(260px,320px);gap:20px;align-items:start}
-.pc-picker{display:grid;grid-template-columns:88px minmax(0,1fr);overflow:hidden}
+.pc-picker{display:grid;grid-template-columns:96px minmax(0,1fr);overflow:hidden}
 .pc-rail{display:flex;flex-direction:column;gap:6px;padding:10px 8px;border-right:1px solid var(--pc-line)}
-.pc-rail-btn{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;border-radius:16px;padding:10px 2px;font-size:9.5px;color:var(--pc-muted);text-transform:var(--pc-caps);letter-spacing:.04em;max-width:100%}
+.pc-rail-btn{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:transparent;border-radius:16px;padding:10px 2px;font-size:9px;color:var(--pc-muted);text-transform:var(--pc-caps);letter-spacing:.02em;max-width:100%}
 .pc-rail-btn[aria-selected=true]{background:var(--pc-accent);color:var(--pc-on-accent);box-shadow:0 6px 20px var(--pc-glow)}
 .pc-options{padding:14px;min-width:0}
 .pc-dice{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid var(--pc-line);background:var(--pc-tile);transition:transform .25s}
@@ -39,6 +39,9 @@ export const creatorCss = `
 .pc-tile svg,.pc-tile .pc-none{width:100%;aspect-ratio:1;display:block;border-radius:12px}
 .pc-none{display:grid;place-items:center;color:var(--pc-muted)}
 .pc-tile span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-note{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px;color:var(--pc-muted);font-size:13px}
+.pc-note p{margin:0}
+.pc-dice:disabled{opacity:.35;cursor:default;transform:none}
 .pc-stage-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
 .pc-stage{width:100%;max-width:680px;min-width:240px;aspect-ratio:1;border-radius:var(--pc-r);overflow:hidden;box-shadow:var(--pc-shadow);border:1px solid var(--pc-line)}
 .pc-stage[data-transparent]{background:repeating-conic-gradient(#d4d4d4 0 25%,#fff 0 50%) 0 0/24px 24px}

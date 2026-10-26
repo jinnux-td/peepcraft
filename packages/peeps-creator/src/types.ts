@@ -15,11 +15,13 @@ export interface CreatorState {
   /** Degrees. */
   rotate: number
   flip: boolean
+  /** The id of a whole figure from @kit/transhumans; when set it is drawn instead of the peep. */
+  figure: string | null
 }
 
-export type Tab = 'type' | Slot
+export type Tab = 'type' | Slot | 'figures'
 
-export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', bg: '#f7d56e', scale: 1, rotate: 0, flip: false }
+export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null }
 
 export const themes: ReadonlyArray<{ id: ThemeId; label: string; dot: string }> = [
   { id: 'sunny', label: 'Sunny', dot: '#f7d56e' }, { id: 'glass', label: 'Glass', dot: '#3d6bff' },

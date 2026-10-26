@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import type { Box, PeepType, Slot } from '@kit/peeps'
 import { exportSvg, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
-import { fallbackBox, squareAround } from '../scene.ts'
-import { choose, commit, redo, setType, startHistory, tweak, undo, type History } from '../state.ts'
+import { boxKey, fallbackBox, squareAround } from '../scene.ts'
+import { choose, chooseFigure, commit, redo, showPeep, startHistory, tweak, undo, type History } from '../state.ts'
 import { creatorCss } from '../styles.ts'
 import { initialState, swatches, type CreatorState, type Tab, type ThemeId } from '../types.ts'
 import { icons } from './icons.tsx'
@@ -55,8 +55,9 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const record = (fn: (s: CreatorState) => CreatorState) => setHist((h) => commit(h, fn(h.now)))
   const live = (patch: Partial<CreatorState>) => setHist((h) => tweak(h, { ...h.now, ...patch }))
   const dice = (target: Target) => record((s) => randomize(s, target))
-  const onMeasure = useCallback((type: PeepType, outline: Box) => setBoxes((b) => ({ ...b, [type]: outline })), [])
-  const box = boxes[state.type] ? squareAround(boxes[state.type]!) : fallbackBox(state.type)
+  const onMeasure = useCallback((key: string, outline: Box) => setBoxes((b) => ({ ...b, [key]: outline })), [])
+  const key = boxKey(state)
+  const box = boxes[key] ? squareAround(boxes[key]!) : fallbackBox(state)
   const pickTheme = (t: ThemeId) => { setInnerTheme(t); onThemeChange?.(t) }
 
   const save = async (kind: 'svg' | 'png') => {
@@ -89,15 +90,15 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
       <div className="pc-main">
         <PartPicker
           state={state} tab={tab} onTab={setTab} boxes={boxes}
-          onChoose={(slot: Slot, id) => record((s) => choose(s, slot, id))} onType={(t) => record((s) => setType(s, t))} onDice={(t) => dice(t)}
+          onChoose={(slot: Slot, id) => record((s) => choose(s, slot, id))} onType={(t) => record((s) => showPeep(s, t))} onFigure={(id) => record((s) => chooseFigure(s, id))} onDice={(t) => dice(t)}
         />
 
         <section className="pc-stage-wrap" aria-label="Preview">
-          <Stage state={state} box={box} measured={!!boxes[state.type]} onMeasure={onMeasure} />
+          <Stage state={state} box={box} measured={!!boxes[key]} onMeasure={onMeasure} />
           <div className="pc-pill" role="group" aria-label="Type">
-            {types.map((t) => <button key={t} aria-pressed={state.type === t} onClick={() => record((s) => setType(s, t))}>{t}</button>)}
+            {types.map((t) => <button key={t} aria-pressed={state.figure === null && state.type === t} onClick={() => record((s) => showPeep(s, t))}>{t}</button>)}
           </div>
-          <p className="pc-hint">Press <kbd>F</kbd> to flip. Parts left alone use the defaults of the type.</p>
+          <p className="pc-hint">Press <kbd>F</kbd> to flip.{state.figure === null && ' Parts left alone use the defaults of the type.'}</p>
         </section>
 
         <section className="pc-panel pc-side" aria-label="Look">

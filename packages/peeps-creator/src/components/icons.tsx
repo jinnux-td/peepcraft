@@ -13,6 +13,7 @@ export const icons = {
   facialHair: draw(<path d="M3 13c3-4 6-2 9 0 3-2 6-4 9 0-3 1-5 5-9 1-4 4-6 0-9-1z" />),
   accessories: draw(<><circle cx="6.5" cy="14" r="3.5" /><circle cx="17.5" cy="14" r="3.5" /><path d="M10 14h4M3 14l2-6M21 14l-2-6" /></>),
   dice: draw(<><rect x="4" y="4" width="16" height="16" rx="3.5" /><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" /></>),
+  figure: draw(<><circle cx="13" cy="4.5" r="2" /><path d="m10 21 2-6-3-3 2-5 4 3 3 1M12 15l4 6" /></>),
   shuffle: draw(<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />),
   undo: draw(<><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></>),
   redo: draw(<><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></>),

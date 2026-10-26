@@ -31,3 +31,20 @@ test('the window is a square around the outline with air', () => {
   assert.equal(w.x + w.width / 2, 60)
   assert.equal(w.y + w.height / 2, 170)
 })
+
+test('a figure on the stage is drawn instead of the peep, in the ink and paper colours, and exported with it', () => {
+  const s = { ...initialState, figure: 'runner', ink: '#112233', paper: '#ddeeff' }
+  const svg = exportSvg(s, fallbackBox(s))
+  assert.match(svg, /<g data-figure="runner">/)
+  assert.doesNotMatch(svg, /data-slot=/)
+  assert.match(svg, /fill="#112233"/); assert.match(svg, /fill="#ddeeff"/)
+  assert.match(svg, /viewBox="-/, 'the window is a square around the 1080 canvas')
+  assert.match(exportSvg(initialState, fallbackBox(initialState)), /data-slot="body"/)
+  assert.throws(() => exportSvg({ ...s, figure: 'nope' }, fallbackBox(initialState)), /no figure "nope"/)
+})
+
+test('the stage keeps one measured outline per peep type and per figure', async () => {
+  const { boxKey } = await import('../src/scene.ts')
+  assert.equal(boxKey(initialState), 'bust')
+  assert.equal(boxKey({ ...initialState, figure: 'astro' }), 'figure:astro')
+})

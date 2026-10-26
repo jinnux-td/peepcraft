@@ -45,3 +45,21 @@ test('every option can come up', () => {
   // the current head is never drawn again, so every other one is
   assert.equal(seen.size, optionsFor('bust', 'head').length - 1)
 })
+
+test('the dice of the figures tab picks another figure; with a figure on stage, shuffle all picks another figure and leaves the parts', async () => {
+  const { figures } = await import('@kit/transhumans')
+  const first = randomize(initialState, 'figures', seeded(2))
+  assert.ok(first.figure && figures.some((f) => f.id === first.figure))
+  for (let i = 1; i < 40; i++) {
+    assert.notEqual(randomize(first, 'figures', seeded(i)).figure, first.figure)
+    const all = randomize({ ...first, parts: { head: 'afro' } }, 'all', seeded(i))
+    assert.notEqual(all.figure, first.figure)
+    assert.equal(all.parts.head, 'afro')
+  }
+})
+
+test('the dice of the type tab takes a figure off the stage', () => {
+  const s = randomize({ ...initialState, figure: 'astro' }, 'type', seeded(5))
+  assert.equal(s.figure, null)
+  assert.notEqual(s.type, 'bust')
+})

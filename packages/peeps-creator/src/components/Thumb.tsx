@@ -1,8 +1,10 @@
-import { origins, type Box, type PeepType, type Slot } from '@kit/peeps'
+import { origins, type Box, type Slot } from '@kit/peeps'
+import type { Figure } from '@kit/transhumans'
 import { fallbackBox, peepOf, squareAround } from '../scene.ts'
 import type { CreatorState } from '../types.ts'
 
-export type Boxes = Partial<Record<PeepType, Box>>
+/** Measured outlines, by `boxKey`: a peep type or a figure. */
+export type Boxes = Partial<Record<string, Box>>
 
 /** A small picture of one choice on the current figure: the whole figure for a body, the head for the rest, with only that slot swapped. */
 export function Thumb({ state, slot, id, boxes }: { state: CreatorState; slot: Slot; id: string; boxes: Boxes }) {
@@ -16,6 +18,15 @@ export function Thumb({ state, slot, id, boxes }: { state: CreatorState; slot: S
   return (
     <svg viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`} aria-hidden="true" style={state.bg === 'transparent' ? undefined : { background: state.bg }}>
       {placed.map(({ slot: sl, atom: A, at }) => <g key={sl} transform={`translate(${at.x} ${at.y})`}><A ink={state.ink} paper={state.paper} /></g>)}
+    </svg>
+  )
+}
+
+/** A whole figure, on its own canvas, on the current background. */
+export function FigureThumb({ state, figure: F }: { state: CreatorState; figure: Figure }) {
+  return (
+    <svg viewBox={`0 0 ${F.width} ${F.height}`} aria-hidden="true" style={state.bg === 'transparent' ? undefined : { background: state.bg }}>
+      <F ink={state.ink} paper={state.paper} />
     </svg>
   )
 }

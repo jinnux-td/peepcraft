@@ -16,6 +16,10 @@ export const choose = (s: CreatorState, slot: Slot, id: string): CreatorState =>
 /** Body ids belong to one type (a pose is not a torso), so changing type drops the chosen body. */
 export const setType = (s: CreatorState, type: PeepType): CreatorState => (type === s.type ? s : { ...s, type, parts: { ...s.parts, body: undefined } })
 
+/** Back to building a peep (or onto a figure): a figure and the parts are two ways to fill the stage. */
+export const chooseFigure = (s: CreatorState, id: string | null): CreatorState => ({ ...s, figure: id })
+export const showPeep = (s: CreatorState, type: PeepType): CreatorState => ({ ...setType(s, type), figure: null })
+
 export interface History { past: CreatorState[]; now: CreatorState; future: CreatorState[] }
 
 const LIMIT = 50
