@@ -1,0 +1,23 @@
+{
+  "name": "@kit/peeps",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Open Peeps (Pablo Stanley, CC0) as React components: every separate atom (hair, face, body, pose, ...) is a component, and a Peep composes them into one SVG with per-type defaults.",
+  "exports": { ".": "./src/index.ts" },
+  "engines": { "node": ">=22.23.4" },
+  "peerDependencies": { "react": ">=18" },
+  "scripts": {
+    "build:atoms": "node scripts/build-atoms.ts",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "5.9.3"
+  }
+}

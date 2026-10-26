@@ -12,10 +12,11 @@ To reuse one, copy its folder into another project.
 | [`@kit/panel`](packages/panel) | a dashboard panel that **holds a view**: title bar, options form drawn from what the view declares, loading / error / empty states, full screen, and a view that cannot break its neighbours | none |
 | [`@kit/heatmap`](packages/heatmap) | activity heat map (a square per day) fed with **per-day counts**, not records: a `‹ year ›` selector that asks the host for one window, replay, scrubber, tooltip | none |
 | [`@kit/shell`](packages/shell) | the frame of a dashboard page: header with tab bar, actions and theme mode, a bar for filters, sidebar (a drawer on a phone), main; theme tokens reach every kit module | none |
+| [`@kit/peeps`](packages/peeps) | Open Peeps illustrations as React components (166 atoms) and a `Peep` that composes them, with defaults per type (standing, sitting, bust) | `react` (peer) |
 | [`@kit/worldmap`](packages/worldmap) | world map, flat or globe (MapLibre), draws resolved layers; Natural Earth basemap bundled, works offline | `maplibre-gl` (BSD-3) |
 
 ## Rules
-1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`) import nothing from each other or from outside their folder. An **assembly** (`map-view`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
+1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `peeps`) import nothing from each other or from outside their folder. An **assembly** (`map-view`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
 2. **Extract, don't invent.** A package comes from code that already works in an app and has, or is about to have, a
    second user. Keep its tests with it.
 3. **Small public API:** everything exported goes through `src/index.ts`.
