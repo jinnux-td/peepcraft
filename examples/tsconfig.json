@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022", "module": "nodenext", "moduleResolution": "nodenext", "lib": ["ES2023", "DOM", "DOM.Iterable"], "types": ["node"],
     "strict": true, "noEmit": true, "allowImportingTsExtensions": true, "verbatimModuleSyntax": true, "erasableSyntaxOnly": true,
-    "skipLibCheck": true, "resolveJsonModule": true
+    "skipLibCheck": true, "resolveJsonModule": true, "jsx": "react-jsx"
   },
-  "include": ["./**/*.ts", "./**/*.d.ts"], "exclude": ["world/dist"]
+  "include": ["./**/*.ts", "./**/*.tsx", "./**/*.d.ts"], "exclude": ["world/dist"]
 }
