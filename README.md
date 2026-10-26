@@ -13,11 +13,12 @@ To reuse one, copy its folder into another project.
 | [`@kit/heatmap`](packages/heatmap) | activity heat map (a square per day) fed with **per-day counts**, not records: a `‹ year ›` selector that asks the host for one window, replay, scrubber, tooltip | none |
 | [`@kit/shell`](packages/shell) | the frame of a dashboard page: header with tab bar, actions and theme mode, a bar for filters, sidebar (a drawer on a phone), main; theme tokens reach every kit module | none |
 | [`@kit/peeps`](packages/peeps) | Open Peeps illustrations as React components (166 atoms) and a `Peep` that composes them, with defaults per type (standing, sitting, bust) | `react` (peer) |
+| [`@kit/transhumans`](packages/transhumans) | Transhumans illustrations (Pablo Stanley, CC0): 38 whole black and white figures as React components that recolour (ink and paper) | `react` (peer) |
 | [`@kit/peeps-creator`](packages/peeps-creator) | **assembly**: a character creator for peeps as one React component (`<PeepCreator />`): a tab per part with a dice each, colours, transparent background, scale / rotate / flip, undo, four themes, SVG and PNG export | `peeps` |
 | [`@kit/worldmap`](packages/worldmap) | world map, flat or globe (MapLibre), draws resolved layers; Natural Earth basemap bundled, works offline | `maplibre-gl` (BSD-3) |
 
 ## Rules
-1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `peeps`) import nothing from each other or from outside their folder. An **assembly** (`map-view`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
+1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `peeps`, `transhumans`) import nothing from each other or from outside their folder. An **assembly** (`map-view`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
 2. **Extract, don't invent.** A package comes from code that already works in an app and has, or is about to have, a
    second user. Keep its tests with it.
 3. **Small public API:** everything exported goes through `src/index.ts`.
