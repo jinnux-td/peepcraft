@@ -1,7 +1,7 @@
 # kit
 
 Small building blocks extracted from [kmap](../kmap). Every package works **on its own**: it imports nothing from its
-siblings, has its own `package.json`, `tsconfig.json`, tests and README, and runs TypeScript directly (Node >= 22.18).
+siblings, has its own `package.json`, `tsconfig.json`, tests and README, and runs TypeScript directly (Node >= 22.23.4).
 To reuse one, copy its folder into another project.
 
 | Package | What it is | Dependencies |
