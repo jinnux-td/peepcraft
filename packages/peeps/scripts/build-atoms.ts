@@ -62,7 +62,7 @@ function attrCode(name: string, value: string, inMask: boolean, refs: Set<string
 
 function code(n: Node, refs: Set<string>, depth: number, inMask = false): string {
   const pad = '  '.repeat(depth)
-  const attrs = Object.entries(n.attrs).map(([k, v]) => attrCode(k, v, inMask, refs)).filter((a): a is string => a !== null)
+  const attrs = Object.entries(n.attrs).map(([k, v]) => attrCode(k, v, inMask || n.tag === 'mask', refs)).filter((a): a is string => a !== null)
   const kids = n.kids.filter((k) => !SKIP_TAGS.has(k.tag)).map((k) => code(k, refs, depth + 1, inMask || n.tag === 'mask'))
   const props = attrs.length ? `{ ${attrs.join(', ')} }` : 'null'
   if (!kids.length) return `${pad}h(${str(n.tag)}, ${props})`
