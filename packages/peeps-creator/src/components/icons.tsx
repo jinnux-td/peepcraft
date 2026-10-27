@@ -28,6 +28,7 @@ export const icons = {
   remove: draw(<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />),
   add: draw(<path d="M12 5v14M5 12h14" />),
   upload: draw(<path d="M12 16V4M7 9l5-5 5 5M4 20h16" />),
+  more: draw(<path strokeWidth="3.2" d="M5 6h.01M12 6h.01M19 6h.01M5 12h.01M12 12h.01M19 12h.01M5 18h.01M12 18h.01M19 18h.01" />),
   close: draw(<path d="M6 6l12 12M18 6 6 18" />),
   none: draw(<><circle cx="12" cy="12" r="8" /><path d="m6.3 6.3 11.4 11.4" /></>),
 }

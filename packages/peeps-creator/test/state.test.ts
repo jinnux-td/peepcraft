@@ -76,3 +76,26 @@ test('dragging moves across and lifts up and down, inside the scene and the lift
   assert.equal(far.x, 0); assert.equal(far.lift, LIFT.min * SCENE)
   assert.equal(dragEntry(s, 0, from, 99999, -99999).scene[0].lift, LIFT.max * SCENE)
 })
+
+test('resizing from the bottom-right handle keeps the top-left corner and stays in range', async () => {
+  const { addToScene, resizeEntry, SIZES } = await import('../src/state.ts')
+  const { entryBox } = await import('../src/scene.ts')
+  const s = addToScene(initialState, undefined, { thing: 'table' })
+  const e = s.scene[0], b = entryBox(e)
+  const big = resizeEntry(s, 0, { x: e.x, lift: 0, size: 1 }, b.width / 2, 0).scene[0]
+  assert.equal(big.size, 1.5)
+  const nb = entryBox(big)
+  assert.ok(Math.abs(nb.x - b.x) < 1e-6 && Math.abs(nb.y - b.y) < 1e-6, 'the top-left corner stays')
+  assert.equal(resizeEntry(s, 0, { x: e.x, lift: 0, size: 1 }, -99999, -99999).scene[0].size, SIZES.min)
+  assert.equal(resizeEntry(s, 0, { x: e.x, lift: 0, size: 1 }, 99999, 0).scene[0].size, SIZES.max)
+})
+
+test('colours: a typed hex becomes #rrggbb, a name goes to the browser, the design lists its colours once', async () => {
+  const { addToScene, designColors, toHex, updateEntry } = await import('../src/state.ts')
+  assert.equal(toHex('#0CF'), '#00ccff'); assert.equal(toHex(' 00c4cc '), '#00c4cc')
+  assert.equal(toHex('#12345'), null); assert.equal(toHex('blue'), null, 'no name parser in Node')
+  assert.equal(toHex('blue', (t) => (t === 'blue' ? '#0000ff' : null)), '#0000ff')
+  let s = addToScene({ ...initialState, bg: 'transparent' }, undefined, { thing: 'potted-plant' })
+  s = updateEntry(s, 0, { ink: '#1D3557', colors: { leaves: '#52b788' } })
+  assert.deepEqual(designColors(s), ['#111111', '#ffffff', '#1d3557', '#52b788'])
+})

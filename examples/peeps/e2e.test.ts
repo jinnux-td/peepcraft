@@ -123,7 +123,7 @@ test('a phone: no sideways scroll, the options are reachable', async () => {
 test('whole figures from Transhumans: pick one, roll another, export it, go back to the peep builder', async () => {
   const page = await open(); const full = page.locator('#full');
   await full.getByRole('tab', { name: 'Figures', exact: true }).click();
-  assert.equal(await full.getByRole('radio').count(), 39, 'the peep tile and 38 figures');
+  assert.equal(await full.getByRole('radiogroup', { name: 'Figures' }).getByRole('radio').count(), 39, 'the peep tile and 38 figures');
   await full.getByRole('radio', { name: 'Runner', exact: true }).click();
   assert.equal(await full.locator('[data-testid=pc-stage] [data-figure=runner]').count(), 1);
   assert.equal(await full.locator('[data-testid=pc-stage] [data-slot]').count(), 0, 'no peep parts under a figure');
@@ -250,5 +250,109 @@ test('a short window: the side panel of the scene fits, with nothing cut off ins
   assert.ok(fit.bottom + 16 <= fit.inner + 1, `the panel and the creator's edge are in view (${fit.bottom} of ${fit.inner})`);
   assert.ok(fit.all <= fit.shown + 1, `the panel itself does not scroll; the list does (${fit.all} > ${fit.shown})`);
   assert.ok(await full.getByRole('button', { name: 'Save as PNG' }).isVisible());
+  await page.close();
+});
+
+test('scene colours: the leaves and the pot of a plant apart, and the own lines of a peep', async () => {
+  const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  await full.locator('[aria-label=Things]').getByRole('button', { name: 'Add potted plant', exact: true }).click();
+  const roles = full.getByRole('radiogroup', { name: 'Colour of' });
+  assert.deepEqual(await roles.getByRole('radio').allInnerTexts(), ['Lines', 'Fill', 'Leaves']);
+  await roles.getByRole('radio', { name: 'Leaves' }).click();
+  await full.getByRole('button', { name: 'Leaves #52b788' }).click();
+  await roles.getByRole('radio', { name: 'Fill' }).click();
+  await full.getByRole('button', { name: 'Fill #fde9d0' }).click();
+  assert.equal(await stage.locator('[data-part=leaves][fill="#52b788"]').count(), 7);
+  assert.ok(await stage.locator('[data-item="0"] path[fill="#fde9d0"]').count() > 0, 'the pot takes the fill');
+
+  await full.getByRole('button', { name: 'Add', exact: true }).click();
+  assert.deepEqual(await roles.getByRole('radio').allInnerTexts(), ['Lines', 'Fill'], 'a peep has no named parts');
+  await roles.getByRole('radio', { name: 'Lines' }).click();
+  await full.getByRole('button', { name: 'Lines #1d3557' }).click();
+  assert.ok(await stage.locator('[data-item="1"] [fill="#1d3557"]').count() > 0);
+  assert.equal(await stage.locator('[data-part=leaves][fill="#52b788"]').count(), 7, 'the plant keeps its colours');
+  await page.close();
+});
+
+test('scene frame: 16:9 widens the stage and the PNG, zoom closes in, the corner handle resizes the picked member', async () => {
+  const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  await full.locator('[aria-label=Things]').getByRole('button', { name: 'Add table', exact: true }).click();
+  await full.getByRole('radiogroup', { name: 'Ratio' }).getByRole('radio', { name: '16:9' }).click();
+  const box = (await stage.boundingBox())!;
+  assert.ok(Math.abs(box.width / box.height - 16 / 9) < 0.02, `the stage is 16:9 (${box.width} x ${box.height})`);
+
+  const handle = stage.locator('[data-handle]');
+  const before = (await stage.locator('[data-item="0"]').boundingBox())!;
+  const h = (await handle.boundingBox())!;
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+  await page.mouse.down(); await page.mouse.move(h.x + h.width / 2 + before.width / 2, h.y + h.height / 2, { steps: 5 }); await page.mouse.up();
+  const after = (await stage.locator('[data-item="0"]').boundingBox())!;
+  assert.ok(Math.abs(after.width / before.width - 1.5) < 0.03, `half again as wide (${after.width / before.width})`);
+  assert.ok(Math.abs(after.x - before.x) < 2 && Math.abs(after.y - before.y) < 2, 'the top-left corner stays');
+
+  const zoom = full.locator('.pc-frame input[type=range]');
+  await zoom.fill('2');
+  const near = (await stage.locator('[data-item="0"]').boundingBox())!;
+  assert.ok(Math.abs(near.width / after.width - 2) < 0.03, 'zoom 2 shows it twice as big');
+
+  const [png] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as PNG' }).click()]);
+  const b64 = readFileSync((await png.path())!).toString('base64');
+  const size = await page.evaluate(async (data) => { const img = new Image(); img.src = `data:image/png;base64,${data}`; await img.decode(); return [img.width, img.height]; }, b64);
+  assert.deepEqual(size, [1024, 576]);
+
+  await full.getByRole('radiogroup', { name: 'PNG size' }).getByRole('radio', { name: '2×' }).click();
+  const [png2] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as PNG' }).click()]);
+  const b642 = readFileSync((await png2.path())!).toString('base64');
+  assert.deepEqual(await page.evaluate(async (data) => { const img = new Image(); img.src = `data:image/png;base64,${data}`; await img.decode(); return [img.width, img.height]; }, b642), [2048, 1152]);
+  await page.close();
+});
+
+test('numbers: a slider drags onto 1×, a typed number is kept in range, the reset icon goes back to the default', async () => {
+  const page = await open(); const full = page.locator('#full');
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  await full.getByRole('button', { name: 'Add', exact: true }).click();
+  const zoom = full.locator('.pc-frame input[type=range]'), zoomBox = full.getByLabel('Zoom value');
+  await zoomBox.fill('0.5'); await zoomBox.blur();
+  const r = (await zoom.boundingBox())!, seen = new Set<string>();
+  await page.mouse.move(r.x + 2, r.y + r.height / 2); await page.mouse.down();
+  for (let i = 0; i <= 80; i++) { await page.mouse.move(r.x + 2 + ((r.width - 4) * i) / 80, r.y + r.height / 2); seen.add(await zoom.inputValue()); }
+  await page.mouse.up();
+  assert.ok(seen.has('1'), `the drag passes through 1 (${[...seen].join(' ')})`);
+
+  await zoomBox.fill('1.5'); await zoomBox.blur();
+  assert.equal(await zoom.inputValue(), '1.5');
+  await zoomBox.fill('9'); await zoomBox.blur();
+  assert.equal(await zoomBox.inputValue(), '2', 'kept in range');
+  await full.getByRole('button', { name: 'Reset zoom' }).click();
+  assert.equal(await zoom.inputValue(), '1');
+  assert.ok(await full.getByRole('button', { name: 'Reset zoom' }).isDisabled(), 'nothing to reset at the default');
+
+  const pos = full.getByLabel('Position value');
+  await pos.fill('25'); await pos.blur();
+  const at = await full.getByTestId('pc-stage').locator('[data-item="0"]').getAttribute('transform');
+  await full.getByRole('button', { name: 'Reset position' }).click();
+  assert.notEqual(await full.getByTestId('pc-stage').locator('[data-item="0"]').getAttribute('transform'), at);
+  assert.equal(await pos.inputValue(), '50');
+  await page.close();
+});
+
+test('more colours: the full set, the colours already in the picture, and a typed name or hex', async () => {
+  const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
+  await full.getByRole('button', { name: 'Background: more colours' }).click();
+  assert.equal(await full.getByRole('group', { name: 'Background: default colours' }).getByRole('button').count(), 28);
+  assert.ok(await full.getByRole('group', { name: 'Background: in this design' }).getByRole('button', { name: 'Background #f7d56e' }).isVisible());
+  await full.getByRole('group', { name: 'Background: default colours' }).getByRole('button', { name: 'Background #5271ff' }).click();
+  assert.equal(await stage.locator('rect[data-layer=background]').getAttribute('fill'), '#5271ff');
+  await full.getByLabel('Background: colour name or hex').fill('tomato');
+  assert.equal(await stage.locator('rect[data-layer=background]').getAttribute('fill'), '#ff6347');
+  await full.getByLabel('Background: colour name or hex').fill('#0cf');
+  assert.equal(await stage.locator('rect[data-layer=background]').getAttribute('fill'), '#00ccff');
+  await full.getByLabel('Background: colour name or hex').fill('not a colour');
+  assert.equal(await full.getByLabel('Background: colour name or hex').getAttribute('aria-invalid'), 'true');
+  assert.equal(await stage.locator('rect[data-layer=background]').getAttribute('fill'), '#00ccff', 'a bad name changes nothing');
+  await full.getByRole('button', { name: 'Background: more colours' }).click();
+  assert.equal(await full.getByRole('group', { name: 'Background: default colours' }).count(), 0, 'the button closes it again');
   await page.close();
 });

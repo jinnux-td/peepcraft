@@ -1,11 +1,12 @@
-import { useEffect, useRef } from 'react'
-import { things } from '@kit/things'
+import { useEffect, useRef, useState } from 'react'
+import { lookup as lookupThing, things } from '@kit/things'
 import { lookup as lookupFigure } from '@kit/transhumans'
-import { LIFT, SCENE } from '../scene.ts'
+import { LIFT, SCENE, sceneWidth } from '../scene.ts'
 import { ACCEPT } from '../uploads.ts'
-import type { CreatorState, SceneEntry, Upload } from '../types.ts'
+import { swatches, type CreatorState, type SceneEntry, type Upload } from '../types.ts'
 import { icons } from './icons.tsx'
 import { Slider } from './Slider.tsx'
+import { Swatches } from './Swatches.tsx'
 import { LookThumb } from './Thumb.tsx'
 
 const name = (e: SceneEntry) => (e.upload ? e.upload.name : e.thing ? things.find((t) => t.id === e.thing)?.label ?? e.thing : e.figure ? lookupFigure(e.figure).label : e.type)
@@ -57,15 +58,18 @@ export function SceneSources({ state, onAdd, uploads, uploadNote, onUpload, onDe
 }
 
 /** The right side of the Scene tab: the members, back to front; pick one to move, size, lift, flip, reorder or remove it. */
-export function SceneMembers({ state, selected, onSelect, onLive, onCommit, onRemove, onMove }: {
+export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit, onRemove, onMove }: {
   state: CreatorState; selected: number | null; onSelect: (i: number | null) => void
-  /** Sliders: no undo step of their own. */
-  onLive: (i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'lift'>>) => void
+  /** Colours already in the picture, offered first under "more colours". */
+  used: readonly string[]
+  /** Sliders and colours: no undo step of their own. */
+  onLive: (i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'lift' | 'ink' | 'paper' | 'colors'>>) => void
   onCommit: (i: number, patch: Partial<Pick<SceneEntry, 'flip'>>) => void
   onRemove: (i: number) => void; onMove: (i: number, by: 1 | -1) => void
 }) {
   const I = icons
   const e = selected !== null ? state.scene[selected] : undefined
+  const [role, setRole] = useState('paper')
   const grid = useRef<HTMLDivElement>(null)
   useEffect(() => { grid.current?.querySelector('[aria-checked=true]')?.scrollIntoView({ block: 'nearest' }) }, [selected])
   return (
@@ -82,9 +86,10 @@ export function SceneMembers({ state, selected, onSelect, onLive, onCommit, onRe
       )}
       {e && selected !== null ? (
         <div className="pc-member" role="group" aria-label={`Member ${selected + 1}`}>
-          <Slider label="Position" value={Math.round((e.x / SCENE) * 100)} min={0} max={100} step={1} unit="%" onChange={(v) => onLive(selected, { x: (v / 100) * SCENE })} />
-          <Slider label="Size" value={e.size} min={0.2} max={2} step={0.05} onChange={(size) => onLive(selected, { size })} />
-          <Slider label="Lift" value={Math.round(((e.lift ?? 0) / SCENE) * 100)} min={LIFT.min * 100} max={LIFT.max * 100} step={1} unit="%" onChange={(v) => onLive(selected, { lift: (v / 100) * SCENE })} />
+          <Slider label="Position" value={Math.round((e.x / sceneWidth(state)) * 100)} min={0} max={100} step={1} unit="%" reset={50} onChange={(v) => onLive(selected, { x: (v / 100) * sceneWidth(state) })} />
+          <Slider label="Size" value={e.size} min={0.2} max={2} step={0.05} reset={1} onChange={(size) => onLive(selected, { size })} />
+          <Slider label="Lift" value={Math.round(((e.lift ?? 0) / SCENE) * 100)} min={LIFT.min * 100} max={LIFT.max * 100} step={1} unit="%" reset={0} onChange={(v) => onLive(selected, { lift: (v / 100) * SCENE })} />
+          {!e.upload && <MemberColors e={e} role={role} used={used} onRole={setRole} onChange={(patch) => onLive(selected, patch)} />}
           <div className="pc-row">
             <button className="pc-btn" aria-label="Flip" title="Flip" aria-pressed={e.flip} onClick={() => onCommit(selected, { flip: !e.flip })}><I.flip /><span>Flip</span></button>
             <button className="pc-btn" aria-label="Back" title="Back" onClick={() => onMove(selected, -1)} disabled={selected === 0}><I.back /><span>Back</span></button>
@@ -94,5 +99,22 @@ export function SceneMembers({ state, selected, onSelect, onLive, onCommit, onRe
         </div>
       ) : state.scene.length > 0 && <p className="pc-note">Pick one here, or drag it on the stage.</p>}
     </>
+  )
+}
+
+/** Colours of one member: its lines, its fill, and each named part of a thing (a pot and its leaves). One palette, for the colour picked above it. */
+function MemberColors({ e, role, used, onRole, onChange }: { e: SceneEntry; role: string; used: readonly string[]; onRole: (r: string) => void; onChange: (patch: Pick<SceneEntry, 'ink'> | Pick<SceneEntry, 'paper'> | Pick<SceneEntry, 'colors'>) => void }) {
+  const roles = [['ink', 'Lines'], ['paper', 'Fill'], ...(e.thing ? lookupThing(e.thing).slots : []).map((s) => [s, s[0].toUpperCase() + s.slice(1)])]
+  // Another member may not have the part that was picked; fall back to its fill.
+  const [id, label] = roles.find(([r]) => r === role) ?? roles[1]
+  const value = id === 'ink' ? e.ink : id === 'paper' ? e.paper : e.colors?.[id] ?? e.paper
+  return (
+    <div className="pc-colors">
+      <div className="pc-pill pc-roles" role="radiogroup" aria-label="Colour of">
+        {roles.map(([r, l]) => <button key={r} role="radio" aria-checked={r === id} onClick={() => onRole(r)}>{l}</button>)}
+      </div>
+      <Swatches label={label} value={value} used={used} options={id === 'ink' ? swatches.ink : id === 'paper' ? swatches.paper : swatches.parts}
+        onChange={(c) => onChange(id === 'ink' ? { ink: c } : id === 'paper' ? { paper: c } : { colors: { ...e.colors, [id]: c } })} />
+    </div>
   )
 }

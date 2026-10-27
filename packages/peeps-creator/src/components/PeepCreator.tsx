@@ -2,10 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import type { Box, PeepType, Slot } from '@kit/peeps'
 import { exportSceneSvg, exportSvg, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
-import { boxKey, fallbackBox, SCENE, SceneView, squareAround } from '../scene.ts'
-import { addToScene, choose, chooseFigure, commit, dragEntry, dropUpload, moveEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
+import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
+import { addToScene, choose, chooseFigure, commit, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
 import { creatorCss } from '../styles.ts'
-import { initialState, swatches, type CreatorState, type Tab, type ThemeId, type Upload } from '../types.ts'
+import { initialState, RATIOS, swatches, type CreatorState, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
 import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
 import { icons } from './icons.tsx'
 import { PartPicker } from './PartPicker.tsx'
@@ -51,11 +51,14 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const [picked, setPicked] = useState<number | null>(null)
   const [uploads, setUploads] = useState<Upload[]>([])
   const [uploadNote, setUploadNote] = useState('')
+  /** PNG size, times the 1024 px picture; a preference, not part of the picture, so not in the undo history. */
+  const [pngScale, setPngScale] = useState(1)
   // No saved uploads when the browser keeps no storage (a private window): the library just starts empty.
   useEffect(() => { loadUploads().then(setUploads, () => {}) }, [])
   const theme = themeProp ?? innerTheme
   const state = hist.now
   const inScene = tab === 'scene'
+  const used = designColors(state)
   // Undo can take the picked member away.
   const selected = picked !== null && picked < state.scene.length ? picked : null
 
@@ -70,9 +73,11 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const box = boxes[key] ? squareAround(boxes[key]!) : fallbackBox(state)
   const pickTheme = (t: ThemeId) => { setInnerTheme(t); onThemeChange?.(t) }
 
+  const base = inScene ? frameSize(state) : { width: SIZE, height: SIZE }
+  const px = { width: base.width * pngScale, height: base.height * pngScale }
   const save = async (kind: 'svg' | 'png') => {
     const svg = inScene ? exportSceneSvg(state) : exportSvg(state, box)
-    onExport({ kind, name: `${inScene ? 'scene' : 'peep'}.${kind}`, blob: kind === 'svg' ? new Blob([svg], { type: 'image/svg+xml' }) : await svgToPng(svg) })
+    onExport({ kind, name: `${inScene ? 'scene' : 'peep'}.${kind}`, blob: kind === 'svg' ? new Blob([svg], { type: 'image/svg+xml' }) : await svgToPng(svg, px.width, px.height) })
   }
 
   const types: PeepType[] = ['standing', 'sitting', 'bust']
@@ -95,7 +100,6 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     deleteUpload(id).catch(() => {})
   }
   // Dragging a member on the stage: one undo step per drag, taken on the first move, so a click that only picks adds none.
-  const drag = useRef<{ i: number; x: number; lift: number; px: number; py: number; unit: number; moved: boolean } | null>(null)
   // In the scene the side panel ends at the bottom of the window, wherever the host page puts the creator (sticky alone only helps once scrolled).
   const side = useRef<HTMLElement>(null)
   useLayoutEffect(() => {
@@ -108,13 +112,16 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     addEventListener('scroll', fit, { passive: true }); addEventListener('resize', fit)
     return () => { removeEventListener('scroll', fit); removeEventListener('resize', fit) }
   }, [inScene])
+  // Grabbing the handle of the picked member resizes it; grabbing a member moves it.
+  const drag = useRef<{ i: number; x: number; lift: number; size: number; resize: boolean; px: number; py: number; unit: number; moved: boolean } | null>(null)
   const grab = (ev: PointerEvent<HTMLDivElement>) => {
-    const hit = (ev.target as Element).closest('[data-item]')?.getAttribute('data-item')
+    const target = ev.target as Element, handle = target.closest('[data-handle]')
+    const hit = handle?.getAttribute('data-handle') ?? target.closest('[data-item]')?.getAttribute('data-item')
     if (hit == null) { setPicked(null); return }
     const i = Number(hit), e = state.scene[i]
     setPicked(i)
     ev.currentTarget.setPointerCapture(ev.pointerId)
-    drag.current = { i, x: e.x, lift: e.lift ?? 0, px: ev.clientX, py: ev.clientY, unit: SCENE / ev.currentTarget.getBoundingClientRect().width, moved: false }
+    drag.current = { i, x: e.x, lift: e.lift ?? 0, size: e.size, resize: !!handle, px: ev.clientX, py: ev.clientY, unit: frameBox(state).width / ev.currentTarget.getBoundingClientRect().width, moved: false }
   }
   const pull = (ev: PointerEvent<HTMLDivElement>) => {
     const d = drag.current
@@ -123,7 +130,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     if (!d.moved && Math.hypot(ev.clientX - d.px, ev.clientY - d.py) < 3) return
     const first = !d.moved
     d.moved = true
-    setHist((h) => (first ? commit : tweak)(h, dragEntry(h.now, d.i, d, dx, dy)))
+    setHist((h) => (first ? commit : tweak)(h, (d.resize ? resizeEntry : dragEntry)(h.now, d.i, d, dx, dy)))
   }
 
   return (
@@ -156,11 +163,17 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
 
         <section className="pc-stage-wrap" aria-label="Preview">
           {inScene ? <>
-            <div className="pc-stage" data-transparent={state.bg === 'transparent' || undefined} data-testid="pc-stage" data-view="scene" tabIndex={-1}
+            <div className="pc-stage" data-transparent={state.bg === 'transparent' || undefined} data-testid="pc-stage" data-view="scene" tabIndex={-1} style={{ '--pc-ratio': RATIOS[state.frame.ratio] } as CSSProperties}
               onPointerDown={grab} onPointerMove={pull} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
               <SceneView state={state} selected={selected} />
             </div>
-            <p className="pc-hint">{state.scene.length ? <>Drag someone to move them: across, or up and down. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
+            <div className="pc-frame">
+              <div className="pc-pill" role="radiogroup" aria-label="Ratio">
+                {(Object.keys(RATIOS) as Ratio[]).map((r) => <button key={r} role="radio" aria-checked={state.frame.ratio === r} onClick={() => record((s) => setRatio(s, r))}>{r}</button>)}
+              </div>
+              <Slider label="Zoom" value={state.frame.zoom} min={0.5} max={2} step={0.05} unit="×" reset={1} onChange={(zoom) => setHist((h) => tweak(h, { ...h.now, frame: { ...h.now.frame, zoom } }))} />
+            </div>
+            <p className="pc-hint">{state.scene.length ? <>Drag someone to move them, or the corner of the picked one to resize it. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
           </> : <>
           <Stage state={state} box={box} measured={!!boxes[key]} onMeasure={onMeasure} />
           <div className="pc-pill" role="group" aria-label="Type">
@@ -171,10 +184,10 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
         </section>
 
         <section ref={side} className={`pc-panel pc-side${inScene ? ' pc-side-scene' : ''}`} aria-label="Look">
-          <Swatches label="Background" value={state.bg} options={swatches.bg} transparent onChange={(bg) => live({ bg })} />
+          <Swatches label="Background" value={state.bg} options={swatches.bg} transparent used={used} onChange={(bg) => live({ bg })} />
           {inScene && (
             <SceneMembers
-              state={state} selected={selected} onSelect={setPicked} onLive={(i, patch) => setHist((h) => tweak(h, updateEntry(h.now, i, patch)))}
+              state={state} selected={selected} onSelect={setPicked} used={used} onLive={(i, patch) => setHist((h) => tweak(h, updateEntry(h.now, i, patch)))}
               onCommit={(i, patch) => record((s) => updateEntry(s, i, patch))}
               onRemove={(i) => { setPicked(null); record((s) => removeEntry(s, i)) }}
               onMove={(i, by) => { setPicked(i + by); record((s) => moveEntry(s, i, by)) }}
@@ -182,12 +195,18 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
           )}
           {/* These edit the peep or figure being built; in the scene each member keeps the look it was added with. */}
           {!inScene && <>
-          <Swatches label="Foreground" value={state.ink} options={swatches.ink} onChange={(ink) => live({ ink })} />
-          <Swatches label="Paper" value={state.paper} options={swatches.paper} onChange={(paper) => live({ paper })} />
-          <Slider label="Scale" value={state.scale} min={0.5} max={1.5} step={0.05} onChange={(scale) => live({ scale })} />
-          <Slider label="Rotate" value={state.rotate} min={-180} max={180} step={5} unit="°" onChange={(rotate) => live({ rotate })} />
+          <Swatches label="Foreground" value={state.ink} options={swatches.ink} used={used} onChange={(ink) => live({ ink })} />
+          <Swatches label="Paper" value={state.paper} options={swatches.paper} used={used} onChange={(paper) => live({ paper })} />
+          <Slider label="Scale" value={state.scale} min={0.5} max={1.5} step={0.05} reset={1} onChange={(scale) => live({ scale })} />
+          <Slider label="Rotate" value={state.rotate} min={-180} max={180} step={5} unit="°" reset={0} onChange={(rotate) => live({ rotate })} />
           <button className="pc-btn pc-wide" aria-pressed={state.flip} onClick={() => live({ flip: !state.flip })}><I.flip /><span>Flip</span></button>
           </>}
+          <div className="pc-export">
+            <div className="pc-pill" role="radiogroup" aria-label="PNG size">
+              {[1, 2, 3, 4].map((k) => <button key={k} role="radio" aria-checked={pngScale === k} onClick={() => setPngScale(k)}>{k}×</button>)}
+            </div>
+            <small aria-label={`PNG ${px.width} by ${px.height} pixels`}>{px.width}×{px.height}</small>
+          </div>
           <div className="pc-save">
             <button className="pc-btn pc-primary" onClick={() => save('svg')}><I.download /><span>Save as SVG</span></button>
             <button className="pc-btn pc-primary" onClick={() => save('png')}><I.download /><span>Save as PNG</span></button>
