@@ -1,5 +1,5 @@
 import { origins, type Box, type Slot } from '@kit/peeps'
-import type { Figure } from '@kit/transhumans'
+import { lookup as lookupFigure, type Figure } from '@kit/transhumans'
 import { fallbackBox, peepOf, squareAround } from '../scene.ts'
 import type { CreatorState } from '../types.ts'
 
@@ -27,6 +27,17 @@ export function FigureThumb({ state, figure: F }: { state: CreatorState; figure:
   return (
     <svg viewBox={`0 0 ${F.width} ${F.height}`} aria-hidden="true" style={state.bg === 'transparent' ? undefined : { background: state.bg }}>
       <F ink={state.ink} paper={state.paper} />
+    </svg>
+  )
+}
+
+/** A whole peep or figure, as the scene keeps it, on its canvas. */
+export function LookThumb({ look, bg }: { look: Pick<CreatorState, 'type' | 'parts' | 'figure' | 'ink' | 'paper' | 'flip'>; bg: string }) {
+  const box = fallbackBox(look)
+  const F = look.figure ? lookupFigure(look.figure) : null
+  return (
+    <svg viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`} aria-hidden="true" style={bg === 'transparent' ? undefined : { background: bg }}>
+      <g transform={look.flip ? `translate(${2 * box.x + box.width} 0) scale(-1 1)` : undefined}>{F ? <F ink={look.ink} paper={look.paper} /> : peepOf(look).group()}</g>
     </svg>
   )
 }

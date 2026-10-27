@@ -65,6 +65,12 @@ export const creatorCss = `
 .pc-slider{display:flex;flex-direction:column;gap:8px}
 .pc input[type=range]{width:100%;accent-color:var(--pc-accent)}
 .pc-save{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc-member{display:flex;flex-direction:column;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--pc-line)}
+.pc-row{display:flex;flex-wrap:wrap;gap:8px}
+.pc-add span:last-child{display:inline-flex;align-items:center;gap:4px;color:var(--pc-text);font-weight:600}
+.pc-add span:last-child svg{width:14px;height:14px}
+.pc-selected{fill:none;stroke:#1b1b1b;stroke-width:2.5;stroke-dasharray:8 6;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)}
+.pc-stage[data-view=scene] [data-item]{cursor:pointer}
 .pc-theme{position:relative}
 .pc-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:10;padding:6px;display:flex;flex-direction:column;min-width:160px;background:var(--pc-menu);border:1px solid var(--pc-line);border-radius:16px;box-shadow:var(--pc-shadow)}
 .pc-item{display:flex;align-items:center;gap:10px;border:0;background:transparent;border-radius:10px;padding:8px 10px;text-align:left}

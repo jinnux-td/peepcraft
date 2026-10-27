@@ -17,11 +17,23 @@ export interface CreatorState {
   flip: boolean
   /** The id of a whole figure from @kit/transhumans; when set it is drawn instead of the peep. */
   figure: string | null
+  /** Members of the scene, back to front. Empty until something is added from the Scene tab. */
+  scene: SceneEntry[]
 }
 
-export type Tab = 'type' | Slot | 'figures'
+/** A copy of a peep or figure as it was when added to the scene, and where it stands. */
+export interface SceneEntry extends Pick<CreatorState, 'type' | 'parts' | 'figure' | 'ink' | 'paper' | 'flip'> {
+  /** Centre from the left, in scene units. */
+  x: number
+  /** 1 is the default size of its kind. */
+  size: number
+  /** Bottom of its measured outline, in its own canvas: its feet go on the ground line. */
+  bottom: number
+}
 
-export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null }
+export type Tab = 'type' | Slot | 'figures' | 'scene'
+
+export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null, scene: [] }
 
 export const themes: ReadonlyArray<{ id: ThemeId; label: string; dot: string }> = [
   { id: 'sunny', label: 'Sunny', dot: '#f7d56e' }, { id: 'glass', label: 'Glass', dot: '#3d6bff' },

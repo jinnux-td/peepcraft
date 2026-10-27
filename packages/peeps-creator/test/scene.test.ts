@@ -48,3 +48,18 @@ test('the stage keeps one measured outline per peep type and per figure', async 
   assert.equal(boxKey(initialState), 'bust')
   assert.equal(boxKey({ ...initialState, figure: 'astro' }), 'figure:astro')
 })
+
+test('the scene export: every member on the ground, back to front, no selection outline', async () => {
+  const { exportSceneSvg } = await import('../src/export.ts')
+  const { addToScene } = await import('../src/state.ts')
+  const { entryBox, GROUND, SCENE } = await import('../src/scene.ts')
+  const s = addToScene(addToScene({ ...initialState, type: 'standing' }, { x: 0, y: 150, width: 1000, height: 3000 }), undefined)
+  const two = addToScene({ ...s, figure: 'runner' })
+  const svg = exportSceneSvg(two)
+  assert.match(svg, new RegExp(`^<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SCENE} ${SCENE}" width="1024" height="1024"><g><rect [^>]*fill="#f7d56e"`))
+  assert.deepEqual([...svg.matchAll(/data-item="(\d)"/g)].map((m) => m[1]), ['0', '1', '2'])
+  assert.doesNotMatch(svg, /pc-selected|data-selected/)
+  const feet = two.scene.map((e) => { const b = entryBox(e); return b.y + e.bottom * (b.height / (e.figure ? 1080 : 3291)) })
+  for (const f of feet) assert.ok(Math.abs(f - GROUND) < 1e-6, `feet at ${f}`)
+  assert.doesNotMatch(exportSceneSvg({ ...two, bg: 'transparent' }), /<rect/)
+})

@@ -44,3 +44,23 @@ test('history keeps the last 50 steps', () => {
   for (let i = 0; i < 80; i++) h = commit(h, { ...h.now, rotate: i })
   assert.equal(h.past.length, 50)
 })
+
+test('the scene: add copies the look, members spread out, update, reorder and remove', async () => {
+  const { addToScene, moveEntry, removeEntry, updateEntry } = await import('../src/state.ts')
+  const { SCENE } = await import('../src/scene.ts')
+  let s = addToScene(choose(initialState, 'head', 'afro'), { x: 0, y: 100, width: 900, height: 1400 })
+  s = addToScene({ ...s, figure: 'runner', ink: '#112233' })
+  assert.equal(s.scene.length, 2)
+  assert.deepEqual({ ...s.scene[0], x: 0 }, { type: 'bust', parts: { head: 'afro' }, figure: null, ink: '#111111', paper: '#ffffff', flip: false, x: 0, size: 1, bottom: 1500 })
+  assert.equal(s.scene[1].bottom, 1080, 'unmeasured: the bottom of the canvas')
+  assert.equal(s.scene[1].ink, '#112233')
+  assert.notEqual(s.scene[0].x, s.scene[1].x, 'the second member does not stand on the first')
+  assert.ok(s.scene.every((e) => e.x > 0 && e.x < SCENE))
+
+  const moved = updateEntry(s, 1, { x: 100, flip: true })
+  assert.equal(moved.scene[1].x, 100); assert.equal(moved.scene[1].flip, true); assert.equal(moved.scene[0], s.scene[0])
+  assert.deepEqual(moveEntry(s, 0, 1).scene.map((e) => e.figure), ['runner', null])
+  assert.equal(moveEntry(s, 0, -1), s, 'the back member cannot go further back')
+  assert.equal(moveEntry(s, 1, 1), s)
+  assert.deepEqual(removeEntry(s, 0).scene.map((e) => e.figure), ['runner'])
+})

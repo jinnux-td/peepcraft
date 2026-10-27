@@ -16,6 +16,7 @@ import { PeepCreator } from '@kit/peeps-creator'
 
 - **Parts:** a tab per category (type, body, hair, face, facial hair, accessories), each an option grid of small pictures on the current figure.
 - **Figures:** a last tab with the 38 whole illustrations of [`@kit/transhumans`](../transhumans) (and a tile to go back to building a peep). A figure replaces the peep on the stage; colours, scale, rotate, flip, background and both exports work on it, parts do not apply, and the dice of the tab picks another figure.
+- **Scene:** the last tab composes a picture of many: **Add** copies the current peep or figure into the scene, and the stage shows the scene while the tab is open. Pick a member (its tile, or click it on the stage) to set its position and size, flip it (`F`), send it back or to the front, or remove it. Everyone stands on one ground line (the feet come from the measured outline), on the scene's background. Each member keeps the colours it was added with; Save exports the whole scene (`scene.svg`, `scene.png`). Undo covers add, remove, flip and order. The scene is `state.scene`, so `defaultState` and `onChange` carry it. It is drawn with the `Scene` of `@kit/peeps`.
 - **Dice:** one per tab changes that tab only (never to the same choice twice); **Shuffle all** changes every part. A transparent background is left alone by Shuffle.
 - **Look:** background (a colour, or **transparent**), foreground and paper colours, scale, rotate, flip (also the `F` key), undo / redo / reset.
 - **Export:** SVG and PNG at 1024 px. Transparent stays transparent in both (no rectangle in the SVG, alpha in the PNG).
@@ -26,7 +27,7 @@ import { PeepCreator } from '@kit/peeps-creator'
 ```
 src/state.ts, random.ts, scene.ts, export.ts, types.ts   plain TypeScript: choosing, history, dice, the picture, the exports (tested with node --test)
 src/styles.ts                                            the stylesheet and the four themes
-src/components/                                          PeepCreator (the whole), PartPicker, Thumb, Stage, Swatches, Slider, ThemeMenu, icons
+src/components/                                          PeepCreator (the whole), PartPicker, ScenePanel, Thumb, Stage, Swatches, Slider, ThemeMenu, icons
 ```
 Each piece is exported, so a dashboard can use the whole creator or only, say, `PartPicker` with its own state.
 

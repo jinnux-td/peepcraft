@@ -1,11 +1,14 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import type { Box } from '@kit/peeps'
-import { Scene, SIZE } from './scene.ts'
+import { Scene, SceneView, SIZE } from './scene.ts'
 import type { CreatorState } from './types.ts'
 
 /** The picture as an SVG document. A transparent background leaves no rectangle, so the file is transparent too. */
 export const exportSvg = (state: CreatorState, box: Box): string => renderToStaticMarkup(createElement(Scene, { state, box }))
+
+/** The whole scene as an SVG document, with no selection outline. */
+export const exportSceneSvg = (state: CreatorState): string => renderToStaticMarkup(createElement(SceneView, { state }))
 
 /** Draws the SVG on a canvas without filling it first, so transparent stays transparent. Browser only. */
 export function svgToPng(svg: string, size = SIZE): Promise<Blob> {

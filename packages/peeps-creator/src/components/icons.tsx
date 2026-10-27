@@ -14,6 +14,7 @@ export const icons = {
   accessories: draw(<><circle cx="6.5" cy="14" r="3.5" /><circle cx="17.5" cy="14" r="3.5" /><path d="M10 14h4M3 14l2-6M21 14l-2-6" /></>),
   dice: draw(<><rect x="4" y="4" width="16" height="16" rx="3.5" /><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" /></>),
   figure: draw(<><circle cx="13" cy="4.5" r="2" /><path d="m10 21 2-6-3-3 2-5 4 3 3 1M12 15l4 6" /></>),
+  scene: draw(<><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M3 16h18M8 16v-4M8 9.5h.01M15 16v-5M15 8.5h.01" /></>),
   shuffle: draw(<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />),
   undo: draw(<><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></>),
   redo: draw(<><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></>),
@@ -22,6 +23,10 @@ export const icons = {
   flip: draw(<path d="M12 3v18M8 7 3 12l5 5V7zM16 7l5 5-5 5V7z" />),
   theme: draw(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5" /></>),
   clear: draw(<><rect x="4" y="4" width="16" height="16" rx="3" /><path d="m4 20 16-16" /></>),
+  front: draw(<><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M15 5V4H4v11h1" /></>),
+  back: draw(<><rect x="4" y="4" width="11" height="11" rx="2" /><path d="M9 19v1h11V9h-1" /></>),
+  remove: draw(<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />),
+  add: draw(<path d="M12 5v14M5 12h14" />),
   none: draw(<><circle cx="12" cy="12" r="8" /><path d="m6.3 6.3 11.4 11.4" /></>),
 }
 export type IconName = keyof typeof icons

@@ -145,3 +145,40 @@ test('whole figures from Transhumans: pick one, roll another, export it, go back
   assert.equal(await full.locator('[data-testid=pc-stage] [data-figure]').count(), 1, 'undo puts the figure back');
   await page.close();
 });
+
+test('a scene: add a peep and a figure, pick one on the stage, flip, reorder, remove, export the whole scene', async () => {
+  const page = await open(); const full = page.locator('#full');
+  const stage = full.getByTestId('pc-stage');
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  assert.equal(await stage.getAttribute('data-view'), 'scene');
+  assert.equal(await stage.locator('[data-item]').count(), 0);
+  assert.ok(await full.getByRole('button', { name: 'Shuffle all' }).isDisabled(), 'shuffle acts on the builder, not the scene');
+  await full.getByRole('button', { name: 'Add', exact: true }).click();
+
+  await full.getByRole('tab', { name: 'Figures', exact: true }).click();
+  await full.getByRole('radio', { name: 'Runner', exact: true }).click();
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  await full.getByRole('button', { name: 'Add', exact: true }).click();
+  assert.equal(await stage.locator('[data-item]').count(), 2);
+  assert.equal(await stage.locator('[data-selected="1"]').count(), 1, 'the new member is picked');
+
+  await stage.locator('[data-item="0"] [data-slot=body]').click();
+  assert.equal(await stage.locator('[data-selected="0"]').count(), 1, 'a click on the stage picks that member');
+  await page.keyboard.press('f');
+  assert.match((await stage.locator('[data-item="0"]').getAttribute('transform'))!, /scale\(-/);
+  await full.getByRole('button', { name: 'Front', exact: true }).click();
+  assert.equal(await stage.locator('[data-item="1"] [data-slot]').count(), 5, 'the peep is now drawn last');
+
+  const [svg] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as SVG' }).click()]);
+  assert.equal(svg.suggestedFilename(), 'scene.svg');
+  const text = readFileSync((await svg.path())!, 'utf8');
+  assert.equal([...text.matchAll(/data-item=/g)].length, 2); assert.doesNotMatch(text, /data-selected/);
+
+  await full.getByRole('button', { name: 'Remove', exact: true }).click();
+  assert.equal(await stage.locator('[data-item]').count(), 1);
+  await full.getByRole('button', { name: 'Undo' }).click();
+  assert.equal(await stage.locator('[data-item]').count(), 2, 'undo brings the member back');
+  await full.getByRole('tab', { name: 'Hair', exact: true }).click();
+  assert.equal(await stage.getAttribute('data-view'), null, 'other tabs show the builder again');
+  await page.close();
+});
