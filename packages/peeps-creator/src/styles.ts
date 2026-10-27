@@ -70,7 +70,31 @@ export const creatorCss = `
 .pc-add span:last-child{display:inline-flex;align-items:center;gap:4px;color:var(--pc-text);font-weight:600}
 .pc-add span:last-child svg{width:14px;height:14px}
 .pc-selected{fill:none;stroke:#1b1b1b;stroke-width:2.5;stroke-dasharray:8 6;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)}
-.pc-stage[data-view=scene] [data-item]{cursor:pointer}
+.pc-stage[data-view=scene] [data-item]{cursor:grab;touch-action:none}
+.pc-stage[data-view=scene]:active [data-item]{cursor:grabbing}
+.pc-scene .pc-grid{max-height:none}
+/* Things scroll after about three rows, so Uploads stay within reach. */
+.pc-scene .pc-things{max-height:330px}
+/* In the scene, the side panel stays in view and the member list takes the height that is left, then scrolls. */
+.pc-side-scene{position:sticky;top:12px;max-height:var(--pc-side-max,calc(100dvh - 24px));overflow:auto}
+.pc-side-scene{gap:12px}
+.pc-side-scene>*{flex-shrink:0}
+.pc-side-scene .pc-members{flex:0 1 auto;min-height:96px;max-height:none}
+.pc-side-scene .pc-member{gap:10px}
+.pc-side-scene .pc-row{flex-wrap:nowrap}
+.pc-side-scene .pc-row .pc-btn{flex:1;padding:8px}
+.pc-side-scene .pc-row .pc-btn span{display:none}
+.pc-side-scene h2{margin:0}
+.pc-side-scene .pc-member{margin-top:0}
+.pc-small{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.pc h3{margin:20px 0 10px;font-size:13px;display:flex;align-items:baseline;gap:10px;text-transform:var(--pc-caps);letter-spacing:var(--pc-track)}
+.pc-file{position:relative;cursor:pointer}
+.pc-file input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.pc-file:focus-within{outline:3px solid var(--pc-accent);outline-offset:2px}
+.pc-upload{position:relative;display:flex;min-width:0}
+.pc-upload .pc-tile{flex:1}
+.pc-x{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--pc-line);background:var(--pc-menu)}
+.pc-x svg{width:16px;height:16px}
 .pc-theme{position:relative}
 .pc-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:10;padding:6px;display:flex;flex-direction:column;min-width:160px;background:var(--pc-menu);border:1px solid var(--pc-line);border-radius:16px;box-shadow:var(--pc-shadow)}
 .pc-item{display:flex;align-items:center;gap:10px;border:0;background:transparent;border-radius:10px;padding:8px 10px;text-align:left}
@@ -85,6 +109,8 @@ export const creatorCss = `
   .pc-rail{flex-direction:row;overflow:auto;border-right:0;border-bottom:1px solid var(--pc-line)}
   .pc-rail-btn{flex:0 0 auto;min-width:68px}
   .pc-grid{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));max-height:360px}
+  .pc-side-scene{position:static;max-height:none;overflow:visible}
+  .pc-side-scene .pc-members{max-height:272px}
 }
 @container (max-width:520px){.pc-btn span{display:none}.pc-btn.pc-primary span,.pc-btn.pc-wide span{display:inline}.pc-save{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.pc *{transition:none!important}}

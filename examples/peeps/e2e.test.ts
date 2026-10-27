@@ -166,6 +166,16 @@ test('a scene: add a peep and a figure, pick one on the stage, flip, reorder, re
   assert.equal(await stage.locator('[data-selected="0"]').count(), 1, 'a click on the stage picks that member');
   await page.keyboard.press('f');
   assert.match((await stage.locator('[data-item="0"]').getAttribute('transform'))!, /scale\(-/);
+  // Boxes relative to the stage: a click on the toolbar can scroll the page.
+  const at = async () => { const [m, st] = [(await stage.locator('[data-item="0"]').boundingBox())!, (await stage.boundingBox())!]; return { x: m.x - st.x, y: m.y - st.y, cx: m.x + m.width / 2, cy: m.y + m.height / 2 } };
+  const before = await at();
+  await page.mouse.move(before.cx, before.cy);
+  await page.mouse.down(); await page.mouse.move(before.cx + 80, before.cy - 60, { steps: 5 }); await page.mouse.up();
+  const after = await at();
+  assert.ok(Math.abs(after.x - before.x - 80) < 3 && Math.abs(after.y - before.y + 60) < 3, `dragged across and up (${after.x - before.x}, ${after.y - before.y})`);
+  await full.getByRole('button', { name: 'Undo' }).click();
+  const back = await at();
+  assert.ok(Math.abs(back.x - before.x) < 1 && Math.abs(back.y - before.y) < 1, 'one undo takes the whole drag back');
   await full.getByRole('button', { name: 'Front', exact: true }).click();
   assert.equal(await stage.locator('[data-item="1"] [data-slot]').count(), 5, 'the peep is now drawn last');
 
@@ -180,5 +190,65 @@ test('a scene: add a peep and a figure, pick one on the stage, flip, reorder, re
   assert.equal(await stage.locator('[data-item]').count(), 2, 'undo brings the member back');
   await full.getByRole('tab', { name: 'Hair', exact: true }).click();
   assert.equal(await stage.getAttribute('data-view'), null, 'other tabs show the builder again');
+  await page.close();
+});
+
+test('things and uploads: add a table and a mug on it, upload a picture, keep it after a reload, delete it from the browser', async () => {
+  const page = await open(); const full = page.locator('#full');
+  const stage = full.getByTestId('pc-stage');
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  await full.locator('[aria-label=Things]').getByRole('button', { name: 'Add table' }).click();
+  await full.locator('[aria-label=Things]').getByRole('button', { name: 'Add mug' }).click();
+  assert.equal(await stage.locator('[data-item]').count(), 2);
+  const lift = full.getByRole('group', { name: 'Member 2' }).getByRole('slider').nth(2);
+  await lift.fill('25');
+  const [table, mug] = [await stage.locator('[data-item="0"]').boundingBox(), await stage.locator('[data-item="1"]').boundingBox()];
+  assert.ok(mug!.y + mug!.height < table!.y + table!.height - 20, 'the lifted mug is above the floor');
+
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAEUlEQVR4nGP4z8DwH4QZYAwAR8oH+Rq28akAAAAASUVORK5CYII=', 'base64');
+  await full.getByLabel('Upload a picture').setInputFiles([{ name: 'logo.png', mimeType: 'image/png', buffer: png }, { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hi') }]);
+  await full.getByRole('button', { name: 'Add logo' }).waitFor();
+  assert.match(await full.locator('.pc-note[role=status]').innerText(), /"notes.txt" is not a PNG/);
+  await full.getByRole('button', { name: 'Add logo' }).click();
+  assert.equal(await stage.locator('image[data-upload]').count(), 1);
+
+  const [svg] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as SVG' }).click()]);
+  assert.match(readFileSync((await svg.path())!, 'utf8'), /<image href="data:image\/png;base64,/);
+  const [pngOut] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as PNG' }).click()]);
+  assert.ok(readFileSync((await pngOut.path())!).length > 1000, 'the PNG export draws with an upload in it');
+
+  await page.reload(); await page.locator('#full [data-testid=pc-stage] svg').waitFor();
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  await full.getByRole('button', { name: 'Add logo' }).click();
+  assert.equal(await stage.locator('image[data-upload]').count(), 1, 'the upload is still in this browser after a reload');
+  await full.getByRole('button', { name: 'Delete logo' }).click();
+  assert.equal(await full.getByRole('button', { name: 'Add logo' }).count(), 0);
+  assert.equal(await stage.locator('image[data-upload]').count(), 0, 'its members go with it');
+  // The delete is written to IndexedDB in the background; wait for it before reloading.
+  await page.waitForFunction(() => new Promise((done) => { const r = indexedDB.open('kit-peeps-creator'); r.onsuccess = () => { const q = r.result.transaction('uploads').objectStore('uploads').count(); q.onsuccess = () => { r.result.close(); done(q.result === 0) } } }));
+  await page.reload(); await page.locator('#full [data-testid=pc-stage] svg').waitFor();
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  assert.equal(await full.getByRole('button', { name: 'Add logo' }).count(), 0, 'and it is gone from the browser');
+
+  for (const t of ['chair', 'stool', 'sofa', 'desk', 'rug', 'cat', 'dog', 'ball', 'phone', 'books', 'laptop', 'bookshelf']) await full.locator('[aria-label=Things]').getByRole('button', { name: `Add ${t}`, exact: true }).click();
+  const list = await full.locator('[aria-label=Scene]').evaluate((el) => ({ shown: el.clientHeight, all: el.scrollHeight }));
+  assert.ok(list.all > list.shown, `a long member list scrolls (${list.shown} of ${list.all})`);
+  await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(50);
+  const side = (await full.locator('.pc-side').boundingBox())!;
+  assert.ok(side.y >= 0 && side.y + side.height <= 900 + 1, `the side panel with the members fits the window (${side.y} + ${side.height})`);
+  const things = await full.locator('[aria-label=Things]').evaluate((el) => ({ shown: el.clientHeight, all: el.scrollHeight }));
+  assert.ok(things.shown <= 330 && things.all > things.shown, `the things scroll (${things.shown} of ${things.all})`);
+  await page.close();
+});
+
+test('a short window: the side panel of the scene fits, with nothing cut off inside it', async () => {
+  const page = await open(1280, 720); const full = page.locator('#full');
+  await full.getByRole('tab', { name: 'Scene', exact: true }).click();
+  for (let i = 0; i < 12; i++) await full.getByRole('button', { name: 'Add', exact: true }).click();
+  await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(50);
+  const fit = await full.locator('.pc-side').evaluate((el) => ({ bottom: el.getBoundingClientRect().bottom, inner: innerHeight, all: el.scrollHeight, shown: el.clientHeight }));
+  assert.ok(fit.bottom + 16 <= fit.inner + 1, `the panel and the creator's edge are in view (${fit.bottom} of ${fit.inner})`);
+  assert.ok(fit.all <= fit.shown + 1, `the panel itself does not scroll; the list does (${fit.all} > ${fit.shown})`);
+  assert.ok(await full.getByRole('button', { name: 'Save as PNG' }).isVisible());
   await page.close();
 });

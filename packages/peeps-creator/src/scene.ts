@@ -1,9 +1,10 @@
 // The picture: background, then the figure scaled / rotated / flipped about the centre of its window. Used on the stage and by the exports.
 // The scene view: many peeps and figures standing on one ground line, drawn with the Scene of @kit/peeps.
 import { createElement, type ReactElement } from 'react'
-import { Background, canvas, Peep, Scene as PeepScene, type Box, type PeepType } from '@kit/peeps'
+import { Background, canvas, Peep, Scene as PeepScene, type Art, type Box, type PeepType } from '@kit/peeps'
+import { lookup as lookupThing } from '@kit/things'
 import { lookup as lookupFigure } from '@kit/transhumans'
-import type { CreatorState, SceneEntry } from './types.ts'
+import type { CreatorState, SceneEntry, Upload } from './types.ts'
 
 export const SIZE = 1024
 
@@ -39,22 +40,35 @@ export function Scene({ state, box, measure }: { state: CreatorState; box: Box; 
 /** The scene's canvas, square like the stage, and the line every member stands on. */
 export const SCENE = 4800
 export const GROUND = 4560
+/** How far Lift reaches, as a share of the scene; below 0 a member stands in front of the ground line. */
+export const LIFT = { min: -0.2, max: 0.8 }
 
-/** Peeps and figures are drawn in different units; at size 1 these make a standing peep and a figure about the same height. */
-export const entryScale = (e: SceneEntry): number => (e.figure ? 2.6 : 0.9) * e.size
+export type Look = Pick<SceneEntry, 'type' | 'parts' | 'ink' | 'paper' | 'figure' | 'thing' | 'upload'>
 
-/** Where a member's canvas lands in the scene: centred on x, its feet on the ground. */
+/** An uploaded picture as Art: an <image> over its canvas. The data URL keeps exports self-contained. */
+const uploadArt = (u: Upload): Art => Object.assign(() => createElement('image', { href: u.href, width: u.width, height: u.height, preserveAspectRatio: 'none', 'data-upload': u.id }), { width: u.width, height: u.height })
+
+/** What a member draws, its canvas, and the scale that puts it among the peeps at size 1. Peeps and things share units; figures are drawn smaller. */
+export function drawn(e: Look): { item: Peep | Art; width: number; height: number; base: number } {
+  if (e.upload) return { item: uploadArt(e.upload), width: e.upload.width, height: e.upload.height, base: 1 }
+  if (e.thing) { const t = lookupThing(e.thing); return { item: t, width: t.width, height: t.height, base: 0.9 } }
+  if (e.figure) { const f = lookupFigure(e.figure); return { item: f, width: f.width, height: f.height, base: 2.6 } }
+  return { item: peepOf(e), ...canvas[e.type], base: 0.9 }
+}
+
+export const entryScale = (e: SceneEntry): number => drawn(e).base * e.size
+
+/** Where a member's canvas lands in the scene: centred on x, its feet on the ground, or lifted above it. */
 export function entryBox(e: SceneEntry): Box {
-  const k = entryScale(e)
-  const { width, height } = e.figure ? lookupFigure(e.figure) : canvas[e.type]
-  return { x: e.x - (width * k) / 2, y: GROUND - e.bottom * k, width: width * k, height: height * k }
+  const { width, height, base } = drawn(e), k = base * e.size
+  return { x: e.x - (width * k) / 2, y: GROUND - e.bottom * k - (e.lift ?? 0), width: width * k, height: height * k }
 }
 
 export function sceneOf(s: CreatorState): PeepScene {
   const scene = new PeepScene({ width: SCENE, height: SCENE, background: s.bg })
   for (const e of s.scene) {
     const { x, y } = entryBox(e)
-    scene.add(e.figure ? lookupFigure(e.figure) : peepOf(e), { x, y, scale: entryScale(e), flip: e.flip, ink: e.ink, paper: e.paper })
+    scene.add(drawn(e).item, { x, y, scale: entryScale(e), flip: e.flip, ink: e.ink, paper: e.paper })
   }
   return scene
 }

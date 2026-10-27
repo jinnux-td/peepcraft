@@ -1,6 +1,7 @@
-import { origins, type Box, type Slot } from '@kit/peeps'
-import { lookup as lookupFigure, type Figure } from '@kit/transhumans'
-import { fallbackBox, peepOf, squareAround } from '../scene.ts'
+import { createElement } from 'react'
+import { origins, Peep, type Box, type Slot } from '@kit/peeps'
+import type { Figure } from '@kit/transhumans'
+import { drawn, fallbackBox, peepOf, squareAround, type Look } from '../scene.ts'
 import type { CreatorState } from '../types.ts'
 
 /** Measured outlines, by `boxKey`: a peep type or a figure. */
@@ -31,13 +32,13 @@ export function FigureThumb({ state, figure: F }: { state: CreatorState; figure:
   )
 }
 
-/** A whole peep or figure, as the scene keeps it, on its canvas. */
-export function LookThumb({ look, bg }: { look: Pick<CreatorState, 'type' | 'parts' | 'figure' | 'ink' | 'paper' | 'flip'>; bg: string }) {
-  const box = fallbackBox(look)
-  const F = look.figure ? lookupFigure(look.figure) : null
+/** A whole peep, figure, thing or upload, as the scene keeps it, on its canvas. */
+export function LookThumb({ look, bg }: { look: Look & { flip?: boolean }; bg: string }) {
+  const { item, width, height } = drawn(look)
+  const box = squareAround({ x: 0, y: 0, width, height })
   return (
     <svg viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`} aria-hidden="true" style={bg === 'transparent' ? undefined : { background: bg }}>
-      <g transform={look.flip ? `translate(${2 * box.x + box.width} 0) scale(-1 1)` : undefined}>{F ? <F ink={look.ink} paper={look.paper} /> : peepOf(look).group()}</g>
+      <g transform={look.flip ? `translate(${width} 0) scale(-1 1)` : undefined}>{item instanceof Peep ? item.group() : createElement(item, { ink: look.ink, paper: look.paper })}</g>
     </svg>
   )
 }

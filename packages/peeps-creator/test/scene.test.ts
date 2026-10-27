@@ -63,3 +63,24 @@ test('the scene export: every member on the ground, back to front, no selection 
   for (const f of feet) assert.ok(Math.abs(f - GROUND) < 1e-6, `feet at ${f}`)
   assert.doesNotMatch(exportSceneSvg({ ...two, bg: 'transparent' }), /<rect/)
 })
+
+test('things and uploads join the scene in the current colours, stand on the ground or are lifted, and an upload goes with its file', async () => {
+  const { exportSceneSvg } = await import('../src/export.ts')
+  const { addToScene, dropUpload, updateEntry } = await import('../src/state.ts')
+  const { entryBox, GROUND } = await import('../src/scene.ts')
+  const upload = { id: 'u1', name: 'logo', href: 'data:image/png;base64,iVBORw0KGgo=', width: 2800, height: 1400 }
+  let s = addToScene({ ...initialState, figure: 'runner', ink: '#112233', paper: '#ddeeff' }, undefined, { thing: 'table' })
+  s = addToScene(s, { x: 0, y: 0, width: 10, height: 10 }, { upload })
+  assert.equal(s.scene[0].figure, null, 'a thing is not the figure on the stage')
+  assert.equal(s.scene[0].thing, 'table'); assert.equal(s.scene[0].bottom, 1350, 'a thing stands on the bottom of its canvas')
+  assert.equal(s.scene[1].bottom, 1400, 'an outline measured for the peep does not apply to an upload')
+  const b = entryBox(s.scene[0]); assert.equal(b.y + b.height, GROUND)
+  s = updateEntry(s, 0, { lift: 300 })
+  assert.equal(entryBox(s.scene[0]).y, b.y - 300)
+
+  const svg = exportSceneSvg(s)
+  assert.match(svg, /<g stroke="#112233"[^>]*><path [^>]*fill="#ddeeff"/, 'the table is drawn in the colours it was added with')
+  assert.match(svg, /<image href="data:image\/png;base64,iVBORw0KGgo=" width="2800" height="1400" preserveAspectRatio="none" data-upload="u1">/)
+  assert.deepEqual(dropUpload(s, 'u1').scene.map((e) => e.thing), ['table'])
+  assert.throws(() => exportSceneSvg(addToScene(initialState, undefined, { thing: 'nope' })), /no thing "nope"/)
+})

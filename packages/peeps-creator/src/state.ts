@@ -1,7 +1,6 @@
 // The creator's state as plain functions: choosing, history. No React, so it is tested without a browser.
-import { canvas, catalogue, defaults, type Atom, type Box, type Category, type PeepType, type Slot } from '@kit/peeps'
-import { lookup as lookupFigure } from '@kit/transhumans'
-import { SCENE } from './scene.ts'
+import { catalogue, defaults, type Atom, type Box, type Category, type PeepType, type Slot } from '@kit/peeps'
+import { drawn, LIFT, SCENE } from './scene.ts'
 import type { CreatorState, SceneEntry } from './types.ts'
 
 export const bodyCategory = (type: PeepType): Category => (type === 'bust' ? 'body' : type)
@@ -25,15 +24,27 @@ export const showPeep = (s: CreatorState, type: PeepType): CreatorState => ({ ..
 /** Where new members stand, as a share of the width, so a second one does not hide behind the first. */
 const SPREAD = [0.5, 0.2, 0.8, 0.35, 0.65]
 
-/** Copies the current peep or figure into the scene. `outline` is its measured outline; without one its feet are the bottom of its canvas. */
-export function addToScene(s: CreatorState, outline?: Box): CreatorState {
-  const bottom = outline ? outline.y + outline.height : s.figure ? lookupFigure(s.figure).height : canvas[s.type].height
-  const entry: SceneEntry = { type: s.type, parts: s.parts, figure: s.figure, ink: s.ink, paper: s.paper, flip: s.flip, x: SCENE * SPREAD[s.scene.length % SPREAD.length], size: 1, bottom }
+/** Copies the current peep or figure into the scene, or adds a thing or an upload in the current colours. `outline` is the measured outline
+ *  of the peep or figure; without one the feet are the bottom of the canvas. */
+export function addToScene(s: CreatorState, outline?: Box, what: Pick<SceneEntry, 'thing' | 'upload'> = {}): CreatorState {
+  const other = !!(what.thing || what.upload)
+  const look = { type: s.type, parts: s.parts, figure: other ? null : s.figure, ink: s.ink, paper: s.paper, ...what }
+  const bottom = outline && !other ? outline.y + outline.height : drawn(look).height
+  const entry: SceneEntry = { ...look, flip: other ? false : s.flip, x: SCENE * SPREAD[s.scene.length % SPREAD.length], size: 1, bottom }
   return { ...s, scene: [...s.scene, entry] }
 }
 
-export const updateEntry = (s: CreatorState, i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'flip'>>): CreatorState =>
+/** Members drawn from an upload go when the upload is deleted. */
+export const dropUpload = (s: CreatorState, id: string): CreatorState => ({ ...s, scene: s.scene.filter((e) => e.upload?.id !== id) })
+
+export const updateEntry = (s: CreatorState, i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'flip' | 'lift'>>): CreatorState =>
   ({ ...s, scene: s.scene.map((e, j) => (j === i ? { ...e, ...patch } : e)) })
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
+
+/** A member dragged by (dx, dy) scene units from where it started: across moves x, up and down moves lift; both stay in range. */
+export const dragEntry = (s: CreatorState, i: number, from: { x: number; lift: number }, dx: number, dy: number): CreatorState =>
+  updateEntry(s, i, { x: clamp(from.x + dx, 0, SCENE), lift: clamp(from.lift - dy, LIFT.min * SCENE, LIFT.max * SCENE) })
 
 export const removeEntry = (s: CreatorState, i: number): CreatorState => ({ ...s, scene: s.scene.filter((_, j) => j !== i) })
 

@@ -64,3 +64,15 @@ test('the scene: add copies the look, members spread out, update, reorder and re
   assert.equal(moveEntry(s, 1, 1), s)
   assert.deepEqual(removeEntry(s, 0).scene.map((e) => e.figure), ['runner'])
 })
+
+test('dragging moves across and lifts up and down, inside the scene and the lift range', async () => {
+  const { addToScene, dragEntry } = await import('../src/state.ts')
+  const { LIFT, SCENE } = await import('../src/scene.ts')
+  const s = addToScene(initialState)
+  const from = { x: 1000, lift: 0 }
+  const moved = dragEntry(s, 0, from, 500, -300).scene[0]
+  assert.equal(moved.x, 1500); assert.equal(moved.lift, 300, 'up the screen is a higher lift')
+  const far = dragEntry(s, 0, from, -9999, 99999).scene[0]
+  assert.equal(far.x, 0); assert.equal(far.lift, LIFT.min * SCENE)
+  assert.equal(dragEntry(s, 0, from, 99999, -99999).scene[0].lift, LIFT.max * SCENE)
+})

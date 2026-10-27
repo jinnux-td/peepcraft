@@ -29,7 +29,15 @@ export interface SceneEntry extends Pick<CreatorState, 'type' | 'parts' | 'figur
   size: number
   /** Bottom of its measured outline, in its own canvas: its feet go on the ground line. */
   bottom: number
+  /** Height above the ground, in scene units: a mug on a table. */
+  lift?: number
+  /** A thing of @kit/things, or an uploaded picture, drawn instead of the peep or figure. */
+  thing?: string
+  upload?: Upload
 }
+
+/** A picture the person uploaded, kept in this browser only. `width` and `height` are its size in the scene at size 1. */
+export interface Upload { id: string; name: string; href: string; width: number; height: number }
 
 export type Tab = 'type' | Slot | 'figures' | 'scene'
 

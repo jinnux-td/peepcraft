@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import type { Box, PeepType, Slot } from '@kit/peeps'
 import { exportSceneSvg, exportSvg, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
-import { boxKey, fallbackBox, SceneView, squareAround } from '../scene.ts'
-import { addToScene, choose, chooseFigure, commit, moveEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
+import { boxKey, fallbackBox, SCENE, SceneView, squareAround } from '../scene.ts'
+import { addToScene, choose, chooseFigure, commit, dragEntry, dropUpload, moveEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
 import { creatorCss } from '../styles.ts'
-import { initialState, swatches, type CreatorState, type Tab, type ThemeId } from '../types.ts'
+import { initialState, swatches, type CreatorState, type Tab, type ThemeId, type Upload } from '../types.ts'
+import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
 import { icons } from './icons.tsx'
 import { PartPicker } from './PartPicker.tsx'
-import { ScenePanel } from './ScenePanel.tsx'
+import { SceneMembers, SceneSources } from './ScenePanel.tsx'
 import { Slider } from './Slider.tsx'
 import { Stage } from './Stage.tsx'
 import { Swatches } from './Swatches.tsx'
@@ -48,6 +49,10 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const [boxes, setBoxes] = useState<Boxes>({})
   const [innerTheme, setInnerTheme] = useState<ThemeId>(defaultTheme)
   const [picked, setPicked] = useState<number | null>(null)
+  const [uploads, setUploads] = useState<Upload[]>([])
+  const [uploadNote, setUploadNote] = useState('')
+  // No saved uploads when the browser keeps no storage (a private window): the library just starts empty.
+  useEffect(() => { loadUploads().then(setUploads, () => {}) }, [])
   const theme = themeProp ?? innerTheme
   const state = hist.now
   const inScene = tab === 'scene'
@@ -75,7 +80,51 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const isStart = JSON.stringify(state) === JSON.stringify({ ...initialState, ...defaultState })
   const reset = () => record(() => ({ ...initialState, ...defaultState }))
   const flipKey = () => (inScene ? selected !== null && record((s) => updateEntry(s, selected, { flip: !s.scene[selected].flip })) : live({ flip: !state.flip }))
-  const pickOnStage = (target: EventTarget) => { const i = (target as Element).closest('[data-item]')?.getAttribute('data-item'); setPicked(i == null ? null : Number(i)) }
+  const upload = async (files: File[]) => {
+    setUploadNote('')
+    for (const file of files) {
+      let u: Upload
+      try { u = await readUpload(file) } catch (err) { setUploadNote((err as Error).message); continue }
+      setUploads((list) => [...list, u])
+      try { await saveUpload(u) } catch { setUploadNote(`"${u.name}" could not be saved in this browser; it lasts until the page is closed.`) }
+    }
+  }
+  const removeUpload = (id: string) => {
+    setUploads((list) => list.filter((u) => u.id !== id))
+    if (state.scene.some((e) => e.upload?.id === id)) { setPicked(null); record((s) => dropUpload(s, id)) }
+    deleteUpload(id).catch(() => {})
+  }
+  // Dragging a member on the stage: one undo step per drag, taken on the first move, so a click that only picks adds none.
+  const drag = useRef<{ i: number; x: number; lift: number; px: number; py: number; unit: number; moved: boolean } | null>(null)
+  // In the scene the side panel ends at the bottom of the window, wherever the host page puts the creator (sticky alone only helps once scrolled).
+  const side = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const el = side.current
+    if (!inScene || !el) return
+    // Room left below the panel's top, less the creator's own bottom padding, so the creator's edge stays in view too.
+    const pad = parseFloat(getComputedStyle(el.closest('.pc')!).paddingBottom) || 0
+    const fit = () => el.style.setProperty('--pc-side-max', `${Math.max(240, innerHeight - Math.max(el.getBoundingClientRect().top, 12) - 12 - pad)}px`)
+    fit()
+    addEventListener('scroll', fit, { passive: true }); addEventListener('resize', fit)
+    return () => { removeEventListener('scroll', fit); removeEventListener('resize', fit) }
+  }, [inScene])
+  const grab = (ev: PointerEvent<HTMLDivElement>) => {
+    const hit = (ev.target as Element).closest('[data-item]')?.getAttribute('data-item')
+    if (hit == null) { setPicked(null); return }
+    const i = Number(hit), e = state.scene[i]
+    setPicked(i)
+    ev.currentTarget.setPointerCapture(ev.pointerId)
+    drag.current = { i, x: e.x, lift: e.lift ?? 0, px: ev.clientX, py: ev.clientY, unit: SCENE / ev.currentTarget.getBoundingClientRect().width, moved: false }
+  }
+  const pull = (ev: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current
+    if (!d) return
+    const dx = (ev.clientX - d.px) * d.unit, dy = (ev.clientY - d.py) * d.unit
+    if (!d.moved && Math.hypot(ev.clientX - d.px, ev.clientY - d.py) < 3) return
+    const first = !d.moved
+    d.moved = true
+    setHist((h) => (first ? commit : tweak)(h, dragEntry(h.now, d.i, d, dx, dy)))
+  }
 
   return (
     <div
@@ -99,22 +148,19 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
           state={state} tab={tab} onTab={setTab} boxes={boxes}
           onChoose={(slot: Slot, id) => record((s) => choose(s, slot, id))} onType={(t) => record((s) => showPeep(s, t))} onFigure={(id) => record((s) => chooseFigure(s, id))} onDice={(t) => dice(t)}
         >
-          <ScenePanel
-            state={state} selected={selected} onSelect={setPicked}
-            onAdd={() => { setPicked(state.scene.length); record((s) => addToScene(s, boxes[boxKey(s)])) }}
-            onLive={(i, patch) => setHist((h) => tweak(h, updateEntry(h.now, i, patch)))}
-            onCommit={(i, patch) => record((s) => updateEntry(s, i, patch))}
-            onRemove={(i) => { setPicked(null); record((s) => removeEntry(s, i)) }}
-            onMove={(i, by) => { setPicked(i + by); record((s) => moveEntry(s, i, by)) }}
+          <SceneSources
+            state={state} onAdd={(what) => { setPicked(state.scene.length); record((s) => addToScene(s, boxes[boxKey(s)], what)) }}
+            uploads={uploads} uploadNote={uploadNote} onUpload={upload} onDeleteUpload={removeUpload}
           />
         </PartPicker>
 
         <section className="pc-stage-wrap" aria-label="Preview">
           {inScene ? <>
-            <div className="pc-stage" data-transparent={state.bg === 'transparent' || undefined} data-testid="pc-stage" data-view="scene" tabIndex={-1} onClick={(e) => pickOnStage(e.target)}>
+            <div className="pc-stage" data-transparent={state.bg === 'transparent' || undefined} data-testid="pc-stage" data-view="scene" tabIndex={-1}
+              onPointerDown={grab} onPointerMove={pull} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
               <SceneView state={state} selected={selected} />
             </div>
-            <p className="pc-hint">{state.scene.length ? <>Click someone to pick them. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
+            <p className="pc-hint">{state.scene.length ? <>Drag someone to move them: across, or up and down. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
           </> : <>
           <Stage state={state} box={box} measured={!!boxes[key]} onMeasure={onMeasure} />
           <div className="pc-pill" role="group" aria-label="Type">
@@ -124,8 +170,16 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
           </>}
         </section>
 
-        <section className="pc-panel pc-side" aria-label="Look">
+        <section ref={side} className={`pc-panel pc-side${inScene ? ' pc-side-scene' : ''}`} aria-label="Look">
           <Swatches label="Background" value={state.bg} options={swatches.bg} transparent onChange={(bg) => live({ bg })} />
+          {inScene && (
+            <SceneMembers
+              state={state} selected={selected} onSelect={setPicked} onLive={(i, patch) => setHist((h) => tweak(h, updateEntry(h.now, i, patch)))}
+              onCommit={(i, patch) => record((s) => updateEntry(s, i, patch))}
+              onRemove={(i) => { setPicked(null); record((s) => removeEntry(s, i)) }}
+              onMove={(i, by) => { setPicked(i + by); record((s) => moveEntry(s, i, by)) }}
+            />
+          )}
           {/* These edit the peep or figure being built; in the scene each member keeps the look it was added with. */}
           {!inScene && <>
           <Swatches label="Foreground" value={state.ink} options={swatches.ink} onChange={(ink) => live({ ink })} />
