@@ -434,8 +434,8 @@ test('locks: Shuffle all keeps a locked background and a locked part', async () 
   await full.getByRole('button', { name: 'Lock Background' }).click();
   assert.equal(await full.getByRole('button', { name: 'Lock Hair' }).getAttribute('aria-pressed'), 'true');
   const bg = await stage.locator('svg').first().innerHTML();
-  const head = async () => full.getByRole('radiogroup', { name: 'Hair' }).getByRole('radio', { checked: true }).getAttribute('title');
-  const body = async () => { await full.getByRole('tab', { name: 'Body', exact: true }).click(); return full.getByRole('radiogroup', { name: 'Body' }).getByRole('radio', { checked: true }).getAttribute('title'); };
+  const head = async () => full.getByRole('radiogroup', { name: 'Hair' }).getByRole('radio', { checked: true }).getAttribute('data-tip');
+  const body = async () => { await full.getByRole('tab', { name: 'Body', exact: true }).click(); return full.getByRole('radiogroup', { name: 'Body' }).getByRole('radio', { checked: true }).getAttribute('data-tip'); };
   const before = await body();
   for (let i = 0; i < 3; i++) await full.getByRole('button', { name: 'Shuffle all' }).click();
   assert.notEqual(await body(), before, 'the body is not locked');
@@ -480,5 +480,31 @@ test('contrast: the peep and its thumbnails in black and white, the dots down to
   assert.equal(await full.getByRole('radiogroup', { name: 'Body' }).locator('[data-top], [data-skin]').count(), 0, 'thumbnails too');
   await full.getByRole('button', { name: 'Contrast' }).click();
   assert.ok(await coloured() > 0, 'the colours come back');
+  await page.close();
+});
+
+test('items as a grid or a list, a name tooltip on each, a light grey behind them in Contrast', async () => {
+  const page = await open(); const full = page.locator('#full');
+  const items = full.getByRole('radiogroup', { name: 'Hair' });
+  assert.equal(await items.getByRole('radio', { name: 'Afro', exact: true }).getAttribute('data-tip'), 'Afro');
+  await full.getByRole('button', { name: 'Show as a list' }).click();
+  assert.equal(await items.evaluate((g) => getComputedStyle(g).gridTemplateColumns.split(' ').length), 1, 'one item a row');
+  await full.getByRole('button', { name: 'Contrast' }).click();
+  assert.equal(await items.locator('svg').first().evaluate((s) => getComputedStyle(s).backgroundColor), 'rgb(242, 242, 242)');
+  await page.close();
+});
+
+test('a tooltip floats over the page: the list of items does not grow under it', async () => {
+  const page = await open(); const full = page.locator('#full');
+  const grid = full.getByRole('radiogroup', { name: 'Hair' });
+  const before = await grid.evaluate((g) => g.scrollHeight);
+  // A scroll hides the tooltip, so the item is brought into view first.
+  await grid.getByRole('radio').last().scrollIntoViewIfNeeded(); await page.waitForTimeout(100);
+  await grid.getByRole('radio').last().hover();
+  const tip = page.locator('body > .pc-tip');
+  assert.equal(await tip.innerText(), await grid.getByRole('radio').last().getAttribute('data-tip'));
+  assert.equal(await grid.evaluate((g) => g.scrollHeight), before, 'the list keeps its height');
+  await page.mouse.move(2, 2);
+  assert.equal(await tip.count(), 0, 'gone when the pointer leaves');
   await page.close();
 });

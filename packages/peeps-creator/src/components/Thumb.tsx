@@ -4,6 +4,9 @@ import type { Figure } from '@kit/transhumans'
 import { drawn, fallbackBox, peepOf, squareAround, type Look } from '../scene.ts'
 import type { CreatorState } from '../types.ts'
 
+/** Behind a choice: the picture's background, or a light grey in Contrast, so black and white items read the same on any background. */
+const tileBg = (s: CreatorState) => (s.mono ? { background: '#f2f2f2' } : s.bg === 'transparent' ? undefined : { background: s.bg })
+
 /** Measured outlines, by `boxKey`: a peep type or a figure. */
 export type Boxes = Partial<Record<string, Box>>
 
@@ -19,7 +22,7 @@ export function Thumb({ state, slot, id, boxes, alone = false }: { state: Creato
     : { x: head.x - 40, y: head.y - 150, width: 553, height: 750 }
   const placed = alone ? [own] : peep.layout().filter((p) => slot === 'body' || p.slot !== 'body')
   return (
-    <svg viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`} aria-hidden="true" style={state.bg === 'transparent' ? undefined : { background: state.bg }}>
+    <svg viewBox={`${box.x} ${box.y} ${box.width} ${box.height}`} aria-hidden="true" style={tileBg(state)}>
       {placed.map((p) => peep.part(p))}
     </svg>
   )
@@ -28,7 +31,7 @@ export function Thumb({ state, slot, id, boxes, alone = false }: { state: Creato
 /** A whole figure, on its own canvas, on the current background. */
 export function FigureThumb({ state, figure: F }: { state: CreatorState; figure: Figure }) {
   return (
-    <svg viewBox={`0 0 ${F.width} ${F.height}`} aria-hidden="true" style={state.bg === 'transparent' ? undefined : { background: state.bg }}>
+    <svg viewBox={`0 0 ${F.width} ${F.height}`} aria-hidden="true" style={tileBg(state)}>
       <F ink={state.ink} paper={state.paper} />
     </svg>
   )

@@ -31,6 +31,8 @@ export const icons = {
   more: draw(<path strokeWidth="3.2" d="M5 6h.01M12 6h.01M19 6h.01M5 12h.01M12 12h.01M19 12h.01M5 18h.01M12 18h.01M19 18h.01" />),
   close: draw(<path d="M6 6l12 12M18 6 6 18" />),
   contrast: draw(<><circle cx="12" cy="12" r="9" /><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" /></>),
+  grid: draw(<><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></>),
+  list: draw(<><rect x="4" y="4.5" width="5" height="5" rx="1.2" /><rect x="4" y="14.5" width="5" height="5" rx="1.2" /><path d="M12.5 7h7.5M12.5 17h7.5" /></>),
   lock: draw(<><rect x="5" y="11" width="14" height="10" rx="2.5" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>),
   unlock: draw(<><rect x="5" y="11" width="14" height="10" rx="2.5" /><path d="M8 11V8a4 4 0 0 1 7.5-2" /></>),
   none: draw(<><circle cx="12" cy="12" r="8" /><path d="m6.3 6.3 11.4 11.4" /></>),

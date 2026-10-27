@@ -47,6 +47,9 @@ export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, o
   }, [current, tab])
   // Thumbnails show each item by itself, or on the whole peep to see several parts together.
   const [onPeep, setOnPeep] = useState(false)
+  // Items as a grid of pictures, or a list with each name in full.
+  const [list, setList] = useState(false)
+  const View = list ? icons.grid : icons.list
   const Dice = icons.dice
   const dots = (tabColors[tab] ?? []).flatMap((id) => colors.filter((c) => c.id === id))
   const [open, setOpen] = useState<string | null>(null)
@@ -65,6 +68,7 @@ export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, o
         <h2>
           <span>{label}<small>{tab === 'figures' ? `${figures.length} whole figures` : slot ? `${options.length} to choose from` : 'the shape of the figure'}</small></span>
           {slot && <button className="pc-chip" aria-pressed={onPeep} onClick={() => setOnPeep(!onPeep)} title="Show each item on the whole peep">On peep</button>}
+          <button className="pc-view" aria-pressed={list} aria-label="Show as a list" title={list ? 'Show as a grid' : 'Show as a list'} onClick={() => setList(!list)}><View /></button>
           {slot && <Lock what={label} locked={!!state.locked?.includes(slot)} onToggle={() => onLock(slot)} />}
           <button className="pc-dice" disabled={onFigureNow} onClick={() => onDice(tab as Exclude<Tab, 'scene'>)} aria-label={`Random ${label.toLowerCase()}`} title={`Random ${label.toLowerCase()}`}><Dice /></button>
         </h2>
@@ -83,14 +87,14 @@ export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, o
             {picked.reset && <button className="pc-link" onClick={picked.reset.run}>{picked.reset.label}</button>}
           </div>
         )}
-        <div className="pc-grid" role="radiogroup" aria-label={label} ref={grid}>
+        <div className={list ? 'pc-grid pc-list' : 'pc-grid'} role="radiogroup" aria-label={label} ref={grid}>
           {onFigureNow && (
             <div className="pc-note"><p>A whole figure is on the stage; parts belong to the peep builder.</p><button className="pc-btn" onClick={() => onFigure(null)}>Back to the peep builder</button></div>
           )}
           {tab === 'figures' && <>
-            <button role="radio" aria-checked={state.figure === null} className="pc-tile" onClick={() => onFigure(null)} title="Build a peep from parts"><span className="pc-none"><None /></span><span>Peep</span></button>
+            <button role="radio" aria-checked={state.figure === null} className="pc-tile" onClick={() => onFigure(null)} data-tip="Build a peep from parts"><span className="pc-none"><None /></span><span>Peep</span></button>
             {figures.map((f) => (
-              <button key={f.id} role="radio" aria-checked={state.figure === f.id} className="pc-tile" onClick={() => onFigure(f.id)} title={f.label}>
+              <button key={f.id} role="radio" aria-checked={state.figure === f.id} className="pc-tile" onClick={() => onFigure(f.id)} data-tip={f.label}>
                 <FigureThumb state={state} figure={f} /><span>{f.label}</span>
               </button>
             ))}
@@ -101,7 +105,7 @@ export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, o
             </button>
           ))}
           {!onFigureNow && slot && options.map((a) => { return (
-            <button key={a.id} role="radio" aria-checked={current === a.id} className="pc-tile" onClick={() => onChoose(slot, a.id)} title={nice(a.label)}>
+            <button key={a.id} role="radio" aria-checked={current === a.id} className="pc-tile" onClick={() => onChoose(slot, a.id)} data-tip={a.id === 'none' ? 'None' : nice(a.label)}>
               {a.id === 'none' ? <span className="pc-none"><None /></span> : <Thumb state={state} slot={slot} id={a.id} boxes={boxes} alone={!onPeep} />}
               <span>{a.id === 'none' ? 'None' : nice(a.label)}</span>
             </button>

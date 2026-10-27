@@ -9,6 +9,7 @@ import { initialState, RATIOS, swatches, type CreatorState, type Ratio, type Tab
 import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
 import { icons } from './icons.tsx'
 import { Lock } from './Lock.tsx'
+import { useTip } from './Tip.tsx'
 import { PartPicker } from './PartPicker.tsx'
 import { SceneMembers, SceneSources } from './ScenePanel.tsx'
 import { peepTargets } from '../colors.ts'
@@ -57,6 +58,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     else if (el) openTab('figures')
   }
   const [boxes, setBoxes] = useState<Boxes>({})
+  const tip = useTip()
   const [innerTheme, setInnerTheme] = useState<ThemeId>(defaultTheme)
   const [picked, setPicked] = useState<number | null>(null)
   const [uploads, setUploads] = useState<Upload[]>([])
@@ -147,8 +149,10 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     <div
       className={`pc ${className}`.trim()} style={style} data-pc-theme={theme}
       onKeyDown={(e) => { if (e.key === 'f' && !e.metaKey && !e.ctrlKey && !(e.target as HTMLElement).closest('input, select, textarea')) flipKey() }}
+      {...tip.handlers}
     >
       <style>{creatorCss}</style>
+      {tip.node}
       <header className="pc-head">
         {title !== false && <h1 className="pc-title">{title}<small>character creator</small></h1>}
         <div className="pc-toolbar" role="toolbar" aria-label="Actions">
