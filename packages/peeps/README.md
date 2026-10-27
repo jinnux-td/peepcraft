@@ -14,6 +14,15 @@ peep.group()                           // just the <g>, to place inside a bigger
 - **Ids:** kebab-case file names: `long-curly`, `smile-teeth-gap`, `glasses-4`, `none`. An unknown id throws and lists the choices. Menus: `catalogue.head.values()` (`.id`, `.label`, `.width`, `.height`).
 - **Background:** `new Background('#f7d56e')` or `new Background()` (transparent) draws a rectangle over a box, or nothing, so an export keeps its alpha.
 - **Colours:** every atom takes `ink` (the black of the drawing) and `paper` (its white). Nothing is hard-coded, so a theme is two props.
+- **Scene:** `new Scene({ width, height, background })` then `.add(item, { x, y, scale, flip, ink, paper })`, back to front; `ground` instead of `y` puts the bottom of the item's canvas on a line, `fitHeight` instead of `scale` sets its height in the scene (both use the canvas, which has air around the art); `.render()` gives one `<svg>`, `.group()` a `<g>` (so a scene nests in a scene). An item is a `Peep`, another `Scene`, or any component with `width` and `height` that takes `ink` and `paper` (an atom, a `@kit/transhumans` figure). Units are the items' own: a standing peep is about 3300 tall, a figure 1080, so scale one to match the other.
+
+```ts
+new Scene({ width: 4200, height: 3400, background: '#f7d56e' })
+  .add(new Peep({ head: 'afro' }), { ground: 3350 })
+  .add(lookupFigure('runner'), { x: 1000, ground: 3350, fitHeight: 3240, ink: '#1d3557', paper: '#fde9d0' })
+  .add(new Peep(), { x: 3000, ground: 3350, flip: true })
+  .render()
+```
 - **Placement:** `src/layout.ts` holds the origin of each slot per type, in the atoms' shared hi-res units. `test/templates.test.ts` checks them against the 302 templates of the pack.
 
 ## Regenerate the atoms

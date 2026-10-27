@@ -3,3 +3,4 @@ export { atom, INK, PAPER, type Atom, type AtomMeta, type AtomProps, type Catego
 export { canvas, onHead, origins, slotOrder, type PeepType, type Point, type Slot } from './layout.ts'
 export { defaults, Peep, type Placed, type PeepOptions, type PeepParts, type PeepTypeName } from './peep.ts'
 export { catalogue, lookup } from './registry.ts'
+export { Scene, type Art, type Drawable, type Placement, type SceneItem, type SceneOptions } from './scene.ts'
