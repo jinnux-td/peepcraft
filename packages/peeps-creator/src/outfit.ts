@@ -11,7 +11,8 @@ const hash = (s: string) => { let h = 2166136261; for (const c of s) h = Math.im
 /** The atom a slot draws: "standing/walking-2", "head/bun". */
 export const atomKey = (type: PeepType, slot: Slot, id: string) => `${slot === 'body' ? (type === 'bust' ? 'body' : type) : slot}/${id}`
 
-/** Items whose colours are not left to their name: a white moustache. */
+/** Colours set by hand for an item, by atom key, over the ones the rules pick: `'standing/walking-2': { top: '#ffffff', shoes: '#111111' }`.
+ *  Pieces left out keep the rules' colours. */
 const own: Partial<Record<string, Partial<Record<Role, string>>>> = { 'facialHair/moustache-6': { hair: '#e8e1e1' } }
 
 const INK = '#111111', WHITE = '#ffffff'
@@ -36,7 +37,7 @@ export function itemColors(key: string): Partial<Record<Role, string>> {
   const theme = pick([themes.cold, themes.warm]), accent = pick(theme.accent)
   const drawnBlack = (r: Role) => !!pieces[r] && !pieces[r]!.paper
   const out: Partial<Record<Role, string>> = {}
-  if (pieces.hair) out.hair = own[key]?.hair ?? pick(key.startsWith('facialHair/') ? swatches.beardOwn : swatches.hairOwn)
+  if (pieces.hair) out.hair = pick(key.startsWith('facialHair/') ? swatches.beardOwn : swatches.hairOwn)
   if (pieces.hat) out.hat = drawnBlack('hat') ? INK : accent
   if (pieces.jacket) out.jacket = drawnBlack('jacket') ? INK : accent
   if (pieces.bottoms) out.bottoms = drawnBlack('bottoms') ? INK : pick(theme.dark)
@@ -45,7 +46,7 @@ export function itemColors(key: string): Partial<Record<Role, string>> {
     out.top = drawnBlack('top') ? INK : !outer ? pick([accent, accent, WHITE]) : out.jacket ? (isDark(out.jacket) ? WHITE : INK) : isDark(outer) ? pick([WHITE, accent]) : INK
   }
   if (pieces.shoes) { const worn = [out.top, out.jacket, out.bottoms].filter((c): c is string => !!c); out.shoes = drawnBlack('shoes') ? INK : pick(worn.length ? worn : theme.dark) }
-  return out
+  return { ...out, ...own[key] }
 }
 
 /** A slot's colours without its pieces: its lines and fill, which stay when another item is chosen. */

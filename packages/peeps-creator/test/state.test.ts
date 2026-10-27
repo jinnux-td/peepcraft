@@ -143,3 +143,9 @@ test('contrast: black lines on white only, the colours kept for when it is off',
   assert.doesNotMatch(mono, /#123456|#d08b5b|data-skin|data-top|<mask/, 'no colours, no skin')
   assert.deepEqual(s.partColors, { body: { top: '#123456' } })
 })
+
+test('colours set by hand for an item win over the rules, piece by piece', async () => {
+  const { itemColors } = await import('../src/outfit.ts')
+  assert.equal(itemColors('facialHair/moustache-6').hair, '#e8e1e1')
+  assert.ok(itemColors('standing/walking-2').top, 'items without an entry keep the rules')
+})
