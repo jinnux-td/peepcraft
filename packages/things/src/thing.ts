@@ -9,6 +9,8 @@ export interface ThingProps extends Omit<SVGProps<SVGGElement>, 'ref'> {
   ink?: string
   /** Fill inside the lines. */
   paper?: string
+  /** Colours of the named parts (`slots`), such as `{ pot: '#c96' }`; a part left out takes `paper`. */
+  colors?: Partial<Record<string, string>>
 }
 
 export interface ThingMeta {
@@ -21,10 +23,13 @@ export interface ThingMeta {
   height: number
 }
 
-export type Thing = ((props: ThingProps) => ReactElement) & ThingMeta
+/** The meta, plus the named parts that can take their own colour, in drawing order. */
+export type Thing = ((props: ThingProps) => ReactElement) & ThingMeta & { slots: readonly string[] }
 
-/** One closed or open path: filled with paper, with ink, or not at all; every path is outlined in ink. */
-export type Part = [d: string, fill?: 'paper' | 'ink' | 'none']
+/** One closed or open path, outlined in ink and filled with paper, ink, nothing, or a named part's colour (`'pot'`). */
+export type Part = [d: string, fill?: 'paper' | 'ink' | 'none' | (string & {})]
+
+const FIXED = ['paper', 'ink', 'none']
 
 export const INK = '#000000'
 export const PAPER = '#FFFFFF'
@@ -32,11 +37,12 @@ export const PAPER = '#FFFFFF'
 export const LINE = 20
 
 export function thing(meta: ThingMeta, parts: readonly Part[]): Thing {
-  const Component = ({ ink = INK, paper = PAPER, ...rest }: ThingProps) =>
+  const Component = ({ ink = INK, paper = PAPER, colors = {}, ...rest }: ThingProps) =>
     createElement('g', { ...rest, stroke: ink, strokeWidth: LINE, strokeLinecap: 'round', strokeLinejoin: 'round' },
-      ...parts.map(([d, fill = 'paper'], i) => createElement('path', { key: i, d, fill: fill === 'ink' ? ink : fill === 'paper' ? paper : 'none' })))
+      ...parts.map(([d, fill = 'paper'], i) => createElement('path', { key: i, d, fill: fill === 'ink' ? ink : fill === 'none' ? 'none' : fill === 'paper' ? paper : colors[fill] ?? paper, 'data-part': FIXED.includes(fill) ? undefined : fill })))
   Component.displayName = `Thing.${meta.id}`
-  return Object.assign(Component, meta)
+  const slots = [...new Set(parts.map(([, f = 'paper']) => f).filter((f) => !FIXED.includes(f)))]
+  return Object.assign(Component, meta, { slots })
 }
 
 // Path helpers. Numbers are rounded so the generated markup stays short.

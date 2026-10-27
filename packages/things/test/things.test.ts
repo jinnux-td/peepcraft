@@ -33,3 +33,14 @@ test('every point is inside the canvas, so the bottom edge is the floor', () => 
     }
   }
 })
+
+test('named parts take their own colour and fall back to paper; the menu lists them once, in drawing order', () => {
+  const plant = lookup('potted-plant')
+  assert.deepEqual(plant.slots, ['leaves'])
+  assert.deepEqual(lookup('desk').slots, ['drawers', 'top'])
+  assert.deepEqual(lookup('mug').slots, [])
+  const html = renderToStaticMarkup(createElement(plant, { paper: '#eeeeee', colors: { leaves: '#2d6a4f' } }))
+  assert.match(html, /fill="#2d6a4f" data-part="leaves"/)
+  assert.match(html, /fill="#eeeeee"/, 'the pot keeps the paper colour')
+  assert.match(renderToStaticMarkup(createElement(plant, { paper: '#eeeeee' })), /fill="#eeeeee" data-part="leaves"/)
+})

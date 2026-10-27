@@ -15,10 +15,10 @@ export const mug = thing({ id: 'mug', label: 'Mug', group: 'small', width: 260, 
 ])
 
 export const books = thing({ id: 'books', label: 'Books', group: 'small', width: 470, height: 310 }, [
-  [rect(20, 210, 430, 90, 14)],
+  [rect(20, 210, 430, 90, 14), 'covers'],
   ['M60 240H410M60 270H410', 'none'],
   [rect(55, 120, 380, 90, 14), 'ink'],
-  [rect(30, 30, 400, 90, 14)],
+  [rect(30, 30, 400, 90, 14), 'covers'],
   ['M70 60H390M70 90H390', 'none'],
 ])
 
