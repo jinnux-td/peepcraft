@@ -16,6 +16,10 @@ export const creatorCss = `
 .pc small{font-size:12px;font-weight:500;color:var(--pc-muted);text-transform:var(--pc-caps);letter-spacing:var(--pc-track)}
 .pc h2{margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:center;text-transform:var(--pc-caps);letter-spacing:var(--pc-track)}
 .pc h2 small{margin-left:10px}
+.pc-dots{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 10px}
+.pc-dots .pc-token{min-width:52px}
+.pc-options>.pc-picked{margin:0 0 12px}
+.pc-options>.pc-picked>.pc-field>.pc-label{position:static;width:auto;height:auto;clip-path:none}
 .pc-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .pc-panel{background:var(--pc-surface);border:1px solid var(--pc-line);border-radius:var(--pc-r);box-shadow:var(--pc-shadow);backdrop-filter:blur(var(--pc-blur));-webkit-backdrop-filter:blur(var(--pc-blur))}
 .pc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--pc-line);background:var(--pc-surface);backdrop-filter:blur(var(--pc-blur));border-radius:999px;padding:8px 14px;transition:transform .12s,box-shadow .12s}
@@ -42,6 +46,14 @@ export const creatorCss = `
 .pc-note{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px;color:var(--pc-muted);font-size:13px}
 .pc-note p{margin:0}
 .pc-dice:disabled{opacity:.35;cursor:default;transform:none}
+.pc .pc-chip{margin-left:auto;padding:5px 10px;border-radius:999px;border:1px solid var(--pc-line);background:transparent;color:var(--pc-muted);font-size:11px;white-space:nowrap}
+.pc-chip[aria-pressed=true]{background:var(--pc-accent);border-color:var(--pc-accent);color:var(--pc-on-accent)}
+.pc-chip+.pc-lock{margin-left:4px}
+.pc .pc-lock{display:grid;place-items:center;width:32px;height:32px;margin-left:auto;margin-right:6px;padding:0;border-radius:50%;border:1px solid transparent;background:transparent;color:var(--pc-muted)}
+.pc-lock:hover{background:var(--pc-tile)}
+.pc-lock[aria-pressed=true]{background:var(--pc-accent);color:var(--pc-on-accent)}
+.pc-label .pc-lock{width:26px;height:26px;margin:0}
+.pc-label .pc-lock svg{width:16px;height:16px}
 .pc-stage-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
 .pc-stage{width:100%;max-width:680px;min-width:240px;aspect-ratio:1;border-radius:var(--pc-r);overflow:hidden;box-shadow:var(--pc-shadow);border:1px solid var(--pc-line)}
 .pc-stage[data-transparent]{background:repeating-conic-gradient(#d4d4d4 0 25%,#fff 0 50%) 0 0/24px 24px}
@@ -66,6 +78,13 @@ export const creatorCss = `
 .pc-export .pc-pill button{padding:4px 10px;font-size:12px;text-transform:none}
 .pc-swatches{display:flex;flex-wrap:wrap;gap:8px}
 .pc-swatch{width:28px;height:28px;border-radius:50%;border:2px solid var(--pc-line);padding:0;position:relative;overflow:hidden;display:grid;place-items:center}
+.pc-swatch[data-tip]{overflow:visible}
+.pc [data-tip]{position:relative}
+.pc [data-tip]:hover::before,.pc [data-tip]:focus-visible::before,.pc [data-tip]:hover::after,.pc [data-tip]:focus-visible::after{position:absolute;left:50%;transform:translateX(-50%);z-index:30;pointer-events:none}
+.pc [data-tip]:hover::after,.pc [data-tip]:focus-visible::after{content:attr(data-tip);top:calc(100% + 9px);padding:6px 9px;border-radius:7px;background:#1f2328;color:#fff;font:600 12px/1.2 system-ui,sans-serif;letter-spacing:0;text-transform:none;white-space:nowrap;box-shadow:0 4px 12px #0003}
+.pc [data-tip]:first-child:hover::after,.pc [data-tip]:first-child:focus-visible::after{left:0;transform:none}
+.pc [data-tip]:last-child:not(:first-child):hover::after,.pc [data-tip]:last-child:not(:first-child):focus-visible::after{left:auto;right:0;transform:none}
+.pc [data-tip]:hover::before,.pc [data-tip]:focus-visible::before{content:"";top:calc(100% + 3px);border:6px solid transparent;border-top:0;border-bottom-color:#1f2328}
 .pc-swatch[aria-pressed=true]{outline:3px solid var(--pc-accent);outline-offset:2px}
 .pc-swatch.pc-custom{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);cursor:pointer}
 .pc-swatch.pc-custom input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
@@ -83,6 +102,9 @@ export const creatorCss = `
 .pc-seven .pc-swatch{width:100%;height:auto;aspect-ratio:1}
 .pc-slider{display:flex;flex-direction:column;gap:8px}
 .pc input[type=range]{width:100%;accent-color:var(--pc-accent)}
+.pc-track{position:relative;display:block}
+.pc-track input[type=range]{display:block;margin:0;position:relative;z-index:1;background:transparent}
+.pc-tick{position:absolute;top:50%;width:2px;height:14px;margin:-7px 0 0 -1px;border-radius:1px;background:var(--pc-muted);pointer-events:none}
 .pc-save{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pc-member{display:flex;flex-direction:column;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--pc-line)}
 .pc-row{display:flex;flex-wrap:wrap;gap:8px}
@@ -101,21 +123,38 @@ export const creatorCss = `
 .pc-scene .pc-things{max-height:330px}
 /* In the scene, the side panel stays in view and the member list takes the height that is left, then scrolls. */
 .pc-side-scene{position:sticky;top:12px;max-height:var(--pc-side-max,calc(100dvh - 24px));overflow:auto}
-.pc-side-scene{gap:10px}
+.pc-side-scene{gap:8px}
 .pc-side-scene>*{flex-shrink:0}
-.pc-side-scene .pc-members{flex:0 1 auto;min-height:96px;max-height:none}
-.pc-side-scene .pc-member{gap:10px}
+.pc-side-scene .pc-members{flex:0 1 auto;min-height:56px;max-height:none}
+.pc-side-scene .pc-member{gap:8px}
 .pc-side-scene .pc-row{flex-wrap:nowrap}
 .pc-side-scene .pc-row .pc-btn{flex:1;padding:8px}
 .pc-side-scene .pc-row .pc-btn span{display:none}
 .pc-side-scene .pc-slider,.pc-frame .pc-slider{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px}
 .pc-side-scene .pc-slider .pc-label,.pc-frame .pc-slider .pc-label{display:contents}
-.pc-side-scene .pc-slider input[type=range],.pc-frame .pc-slider input[type=range]{grid-column:2;grid-row:1}
+.pc-side-scene .pc-slider .pc-track,.pc-frame .pc-slider .pc-track{grid-column:2;grid-row:1}
 .pc-side-scene .pc-value,.pc-frame .pc-value{grid-column:3;grid-row:1}
 .pc-colors{display:flex;flex-direction:column;gap:8px}
+.pc-link{align-self:flex-start;border:0;background:transparent;padding:0;font-size:12px;color:var(--pc-muted);text-decoration:underline}
 .pc-roles{flex-wrap:wrap;box-shadow:none;align-self:flex-start}
-.pc-roles button{padding:5px 12px;font-size:12px;text-transform:none}
-.pc-colors .pc-label{display:none}
+.pc-tokens{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.pc .pc-token{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;padding:6px 2px 4px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--pc-muted);font-size:11px}
+.pc-token:hover{background:var(--pc-tile)}
+.pc-token[aria-checked=true]{background:var(--pc-tile);border-color:var(--pc-accent);color:var(--pc-text);font-weight:600}
+.pc-token i{position:relative;width:24px;height:24px;border-radius:50%;border:2px solid var(--pc-line);box-shadow:inset 0 0 0 1px #0000001a}
+.pc-token i[data-changed]::after{content:"";position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--pc-accent);border:2px solid var(--pc-surface)}
+.pc-token span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-picked{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;background:var(--pc-tile)}
+.pc-picked>.pc-field>.pc-label,.pc-compact .pc-token span,.pc-compact>.pc-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.pc-compact .pc-picked>.pc-field>.pc-label{position:static;width:auto;height:auto;clip-path:none}
+.pc-compact .pc-tokens{grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:2px}
+.pc-compact .pc-token i{width:20px;height:20px}
+.pc .pc-compact .pc-token{padding:3px 0;position:relative}
+.pc-compact .pc-picked{padding:6px 8px}
+.pc-picked .pc-swatches{gap:5px}
+.pc-picked .pc-swatch{width:22px;height:22px}
+.pc-picked .pc-seven .pc-swatch{width:100%;height:auto}
+.pc-stage:not([data-view]) [data-slot],.pc-stage:not([data-view]) [data-figure]{cursor:pointer}
 .pc-side-scene h2{margin:0}
 .pc-side-scene .pc-member{margin-top:0}
 .pc-small{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}

@@ -4,11 +4,18 @@ import { createElement, type ReactElement } from 'react'
 import { Background, canvas, Peep, Scene as PeepScene, type Art, type Box, type PeepType } from '@kit/peeps'
 import { lookup as lookupThing } from '@kit/things'
 import { lookup as lookupFigure } from '@kit/transhumans'
+import { plain, wornColors } from './outfit.ts'
 import { RATIOS, type CreatorState, type SceneEntry, type Upload } from './types.ts'
 
 export const SIZE = 1024
 
-export const peepOf = (s: Pick<CreatorState, 'type' | 'ink' | 'paper' | 'parts'>, override: Partial<Record<string, string>> = {}): Peep => new Peep({ type: s.type, ink: s.ink, paper: s.paper, ...s.parts, ...override })
+/** The peep of a state, in its items' own colours under the picked ones; `override` swaps items (a thumbnail), which come in their own. */
+export function peepOf(s: Pick<CreatorState, 'type' | 'ink' | 'paper' | 'parts'> & Partial<Pick<CreatorState, 'partColors' | 'skin' | 'mono'>>, override: Partial<Record<string, string>> = {}): Peep {
+  const parts = { ...s.parts, ...override }, picked = { ...s.partColors }
+  if (s.mono) return new Peep({ type: s.type, ink: s.ink, paper: s.paper, ...parts })
+  for (const slot of Object.keys(override) as (keyof typeof picked)[]) picked[slot] = plain(picked[slot])
+  return new Peep({ type: s.type, ink: s.ink, paper: s.paper, colors: wornColors(s.type, parts, picked), skin: s.skin, ...parts })
+}
 
 /** A square window on a measured outline, with air around it. */
 export function squareAround(b: Box): Box {
@@ -43,7 +50,7 @@ export const GROUND = 4560
 /** How far Lift reaches, as a share of the scene; below 0 a member stands in front of the ground line. */
 export const LIFT = { min: -0.2, max: 0.8 }
 
-export type Look = Pick<SceneEntry, 'type' | 'parts' | 'ink' | 'paper' | 'figure' | 'thing' | 'upload' | 'colors'>
+export type Look = Pick<SceneEntry, 'type' | 'parts' | 'ink' | 'paper' | 'figure' | 'thing' | 'upload' | 'colors' | 'partColors' | 'skin'>
 
 /** An uploaded picture as Art: an <image> over its canvas. The data URL keeps exports self-contained. */
 const uploadArt = (u: Upload): Art => Object.assign(() => createElement('image', { href: u.href, width: u.width, height: u.height, preserveAspectRatio: 'none', 'data-upload': u.id }), { width: u.width, height: u.height })

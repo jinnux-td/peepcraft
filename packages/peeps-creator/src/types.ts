@@ -1,4 +1,4 @@
-import type { PeepType, Slot } from '@kit/peeps'
+import type { PartColors, PeepType, Slot } from '@kit/peeps'
 
 export type Parts = Partial<Record<Slot, string>>
 export type ThemeId = 'sunny' | 'glass' | 'noir' | 'violet'
@@ -17,18 +17,29 @@ export interface CreatorState {
   flip: boolean
   /** The id of a whole figure from @kit/transhumans; when set it is drawn instead of the peep. */
   figure: string | null
+  /** Ink and paper of single parts of the peep (hair, clothes, ...), over `ink` and `paper`. */
+  partColors: PartColors
+  /** One colour for all the skin (face, neck, hands); without it the skin is the paper. */
+  skin?: string
   /** Members of the scene, back to front. Empty until something is added from the Scene tab. */
   scene: SceneEntry[]
   /** The scene's picture: its shape, and how close it is (2 shows everyone twice as big). */
   frame: { ratio: Ratio; zoom: number }
+  /** Contrast: black lines on white only, as the pack draws them; the colours of items, skin and picks are kept for when it is off. */
+  mono?: boolean
+  /** What "Shuffle all" leaves alone: the background, or a part. */
+  locked?: readonly Lockable[]
 }
+
+/** What can be locked against "Shuffle all". */
+export type Lockable = 'bg' | Slot
 
 /** Width to height of the scene. */
 export const RATIOS = { '1:1': 1, '4:3': 4 / 3, '3:2': 3 / 2, '16:9': 16 / 9, '3:4': 3 / 4, '9:16': 9 / 16 } as const
 export type Ratio = keyof typeof RATIOS
 
 /** A copy of a peep or figure as it was when added to the scene, and where it stands. */
-export interface SceneEntry extends Pick<CreatorState, 'type' | 'parts' | 'figure' | 'ink' | 'paper' | 'flip'> {
+export interface SceneEntry extends Pick<CreatorState, 'type' | 'parts' | 'figure' | 'ink' | 'paper' | 'flip'>, Partial<Pick<CreatorState, 'partColors' | 'skin' | 'mono'>> {
   /** Centre from the left, in scene units. */
   x: number
   /** 1 is the default size of its kind. */
@@ -49,7 +60,10 @@ export interface Upload { id: string; name: string; href: string; width: number;
 
 export type Tab = 'type' | Slot | 'figures' | 'scene'
 
-export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null, scene: [], frame: { ratio: '1:1', zoom: 1 } }
+/** The skin a peep starts with. */
+export const SKIN = '#d08b5b'
+
+export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', skin: SKIN, bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null, partColors: {}, scene: [], frame: { ratio: '1:1', zoom: 1 } }
 
 export const themes: ReadonlyArray<{ id: ThemeId; label: string; dot: string }> = [
   { id: 'sunny', label: 'Sunny', dot: '#f7d56e' }, { id: 'glass', label: 'Glass', dot: '#3d6bff' },
@@ -67,6 +81,14 @@ export const swatches = {
     '#0097b2', '#0cc0df', '#5ce1e6', '#38b6ff', '#5271ff', '#004aad', '#1800ad',
     '#00bf63', '#7ed957', '#c1ff72', '#ffde59', '#ffbd59', '#ff914d', '#ff751f',
   ],
+  /** Skin tones for a skin, light to dark; any other colour is under the wheel and "more colours". */
+  skin: ['#ffffff', '#ffe2cb', '#ffdbbe', '#ffdbac', '#ffcf9e', '#f1c27d', '#e0ac69', '#d08b5b', '#c68642', '#987161', '#8d5524', '#5c3a21', '#4f3e35'],
+  hair: ['#111111', '#3b2219', '#6b2d1a', '#a55728', '#d6b370', '#e8e1d1', '#b33a3a'],
+  clothes: ['#ffffff', '#e63946', '#ffe066', '#52b788', '#38b6ff', '#1d3557', '#8c52ff'],
+  /** What hair comes in, a colour as often as it is listed: mostly black, some brown, white, light yellow. */
+  hairOwn: ['#111111', '#111111', '#111111', '#111111', '#111111', '#111111', '#6b2d1a', '#3b2219', '#e8e1e1', '#d6b370'],
+  /** What a beard comes in: black, some white. */
+  beardOwn: ['#111111', '#111111', '#111111', '#111111', '#e8e1e1'],
   /** For the named parts of a thing: leaves, wood, cushions. */
-  parts: ['#ffffff', '#ffe066', '#ff8fa3', '#cdeac0', '#52b788', '#2d6a4f', '#c9773e', '#7b4a2a', '#a8dadc', '#1d3557'],
+  parts: ['#ffffff', '#ffe066', '#ff8fa3', '#52b788', '#2d6a4f', '#c9773e', '#7b4a2a'],
 } as const

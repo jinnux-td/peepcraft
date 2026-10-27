@@ -115,3 +115,33 @@ test('the frame: a ratio widens the scene and keeps members in place across it, 
   const far = { ...s, frame: { ratio: '1:1' as const, zoom: 0.5 } }
   assert.match(exportSceneSvg(far), new RegExp(`viewBox="${-SCENE / 2} ${-GROUND} ${SCENE * 2} ${SCENE * 2}"[^>]*><rect x="${-SCENE / 2}" y="${-GROUND}" width="${SCENE * 2}"`), 'zoomed out, the background still fills the picture')
 })
+
+test('part colours: one skin for head and body, hair and clothes apart, carried into the scene and the colours of the design', async () => {
+  const { exportSceneSvg, exportSvg } = await import('../src/export.ts')
+  const { addToScene, designColors } = await import('../src/state.ts')
+  const { peepTargets } = await import('../src/colors.ts')
+  let s = { ...initialState }
+  const set = (p: Partial<typeof s>) => { s = { ...s, ...p } }
+  const t = () => Object.fromEntries(peepTargets(s, set).map((x) => [x.id, x]))
+  assert.deepEqual(Object.keys(t()), ['skin', 'hair', 'hat', 'top', 'clothes', 'face', 'facialHair', 'accessories', 'ink', 'paper'], 'a tee and a bun with a hair tie: no jacket, no shoes')
+  assert.deepEqual(peepTargets(s, set, true).map((x) => x.id), ['ink', 'paper'], 'a figure has only lines and fill')
+  t().skin.onChange('#c68642'); t().hair.onChange('#6b2d1a'); t().clothes.onChange('#e63946')
+  assert.equal(s.skin, '#c68642')
+  assert.deepEqual(s.partColors, { head: { hair: '#6b2d1a' }, body: { paper: '#e63946' } })
+  const { itemColors } = await import('../src/outfit.ts')
+  assert.equal(t().top.value, itemColors('body/tee-1').top, 'an untouched piece shows the colour its item comes in'); assert.equal(t().top.reset, undefined)
+  t().top.onChange('#1d3557')
+  assert.equal(t().top.reset?.label, 'Back to its own colour'); assert.equal(t().hair.reset?.label, 'Back to its own colour')
+  assert.match(exportSvg(s, fallbackBox(s)), /data-top="">(?:(?!data-).)*fill="#1d3557"/s, 'the tee in its own colour')
+  assert.equal(t().face.value, s.ink, 'an untouched part shows the peep colour'); assert.equal(t().face.reset, undefined)
+  const svg = exportSvg(s, fallbackBox(s))
+  assert.equal((svg.match(/data-skin=""/g) ?? []).length, 2, 'the skin of the head and of the body')
+  assert.match(svg, /fill="#c68642"/); assert.match(svg, /fill="#e63946"/)
+  assert.match(svg, /data-slot="head">(?:(?!data-slot).)*fill="#6b2d1a"/s, 'the hair is inside the head')
+  t().skin.reset!.run()
+  assert.equal(s.skin, '#d08b5b', 'back to the skin a peep starts with'); assert.equal(t().skin.reset, undefined)
+  assert.match(exportSvg(s, fallbackBox(s)), /data-skin=""><g><g [^>]*><path[^>]*fill="#d08b5b"/)
+  const scene = addToScene({ ...s, skin: '#8d5524' })
+  assert.match(exportSceneSvg(scene), /fill="#8d5524"/)
+  assert.ok(designColors(scene).includes('#8d5524') && designColors(scene).includes('#6b2d1a'))
+})

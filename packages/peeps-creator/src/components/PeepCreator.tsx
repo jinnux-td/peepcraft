@@ -3,13 +3,15 @@ import type { Box, PeepType, Slot } from '@kit/peeps'
 import { exportSceneSvg, exportSvg, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
 import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
-import { addToScene, choose, chooseFigure, commit, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
+import { addToScene, choose, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
 import { creatorCss } from '../styles.ts'
 import { initialState, RATIOS, swatches, type CreatorState, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
 import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
 import { icons } from './icons.tsx'
+import { Lock } from './Lock.tsx'
 import { PartPicker } from './PartPicker.tsx'
 import { SceneMembers, SceneSources } from './ScenePanel.tsx'
+import { peepTargets } from '../colors.ts'
 import { Slider } from './Slider.tsx'
 import { Stage } from './Stage.tsx'
 import { Swatches } from './Swatches.tsx'
@@ -46,6 +48,14 @@ function download(file: ExportedFile) {
 export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', className = '', style }: PeepCreatorProps) {
   const [hist, setHist] = useState<History>(() => startHistory({ ...initialState, ...defaultState }))
   const [tab, setTab] = useState<Tab>('head')
+  const openTab = setTab
+  /** A click on the peep on the stage opens the tab of the part under the pointer; on a figure, the Figures tab. */
+  const pickPart = (target: EventTarget) => {
+    const el = (target as Element).closest('[data-slot], [data-figure]')
+    const slot = el?.getAttribute('data-slot')
+    if (slot) openTab(slot as Tab)
+    else if (el) openTab('figures')
+  }
   const [boxes, setBoxes] = useState<Boxes>({})
   const [innerTheme, setInnerTheme] = useState<ThemeId>(defaultTheme)
   const [picked, setPicked] = useState<number | null>(null)
@@ -152,7 +162,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
 
       <div className="pc-main">
         <PartPicker
-          state={state} tab={tab} onTab={setTab} boxes={boxes}
+          state={state} tab={tab} onTab={openTab} boxes={boxes} colors={peepTargets(state, live, !!state.figure || !!state.mono)} used={used} onLock={(slot) => live(toggleLock(state, slot))}
           onChoose={(slot: Slot, id) => record((s) => choose(s, slot, id))} onType={(t) => record((s) => showPeep(s, t))} onFigure={(id) => record((s) => chooseFigure(s, id))} onDice={(t) => dice(t)}
         >
           <SceneSources
@@ -175,16 +185,20 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
             </div>
             <p className="pc-hint">{state.scene.length ? <>Drag someone to move them, or the corner of the picked one to resize it. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
           </> : <>
-          <Stage state={state} box={box} measured={!!boxes[key]} onMeasure={onMeasure} />
+          <div style={{ display: 'contents' }} onClick={(e) => pickPart(e.target)}>
+            <Stage state={state} box={box} measured={!!boxes[key]} onMeasure={onMeasure} />
+          </div>
           <div className="pc-pill" role="group" aria-label="Type">
             {types.map((t) => <button key={t} aria-pressed={state.figure === null && state.type === t} onClick={() => record((s) => showPeep(s, t))}>{t}</button>)}
           </div>
-          <p className="pc-hint">Press <kbd>F</kbd> to flip.{state.figure === null && ' Parts left alone use the defaults of the type.'}</p>
+          <p className="pc-hint">Click a part to open its tab. Press <kbd>F</kbd> to flip.{state.figure === null && ' Parts left alone use the defaults of the type.'}</p>
           </>}
         </section>
 
         <section ref={side} className={`pc-panel pc-side${inScene ? ' pc-side-scene' : ''}`} aria-label="Look">
-          <Swatches label="Background" value={state.bg} options={swatches.bg} transparent used={used} onChange={(bg) => live({ bg })} />
+          <Swatches label="Background" value={state.bg} options={swatches.bg} transparent used={used} onChange={(bg) => live({ bg })}
+            action={!inScene && <Lock what="Background" locked={!!state.locked?.includes('bg')} onToggle={() => live(toggleLock(state, 'bg'))} />} />
+          {!inScene && <button className="pc-btn pc-wide" aria-pressed={!!state.mono} onClick={() => record((s) => ({ ...s, mono: !s.mono }))} title="Black lines on white only, as the pack draws them"><I.contrast /><span>Contrast</span></button>}
           {inScene && (
             <SceneMembers
               state={state} selected={selected} onSelect={setPicked} used={used} onLive={(i, patch) => setHist((h) => tweak(h, updateEntry(h.now, i, patch)))}
@@ -195,8 +209,6 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
           )}
           {/* These edit the peep or figure being built; in the scene each member keeps the look it was added with. */}
           {!inScene && <>
-          <Swatches label="Foreground" value={state.ink} options={swatches.ink} used={used} onChange={(ink) => live({ ink })} />
-          <Swatches label="Paper" value={state.paper} options={swatches.paper} used={used} onChange={(paper) => live({ paper })} />
           <Slider label="Scale" value={state.scale} min={0.5} max={1.5} step={0.05} reset={1} onChange={(scale) => live({ scale })} />
           <Slider label="Rotate" value={state.rotate} min={-180} max={180} step={5} unit="°" reset={0} onChange={(rotate) => live({ rotate })} />
           <button className="pc-btn pc-wide" aria-pressed={state.flip} onClick={() => live({ flip: !state.flip })}><I.flip /><span>Flip</span></button>

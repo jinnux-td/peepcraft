@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { toHex } from '../state.ts'
 import { swatches } from '../types.ts'
 import { icons } from './icons.tsx'
@@ -14,19 +14,21 @@ function browserColor(name: string): string | null {
 
 /** A row of colour dots and a picker. `transparent` adds a "no colour" dot first (a checkerboard with a slash). "More colours" opens a box
  *  for a name or a hex, the colours already in the picture (`used`), and the full set. */
-export function Swatches({ label, value, options, onChange, transparent = false, used = [] }: {
+export function Swatches({ label, value, options, onChange, transparent = false, used = [], action }: {
   label: string; value: string; options: readonly string[]; onChange: (v: string) => void; transparent?: boolean; used?: readonly string[]
+  /** A button beside the label (the lock of the background). */
+  action?: ReactNode
 }) {
   const id = useId()
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const I = icons
   const isClear = value.toLowerCase() === 'transparent'
-  const dot = (o: string) => <button key={o} className="pc-swatch" style={{ background: o }} aria-label={`${label} ${o}`} aria-pressed={o.toLowerCase() === value.toLowerCase()} onClick={() => onChange(o)} />
+  const dot = (o: string) => <button key={o} className="pc-swatch" data-tip={o} style={{ background: o }} aria-label={`${label} ${o}`} aria-pressed={o.toLowerCase() === value.toLowerCase()} onClick={() => onChange(o)} />
   const typed = toHex(text, browserColor)
   return (
     <div className="pc-field">
-      <span className="pc-label" id={id}>{label}</span>
+      <span className="pc-label"><span id={id}>{label}</span>{action}</span>
       <div className="pc-swatches" role="group" aria-labelledby={id}>
         {transparent && <button className="pc-swatch pc-clear" aria-label={`${label}: transparent`} aria-pressed={isClear} onClick={() => onChange('transparent')}><I.clear /></button>}
         {options.map(dot)}

@@ -63,3 +63,14 @@ test('the dice of the type tab takes a figure off the stage', () => {
   assert.equal(s.figure, null)
   assert.notEqual(s.type, 'bust')
 })
+
+test('shuffle all leaves what is locked: the background, a part', async () => {
+  const { toggleLock } = await import('../src/state.ts')
+  let s: CreatorState = toggleLock(toggleLock({ ...initialState, parts: { head: 'afro' } }, 'bg'), 'head')
+  assert.deepEqual(s.locked, ['bg', 'head'])
+  assert.notEqual(partId(randomize(s, 'all'), 'body'), 'tee-1', 'the rest still rolls')
+  for (let i = 0; i < 20; i++) s = randomize(s, 'all')
+  assert.equal(s.bg, initialState.bg); assert.equal(s.parts.head, 'afro')
+  assert.equal(randomize(s, 'head', () => 0).parts.head !== 'afro', true, 'the dice of the tab still changes a locked part')
+  assert.deepEqual(toggleLock(s, 'head').locked, ['bg'])
+})
