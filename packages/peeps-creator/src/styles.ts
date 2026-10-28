@@ -112,7 +112,7 @@ export const creatorCss = `
 .pc-add span:last-child svg{width:14px;height:14px}
 .pc-selected{fill:none;stroke:#1b1b1b;stroke-width:2.5;stroke-dasharray:8 6;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)}
 .pc-stage[data-view=scene]{aspect-ratio:var(--pc-ratio,1);width:min(100%,calc(72vh * var(--pc-ratio,1)))}
-.pc-members .pc-tile[draggable]{cursor:grab}.pc-members .pc-tile[data-over]{outline:2px dashed var(--pc-accent);outline-offset:2px}.pc-handle{touch-action:none}.pc-remove{cursor:pointer}.pc-remove circle{fill:#1b1b1b;stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke}.pc-remove path{stroke:#fff;stroke-width:2.5;stroke-linecap:round;vector-effect:non-scaling-stroke}.pc-remove:hover circle{fill:#e63946}.pc-handle circle:last-child{fill:#fff;stroke:#1b1b1b;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.pc-members .pc-tile[draggable]{cursor:grab}.pc-member-tile{position:relative;display:grid}.pc .pc-member-x{position:absolute;top:4px;right:4px;width:22px;height:22px;padding:0;border-radius:50%;border:1.5px solid #fff;background:#1b1b1b;color:#fff;display:grid;place-items:center;cursor:pointer}.pc .pc-member-x svg{width:14px;height:14px;stroke-width:2.6}.pc .pc-member-x:hover,.pc .pc-member-x:focus-visible{background:#e63946}.pc-members .pc-tile[data-over]{outline:2px dashed var(--pc-accent);outline-offset:2px}.pc-handle{touch-action:none}.pc-remove{cursor:pointer}.pc-remove circle{fill:#1b1b1b;stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke}.pc-remove path{stroke:#fff;stroke-width:2.5;stroke-linecap:round;vector-effect:non-scaling-stroke}.pc-remove:hover circle{fill:#e63946}.pc-handle circle:last-child{fill:#fff;stroke:#1b1b1b;stroke-width:1.5;vector-effect:non-scaling-stroke}
 .pc-frame{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;width:100%}
 .pc-frame .pc-pill button{padding:6px 12px;font-size:13px;text-transform:none}
 .pc-frame .pc-slider{width:320px;max-width:100%}
@@ -164,8 +164,8 @@ export const creatorCss = `
 .pc-file:focus-within{outline:3px solid var(--pc-accent);outline-offset:2px}
 .pc-upload{position:relative;display:flex;min-width:0}
 .pc-upload .pc-tile{flex:1}
-.pc-x{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--pc-line);background:var(--pc-menu)}
-.pc-x svg{width:16px;height:16px}
+.pc .pc-x{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--pc-line);background:var(--pc-menu)}
+.pc .pc-x svg{width:16px;height:16px}
 .pc-theme{position:relative}
 .pc-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:10;padding:6px;display:flex;flex-direction:column;min-width:160px;background:var(--pc-menu);border:1px solid var(--pc-line);border-radius:16px;box-shadow:var(--pc-shadow)}
 .pc-item{display:flex;align-items:center;gap:10px;border:0;background:transparent;border-radius:10px;padding:8px 10px;text-align:left}

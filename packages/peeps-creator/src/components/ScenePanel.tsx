@@ -82,7 +82,9 @@ export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit
       {state.scene.length > 0 && (
         <div className="pc-grid pc-members" role="radiogroup" aria-label="Scene" ref={grid}>
           {state.scene.map((m, i) => (
-            <button key={i} role="radio" aria-checked={selected === i} className="pc-tile" onClick={() => onSelect(selected === i ? null : i)} title={`${i + 1}. ${name(m)}. Drag to change the order`}
+            // The tile picks the member; the × beside it (a button can't hold a button) removes it at once.
+            <div key={i} className="pc-member-tile">
+            <button role="radio" aria-checked={selected === i} className="pc-tile" onClick={() => onSelect(selected === i ? null : i)} title={`${i + 1}. ${name(m)}. Drag to change the order`}
               draggable data-over={over === i && dragged !== i ? '' : undefined}
               onDragStart={(ev) => { setDragged(i); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(i)) }}
               onDragOver={(ev) => { if (dragged === null) return; ev.preventDefault(); setOver(i) }}
@@ -91,6 +93,8 @@ export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit
               onDragEnd={() => { setDragged(null); setOver(null) }}>
               <LookThumb look={m} bg={state.bg} /><span>{i + 1}. {name(m)}</span>
             </button>
+            <button className="pc-member-x" aria-label={`Remove ${i + 1}. ${name(m)}`} title="Remove from the scene" onClick={() => onRemove(i)}><I.close /></button>
+            </div>
           ))}
         </div>
       )}

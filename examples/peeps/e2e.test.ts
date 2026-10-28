@@ -194,6 +194,12 @@ test('a scene: add a peep and a figure, pick one on the stage, flip, reorder, re
   assert.equal(await stage.locator('[data-remove]').count(), 0, 'and nothing is picked');
   await full.getByRole('button', { name: 'Undo' }).click();
   assert.equal(await stage.locator('[data-item]').count(), 2);
+  const members = full.getByRole('radiogroup', { name: 'Scene' });
+  await members.getByRole('button', { name: /^Remove 1\. / }).click();
+  assert.equal(await stage.locator('[data-item]').count(), 1, 'the × on a tile In the scene removes that member, picked or not');
+  assert.equal(await members.getByRole('radio').count(), 1);
+  await full.getByRole('button', { name: 'Undo' }).click();
+  assert.equal(await stage.locator('[data-item]').count(), 2);
   await full.getByRole('tab', { name: 'Hair', exact: true }).click();
   assert.equal(await stage.getAttribute('data-view'), null, 'other tabs show the builder again');
   await page.close();
