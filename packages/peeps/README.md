@@ -1,6 +1,6 @@
 # @kit/peeps
 
-[Open Peeps](https://www.opeeps.fun/) (Pablo Stanley, CC0) as React components. Every separate atom of the pack and its Figma file (180: hair, faces, facial hair, glasses, torsos, standing and sitting poses) is a component; a `Peep` puts them on one canvas and fills what you leave out with the defaults of its type.
+[Open Peeps](https://www.opeeps.fun/) (Pablo Stanley, CC0) as React components. Every separate atom of the pack and its Figma file (177: hair, faces, facial hair, glasses, torsos, standing and sitting poses) is a component; a `Peep` puts them on one canvas and fills what you leave out with the defaults of its type.
 
 ```ts
 import { Peep } from '@kit/peeps'
@@ -31,7 +31,7 @@ new Scene({ width: 4200, height: 3400, background: '#f7d56e' })
 node scripts/build-figma.ts <symbols.svg>    # writes src/atoms/<category>/<Name>.ts, keeping their ids, labels, sizes and file names
 PEEPS_ASSETS="<path to>/Flat Assets" npm test   # adds the template check
 ```
-`<symbols.svg>` is the Figma page Symbols exported whole as SVG with layer names as ids (the Figma MCP's `download_assets` on node `0:808`, format svg). Figma scales that page down to 4096 wide; `scripts/figma-symbols.json` holds the scale, the page origin and where each symbol sits, to put each path back in its symbol's own units. Symbols Figma has beyond the pack are atoms too, after the pack's: Dreads 1 and 2, the doctor and nurse heads and poses (`doctor-nurse-1` to `3`), the eyes-only faces to wear under a mask (`masked-calm`, `masked-cheers`, `masked-smile`) and the masks.
+`<symbols.svg>` is the Figma page Symbols exported whole as SVG with layer names as ids (the Figma MCP's `download_assets` on node `0:808`, format svg). Figma scales that page down to 4096 wide; `scripts/figma-symbols.json` holds the scale, the page origin and where each symbol sits, to put each path back in its symbol's own units. Symbols Figma has beyond the pack are atoms too, after the pack's: Dreads 1 and 2, the doctor and nurse poses (`doctor-nurse-1` to `3`), the eyes-only faces to wear under a mask (`masked-calm`, `masked-cheers`, `masked-smile`) and the masks.
 
 The UI to pick parts is a separate package, [`@kit/peeps-creator`](../peeps-creator); this one has no UI.
 

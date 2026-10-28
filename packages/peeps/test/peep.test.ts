@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import { catalogue, defaults, Peep, lookup, type Category, type PartColors } from '../src/index.ts'
 
-const counts: Record<Category, number> = { accessories: 9, body: 30, face: 33, facialHair: 17, head: 51, mask: 3, sitting: 11, standing: 26 }
+const counts: Record<Category, number> = { accessories: 9, body: 30, face: 33, facialHair: 17, head: 48, mask: 3, sitting: 11, standing: 26 }
 
 test('every atom of the pack is in the catalogue', () => {
   for (const [category, n] of Object.entries(counts)) assert.equal(catalogue[category as Category].size, n, category)
@@ -103,13 +103,12 @@ test('an item offers its pieces with their colours; the standing and sitting pos
   assert.deepEqual(lookup('facialHair', 'full-4').pieces, { hair: '#e8e1e1' }, 'a beard\'s grey is its hair')
 })
 
-test('a mask goes over the face and the beard, under the glasses; the doctors come with scrubs and a cap', () => {
-  const peep = new Peep({ type: 'standing', body: 'doctor-nurse-2', head: 'doctor-nurse-3', face: 'masked-calm', mask: 'medical-mask', accessories: 'glasses' })
+test('a mask goes over the face and the beard, under the glasses; the doctors come with scrubs', () => {
+  const peep = new Peep({ type: 'standing', body: 'doctor-nurse-2', head: 'dreads-1', face: 'masked-calm', mask: 'medical-mask', accessories: 'glasses' })
   assert.deepEqual(peep.layout().map((p) => [p.slot, p.atom.id]).slice(3), [['facialHair', 'none'], ['mask', 'medical-mask'], ['accessories', 'glasses']])
   assert.deepEqual(peep.layout()[4].at, { x: 404 + 23, y: 180 + 281 }, 'where the Figma file puts it on the head')
   const html = renderToStaticMarkup(peep.group({}))
   assert.match(html, /data-slot="mask"><g><path[^>]*fill="#ffffff"[^>]*data-piece="mask"/i, "white, so the paper")
   assert.deepEqual(lookup('mask', 'respirator').pieces, { mask: '#9ddadb' })
-  assert.deepEqual(lookup('head', 'doctor-nurse-1').pieces, { cap: '#8fa7df', 'face-mask': '#ffffff' })
   assert.deepEqual(lookup('standing', 'doctor-nurse-2').pieces, { scrubs: '#8fa7df', shoes: '#ffffff', coat: '#ffffff', top: '#9fd8e5' })
 })

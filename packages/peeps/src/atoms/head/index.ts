@@ -47,9 +47,6 @@ import { HatBeanie } from './HatBeanie.ts'
 import { HatHip } from './HatHip.ts'
 import { Dreads1 } from './Dreads1.ts'
 import { Dreads2 } from './Dreads2.ts'
-import { DoctorNurse2 } from './DoctorNurse2.ts'
-import { DoctorNurse1 } from './DoctorNurse1.ts'
-import { DoctorNurse3 } from './DoctorNurse3.ts'
 
 export const atoms = [
   Afro,
@@ -100,8 +97,5 @@ export const atoms = [
   HatHip,
   Dreads1,
   Dreads2,
-  DoctorNurse2,
-  DoctorNurse1,
-  DoctorNurse3,
 ] as const
 export type Id = (typeof atoms)[number]['id']

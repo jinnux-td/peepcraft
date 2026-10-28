@@ -21,7 +21,7 @@ test('options of a slot come from the category of the type', () => {
   assert.equal(optionsFor('bust', 'body').length, 30)
   assert.equal(optionsFor('standing', 'body').length, 26)
   assert.equal(optionsFor('sitting', 'body').length, 11)
-  assert.equal(optionsFor('sitting', 'head').length, 51)
+  assert.equal(optionsFor('sitting', 'head').length, 48)
   assert.deepEqual(optionsFor('bust', 'mask').map((a) => a.id), ['medical-mask', 'respirator', 'none'])
 })
 

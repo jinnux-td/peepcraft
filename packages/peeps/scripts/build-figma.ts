@@ -18,11 +18,12 @@ const folders: Record<string, string> = {
 const renamed: Record<string, string> = {
   'body/jacket': 'body/fur-jacket', 'body/jacket-polka-dots': 'body/polka-dot-jacket',
   'face/With_Mask/Cheers': 'face/masked-cheers', 'face/With_Mask/Calm': 'face/masked-calm', 'face/With_Mask/Smile': 'face/masked-smile',
-  'head/doctor-nurse-2_2': 'head/doctor-nurse-1', 'mask/*no-mask': 'mask/none', 'pose/standing/doctor-nurse-01': 'standing/doctor-nurse-1',
+  'mask/*no-mask': 'mask/none', 'pose/standing/doctor-nurse-01': 'standing/doctor-nurse-1',
   'pose/standing/doctor-nurse-02': 'standing/doctor-nurse-2', 'pose/standing/doctor-nurse-03': 'standing/doctor-nurse-3',
 }
-/** Where two symbols share a name ("Name_2" is the second), the one not drawn like the atom: a bun without the bandana, a newer Short 4. */
-const skipped = new Set(['head/Bun', 'head/Short 4', 'accessories/Glasses 5'])
+/** Symbols not made atoms: where two share a name ("Name_2" is the second), the one not drawn like the atom (a bun without the bandana, a
+ *  newer Short 4); and the doctors' heads, not wanted. */
+const skipped = new Set(['head/Bun', 'head/Short 4', 'accessories/Glasses 5', 'head/doctor-nurse-2', 'head/doctor-nurse-2_2', 'head/doctor-nurse-3'])
 /** Layers named by Figma's defaults, by what they are: the yellow of a polo, the black of a face, a beard's grey. */
 const pieceNames: Record<string, string> = { path: 'top', shape: 'ink', 'path-4': 'ink', 'fill-4': 'clips', 'fill-6': 'clips' }
 /** The colours the standing and sitting poses came in before (the pack's, by the labels), kept over Figma's: their combinations read better.
@@ -64,10 +65,10 @@ const before: Record<string, Record<string, string>> = {
 }
 /** Categories whose pieces are offered as colours of their own (a face's eyes and glasses' lenses are its fill). */
 const offered = new Set(['body', 'standing', 'sitting', 'head', 'facialHair', 'mask'])
-/** A piece by what it is where Figma names it vaguely: a beard's "Background" is its grey hair, a doctor's the cap, a mask's "Color" the
+/** A piece by what it is where Figma names it vaguely: a beard's "Background" is its grey hair, a mask's "Color" the
  *  mask; the doctors' "Clothes" are told apart by colour, scrubs, a white coat, a top (a cardigan on the first). */
 function pieceOf(category: string, id: string, s: Shape): string {
-  if (s.piece === 'background') return category === 'facialHair' ? 'hair' : category === 'head' ? 'cap' : s.piece
+  if (s.piece === 'background' && category === 'facialHair') return 'hair'
   if (s.piece === 'color' && category === 'mask') return 'mask'
   if (s.piece === 'clothes') return ({ '#8fa7df': 'scrubs', '#ffffff': 'coat', '#9fd8e5': id === 'doctor-nurse-1' ? 'jacket' : 'top' })[s.fill] ?? s.piece
   return s.piece

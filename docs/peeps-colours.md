@@ -76,7 +76,7 @@ face and of glasses are not offered (their whites take the part's paper).
 Every atom is generated from its symbol in the Figma file (page Symbols) by `packages/peeps/scripts/build-figma.ts`. A symbol's top-level
 layers are its pieces, each one plain path in the atom: `✋ Skin` is `skin`, `🖍 Ink` is `ink` (the lines and black solids: black hair, a black
 tee), `👕 Top` is `top`, `👖 Pants` is `pants`, and so on, named after the layer without its emoji. A few vague names are renamed in
-`pieceOf()`: a beard's `Background` is `hair`, a doctor's `cap`, a mask's `Color` is `mask`, the doctors' `Clothes` are `scrubs`, `coat`, `top`
+`pieceOf()`: a beard's `Background` is `hair`, a mask's `Color` is `mask`, the doctors' `Clothes` are `scrubs`, `coat`, `top`
 (a `jacket` on doctor 1) by colour.
 
 Each piece comes in its layer's fill, except the standing and sitting poses (not `closed-legs-2`), which keep the colours they came in before
