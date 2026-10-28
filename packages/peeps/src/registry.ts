@@ -1,21 +1,19 @@
 // Every atom by category and id, so a Peep can look a part up by name.
 import type { Atom, Category } from './atom.ts'
-import { colors } from './skin.ts'
 import { atoms as accessories } from './atoms/accessories/index.ts'
 import { atoms as body } from './atoms/body/index.ts'
 import { atoms as face } from './atoms/face/index.ts'
 import { atoms as facialHair } from './atoms/facialHair/index.ts'
 import { atoms as head } from './atoms/head/index.ts'
+import { atoms as mask } from './atoms/mask/index.ts'
 import { atoms as sitting } from './atoms/sitting/index.ts'
 import { atoms as standing } from './atoms/standing/index.ts'
 
-// Each atom gets its pieces and their colours from skin.ts, generated from the labels.
-const index = (category: Category, list: readonly Atom[]): ReadonlyMap<string, Atom> =>
-  new Map(list.map((a) => [a.id, Object.assign(a, { pieces: colors[`${category}/${a.id}`] ?? {} })]))
+const index = (list: readonly Atom[]): ReadonlyMap<string, Atom> => new Map(list.map((a) => [a.id, a]))
 
 export const catalogue: Record<Category, ReadonlyMap<string, Atom>> = {
-  accessories: index('accessories', accessories), body: index('body', body), face: index('face', face), facialHair: index('facialHair', facialHair),
-  head: index('head', head), sitting: index('sitting', sitting), standing: index('standing', standing),
+  accessories: index(accessories), body: index(body), face: index(face), facialHair: index(facialHair),
+  head: index(head), mask: index(mask), sitting: index(sitting), standing: index(standing),
 }
 
 export function lookup(category: Category, id: string): Atom {

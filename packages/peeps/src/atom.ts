@@ -1,13 +1,21 @@
-// An atom is one hand-drawn part (a hairstyle, a face, ...) as a React component that draws a <g> in the part's own hi-res canvas.
-import { createElement, useId, type ReactElement, type SVGProps } from 'react'
+// An atom is one drawn part (a hairstyle, a face, ...) as a React component that draws a <g> in the part's own hi-res canvas: one plain path
+// per piece of the Figma symbol (its skin, top, pants, ink, ...), each in its own colour unless given another.
+import { createElement, type ReactElement, type SVGProps } from 'react'
 
-export type Category = 'accessories' | 'body' | 'face' | 'facialHair' | 'head' | 'standing' | 'sitting'
+export type Category = 'accessories' | 'body' | 'face' | 'facialHair' | 'head' | 'mask' | 'standing' | 'sitting'
+
+/** A piece of an atom, named after its layer group in Figma: 'skin', 'ink' (the lines), 'top', 'pants', 'shoes', 'jacket', 'hair', 'hat'... */
+export type Role = string
 
 export interface AtomProps extends Omit<SVGProps<SVGGElement>, 'ref'> {
-  /** Line colour (the drawing's black). */
+  /** Colour of the lines, the piece 'ink'. */
   ink?: string
-  /** Fill behind the lines (the drawing's white): skin of the hands, hat body, glasses lenses. */
+  /** Colour of the pieces that come in white (shoes, the whites of the eyes, a lens), and of everything but the lines in `mono`. */
   paper?: string
+  /** A colour per piece, over its own: `{ skin: '#8d5524', top: '#e63946' }`. */
+  colors?: Partial<Record<Role, string>>
+  /** Black and white: the lines in `ink`, every other piece in `paper`, whatever its colour. */
+  mono?: boolean
 }
 
 export interface AtomMeta {
@@ -21,25 +29,29 @@ export interface AtomMeta {
   height: number
 }
 
-/** The meta, plus the pieces that can take their own colour (hair, a top, a tie) with the colour each comes in: `{ top: '#90a7e0' }`.
- *  A Peep draws them only when given a colour; the creator draws each in its own until one is picked. Empty for a face or an accessory. */
-export type Atom = ((props: AtomProps) => ReactElement) & AtomMeta & { pieces: Readonly<Record<string, string>> }
+/** One path of an atom: the piece it belongs to, the colour it comes in, and, for a line drawn as a stroke, its width. */
+export interface Shape { piece: Role; fill: string; d: string; stroke?: number }
 
-export interface Draw {
-  ink: string
-  paper: string
-  /** Makes a document-unique id for a mask or clip, so two copies of one atom on a page never share it. */
-  ref: (id: string) => string
-}
+/** The meta, the shapes, and the pieces that can take their own colour (hair, a top, a hat) with the colour each comes in:
+ *  `{ top: '#90a7e0' }`. The skin and the lines are not among them, nor the pieces of a face or accessory, which take its paper. */
+export type Atom = ((props: AtomProps) => ReactElement) & AtomMeta & { pieces: Readonly<Record<Role, string>>; shapes: readonly Shape[] }
 
 export const INK = '#000000'
 export const PAPER = '#FFFFFF'
 
-export function atom(meta: AtomMeta, draw: (c: Draw) => ReactElement[]): Atom {
-  const Component = ({ ink = INK, paper = PAPER, ...rest }: AtomProps) => {
-    const uid = useId().replace(/:/g, '')
-    return createElement('g', rest, ...draw({ ink, paper, ref: (id) => `${uid}-${id}` }))
-  }
+/** The colour a shape is drawn in. */
+export function fillOf(s: Shape, { ink = INK, paper = PAPER, colors, mono }: Pick<AtomProps, 'ink' | 'paper' | 'colors' | 'mono'>): string {
+  if (s.piece === 'ink') return colors?.ink ?? ink
+  if (mono) return paper
+  return colors?.[s.piece] ?? (s.fill === '#ffffff' ? paper : s.fill)
+}
+
+export function atom(meta: AtomMeta, pieces: Record<Role, string>, shapes: readonly Shape[]): Atom {
+  const Component = ({ ink, paper, colors, mono, ...rest }: AtomProps) =>
+    createElement('g', rest, ...shapes.map((s, i) => {
+      const fill = fillOf(s, { ink, paper, colors, mono })
+      return createElement('path', s.stroke ? { key: i, d: s.d, fill: 'none', stroke: fill, strokeWidth: s.stroke, 'data-piece': s.piece } : { key: i, d: s.d, fill, fillRule: 'evenodd', 'data-piece': s.piece })
+    }))
   Component.displayName = `Peep${meta.category}.${meta.id}`
-  return Object.assign(Component, meta, { pieces: {} })
+  return Object.assign(Component, meta, { pieces, shapes })
 }

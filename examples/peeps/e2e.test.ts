@@ -140,7 +140,7 @@ test('whole figures from Transhumans: pick one, roll another, export it, go back
 
   await full.getByRole('button', { name: 'Back to the peep builder' }).click();
   assert.equal(await full.locator('[data-testid=pc-stage] [data-figure]').count(), 0);
-  assert.equal(await full.locator('[data-testid=pc-stage] [data-slot]').count(), 5);
+  assert.equal(await full.locator('[data-testid=pc-stage] [data-slot]').count(), 6, 'body, head, face, facial hair, mask, accessories');
   await full.getByRole('button', { name: 'Undo' }).click();
   assert.equal(await full.locator('[data-testid=pc-stage] [data-figure]').count(), 1, 'undo puts the figure back');
   await page.close();
@@ -177,7 +177,7 @@ test('a scene: add a peep and a figure, pick one on the stage, flip, reorder, re
   const back = await at();
   assert.ok(Math.abs(back.x - before.x) < 1 && Math.abs(back.y - before.y) < 1, 'one undo takes the whole drag back');
   await full.getByRole('button', { name: 'Front', exact: true }).click();
-  assert.equal(await stage.locator('[data-item="1"] [data-slot]').count(), 5, 'the peep is now drawn last');
+  assert.equal(await stage.locator('[data-item="1"] [data-slot]').count(), 6, 'the peep is now drawn last');
 
   const [svg] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as SVG' }).click()]);
   assert.equal(svg.suggestedFilename(), 'scene.svg');
@@ -188,6 +188,12 @@ test('a scene: add a peep and a figure, pick one on the stage, flip, reorder, re
   assert.equal(await stage.locator('[data-item]').count(), 1);
   await full.getByRole('button', { name: 'Undo' }).click();
   assert.equal(await stage.locator('[data-item]').count(), 2, 'undo brings the member back');
+  await stage.locator('[data-item="1"] [data-slot=body]').click();
+  await stage.locator('[data-remove]').click();
+  assert.equal(await stage.locator('[data-item]').count(), 1, 'the × at the corner of the picked member removes it');
+  assert.equal(await stage.locator('[data-remove]').count(), 0, 'and nothing is picked');
+  await full.getByRole('button', { name: 'Undo' }).click();
+  assert.equal(await stage.locator('[data-item]').count(), 2);
   await full.getByRole('tab', { name: 'Hair', exact: true }).click();
   assert.equal(await stage.getAttribute('data-view'), null, 'other tabs show the builder again');
   await page.close();
@@ -267,7 +273,7 @@ test('scene colours: the leaves and the pot of a plant apart, and the own lines 
   assert.ok(await stage.locator('[data-item="0"] path[fill="#fde9d0"]').count() > 0, 'the pot takes the fill');
 
   await full.getByRole('button', { name: 'Add', exact: true }).click();
-  assert.deepEqual(await roles.getByRole('radio').allInnerTexts(), ['Skin', 'Hair', 'Hat', 'Top', 'Clothes', 'Face', 'Accessories', 'Lines', 'Fill'], 'a peep has its parts, and the pieces its head and outfit have');
+  assert.deepEqual(await roles.getByRole('radio').allInnerTexts(), ['Skin', 'Bandana', 'Top', 'Face', 'Accessories', 'Lines'], 'a peep has its parts, and the pieces its head and outfit have');
   await roles.getByRole('radio', { name: 'Lines' }).click();
   await full.getByRole('button', { name: 'Lines #1d3557' }).click();
   assert.ok(await stage.locator('[data-item="1"] [fill="#1d3557"]').count() > 0);
@@ -369,38 +375,38 @@ const pickIn = async (full: Locator, tab: string, part: string, colour: string) 
 test('part colours in the builder: each tab shows the colours of its items, skin tones for Skin, back to the default skin', async () => {
   const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
   const dots = async (tab: string) => { await full.getByRole('tab', { name: tab, exact: true }).click(); return full.getByRole('radiogroup', { name: 'Colour of' }).getByRole('radio').allInnerTexts(); };
-  assert.deepEqual(await dots('Hair'), ['Hair', 'Hat', 'Line', 'Skin'], 'the bun has a hair tie, and its own lines');
-  assert.deepEqual(await dots('Body'), ['Top', 'Line', 'Clothes', 'Skin'], 'a tee: no jacket, no shoes');
+  assert.deepEqual(await dots('Hair'), ['Bandana', 'Line', 'Skin'], 'the bun has a bandana, and its own lines');
+  assert.deepEqual(await dots('Body'), ['Top', 'Line', 'Skin'], 'a tee: no jacket, no shoes');
   await full.getByRole('tab', { name: 'Hair', exact: true }).click();
   await full.getByRole('radiogroup', { name: 'Colour of' }).getByRole('radio', { name: 'Skin', exact: true }).click();
   assert.ok(await full.getByRole('button', { name: 'Skin #c68642' }).isVisible(), 'skin tones are offered first');
-  await pickIn(full, 'Hair', 'Skin', '#c68642'); await pickIn(full, 'Hair', 'Hair', '#a55728');
-  await pickIn(full, 'Body', 'Clothes', '#38b6ff'); await pickIn(full, 'Body', 'Top', '#e63946'); await pickIn(full, 'Face', 'Face', '#1d3557');
+  await pickIn(full, 'Hair', 'Skin', '#c68642'); await pickIn(full, 'Hair', 'Bandana', '#52b788');
+  await pickIn(full, 'Body', 'Top', '#e63946'); await pickIn(full, 'Face', 'Face', '#1d3557');
   const slot = (s: string) => stage.locator(`[data-slot=${s}] path`);
   assert.ok(await slot('head').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#c68642')), 'skin');
-  assert.ok(await stage.locator('[data-slot=head] [data-hair-ink] path[fill="#a55728"]').count() > 0, 'hair');
-  assert.ok(await stage.locator('[data-slot=body] [data-top] path[fill="#e63946"]').count() > 0, 'the top, a piece of the clothes, in its own colour');
+  assert.ok(await stage.locator('[data-slot=head] [data-piece=bandana][fill="#52b788"]').count() > 0, 'bandana');
+  assert.ok(await stage.locator('[data-slot=body] [data-piece=top][fill="#e63946"]').count() > 0, 'the top in its own colour');
   assert.ok(await slot('face').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#1d3557')), 'face');
 
   await full.getByRole('tab', { name: 'Type', exact: true }).click();
   await full.getByRole('radiogroup', { name: 'Colour of' }).getByRole('radio', { name: 'Skin', exact: true }).click();
   await full.getByRole('button', { name: 'Back to its own colour' }).click();
   assert.ok(!(await slot('head').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#c68642'))), 'the picked skin is gone');
-  assert.ok(await slot('head').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#ffdbbe')), 'back to the skin a peep starts with');
-  assert.ok(await stage.locator('[data-slot=head] [data-hair-ink] path[fill="#a55728"]').count() > 0, 'the hair stays');
+  assert.ok(await slot('head').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#d08b5b')), 'back to the skin a peep starts with');
+  assert.ok(await stage.locator('[data-slot=head] [data-piece=bandana][fill="#52b788"]').count() > 0, 'the bandana stays');
   await page.close();
 });
 
 test('items come in their own colours: thumbnails show them, another item drops the colour picked for the last', async () => {
   const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
   await pickIn(full, 'Body', 'Top', '#e63946');
-  assert.ok(await stage.locator('[data-top] path[fill="#e63946"]').count() > 0);
+  assert.ok(await stage.locator('[data-piece=top][fill="#e63946"]').count() > 0);
   const tiles = full.getByRole('radiogroup', { name: 'Body' }).getByRole('radio');
-  const fills = await tiles.evaluateAll((ts) => ts.slice(0, 8).map((t) => [...t.querySelectorAll('[data-top] path, [data-top-ink] path')].map((p) => p.getAttribute('fill')).join()));
+  const fills = await tiles.evaluateAll((ts) => ts.slice(0, 8).map((t) => [...t.querySelectorAll('[data-piece=top]')].map((p) => p.getAttribute('fill')).join()));
   assert.ok(new Set(fills.filter(Boolean)).size > 2, 'the tops of the thumbnails differ');
-  await full.getByRole('radio', { name: 'Gym Shirt' }).click();
-  assert.equal(await stage.locator('[data-top] path[fill="#e63946"], [data-top-ink] path[fill="#e63946"]').count(), 0, 'the gym shirt in its own colour');
-  assert.ok(await stage.locator('[data-slot=body] [data-top-ink]').count() > 0, 'which it has');
+  await full.getByRole('radio', { name: 'Sweater', exact: true }).click();
+  assert.equal(await stage.locator('[fill="#e63946"]').count(), 0, 'the sweater in its own colour');
+  assert.ok(await stage.locator('[data-slot=body] [data-piece=top]').count() > 0, 'which has a top');
   await page.close();
 });
 
@@ -418,12 +424,13 @@ test('click a part on the stage: its tab opens, with its colours', async () => {
   await page.close();
 });
 
-test('one skin colour reaches the neck and the hands; Clothes leaves them alone', async () => {
+test('one skin colour reaches the neck and the hands; the top leaves them alone', async () => {
   const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
-  await pickIn(full, 'Body', 'Skin', '#8d5524'); await pickIn(full, 'Body', 'Clothes', '#38b6ff');
-  assert.equal(await stage.locator('[data-slot=body] [data-skin] path[fill="#8d5524"]').count() > 0, true, 'the body has a skin copy');
-  assert.equal(await stage.locator('[data-slot=head] [data-skin] path[fill="#8d5524"]').count() > 0, true, 'the head has a skin copy');
-  assert.ok(await stage.locator('[data-slot=body] > g > g:not([data-skin]) path[fill="#38b6ff"]').count() > 0, 'the clothes are blue');
+  await pickIn(full, 'Body', 'Skin', '#8d5524'); await pickIn(full, 'Body', 'Top', '#38b6ff');
+  assert.ok(await stage.locator('[data-slot=body] [data-piece=skin][fill="#8d5524"]').count() > 0, 'the skin of the body');
+  assert.ok(await stage.locator('[data-slot=head] [data-piece=skin][fill="#8d5524"]').count() > 0, 'the skin of the head');
+  assert.ok(await stage.locator('[data-slot=body] [data-piece=top][fill="#38b6ff"]').count() > 0, 'the top is blue');
+  assert.equal(await stage.locator('[data-piece=skin][fill="#38b6ff"]').count(), 0, 'and the skin is not');
   await page.close();
 });
 
@@ -472,13 +479,13 @@ test('a slider marks its default and pulls a drag that comes near it onto it', a
 
 test('contrast: the peep and its thumbnails in black and white, the dots down to Lines and Fill, back in colour when off', async () => {
   const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
-  const coloured = () => stage.locator('[data-skin], [data-top], [data-hair-ink]').count();
+  const colour = 'path[data-piece]:not([data-piece=ink]):not([fill="#ffffff"])', coloured = () => stage.locator(colour).count();
   assert.ok(await coloured() > 0);
   await full.getByRole('button', { name: 'Contrast' }).click();
   assert.equal(await coloured(), 0, 'black and white');
   await full.getByRole('tab', { name: 'Body', exact: true }).click();
   assert.equal(await full.getByRole('radiogroup', { name: 'Colour of' }).count(), 0, 'no part colours to pick');
-  assert.equal(await full.getByRole('radiogroup', { name: 'Body' }).locator('[data-top], [data-skin]').count(), 0, 'thumbnails too');
+  assert.equal(await full.getByRole('radiogroup', { name: 'Body' }).locator(colour).count(), 0, 'thumbnails too');
   await full.getByRole('button', { name: 'Contrast' }).click();
   assert.ok(await coloured() > 0, 'the colours come back');
   await page.close();

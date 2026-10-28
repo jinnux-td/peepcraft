@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import { catalogue, defaults, Peep, lookup, type Category, type PartColors } from '../src/index.ts'
 
-const counts: Record<Category, number> = { accessories: 9, body: 30, face: 30, facialHair: 17, head: 46, sitting: 11, standing: 23 }
+const counts: Record<Category, number> = { accessories: 9, body: 30, face: 33, facialHair: 17, head: 51, mask: 3, sitting: 11, standing: 26 }
 
 test('every atom of the pack is in the catalogue', () => {
   for (const [category, n] of Object.entries(counts)) assert.equal(catalogue[category as Category].size, n, category)
@@ -22,7 +22,7 @@ test('every atom renders a group with paths, and takes ink and paper', () => {
 test('defaults name real atoms', () => {
   for (const [type, d] of Object.entries(defaults)) {
     const body = type === 'bust' ? 'body' : (type as 'standing' | 'sitting')
-    lookup(body, d.body); lookup('head', d.head); lookup('face', d.face); lookup('facialHair', d.facialHair); lookup('accessories', d.accessories)
+    lookup(body, d.body); lookup('head', d.head); lookup('face', d.face); lookup('facialHair', d.facialHair); lookup('mask', d.mask); lookup('accessories', d.accessories)
   }
 })
 
@@ -44,16 +44,14 @@ test('a body of the wrong type or an unknown id is refused, naming the choices',
 test('layout is deterministic and puts parts back to front', () => {
   const a = renderToStaticMarkup(new Peep({ type: 'sitting', head: 'afro' }).render())
   assert.equal(a, renderToStaticMarkup(new Peep({ type: 'sitting', head: 'afro' }).render()))
-  assert.deepEqual(new Peep().layout().map((p) => p.slot), ['body', 'head', 'face', 'facialHair', 'accessories'])
+  assert.deepEqual(new Peep().layout().map((p) => p.slot), ['body', 'head', 'face', 'facialHair', 'mask', 'accessories'])
   assert.match(a, /^<svg viewBox="0 0 1647 2500"/)
 })
 
-test('two copies of the mask atom on one page do not share ids', () => {
-  const html = renderToStaticMarkup(createElement('svg', null, createElement(lookup('sitting', 'one-leg-up-2')), createElement(lookup('sitting', 'one-leg-up-2'))))
-  const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1])
-  assert.equal(new Set(ids).size, ids.length)
-  assert.ok(ids.length >= 4)
-  for (const m of html.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)) assert.ok(ids.includes(m[1] ?? m[2]), `dangling ${m[0]}`)
+test('an atom is plain paths, one per layer group of its Figma symbol, no masks or ids', () => {
+  const html = renderToStaticMarkup(createElement('svg', null, createElement(lookup('sitting', 'one-leg-up-2'))))
+  assert.doesNotMatch(html, / id="|<mask|<clipPath/)
+  assert.deepEqual([...new Set([...html.matchAll(/data-piece="([^"]+)"/g)].map((m) => m[1]))], ['skin', 'shoes', 'top', 'ink'])
 })
 
 test('a background is a rectangle over the box, or nothing when transparent', async () => {
@@ -67,49 +65,51 @@ test('a background is a rectangle over the box, or nothing when transparent', as
   }
 })
 
-test('a part can take its own ink and paper: hair and skin on the head, the rest keeps the peep colours', () => {
-  const html = renderToStaticMarkup(new Peep({ ink: '#111111', paper: '#ffffff', colors: { head: { ink: '#6b2d1a', paper: '#c68642' }, accessories: { ink: '#1d3557' } } }).group())
+test('every piece comes in its Figma colour: the skin, a top, the black lines; white ones take the paper', () => {
+  const html = renderToStaticMarkup(new Peep({ type: 'bust', body: 'coffee', paper: '#fde9d0' }).group())
+  const fills = (piece: string) => new Set([...html.matchAll(new RegExp(`fill="([^"]+)"[^>]*data-piece="${piece}"`, 'g'))].map((m) => m[1]))
+  assert.deepEqual(fills('skin'), new Set(['#d08b5b']))
+  assert.deepEqual(fills('top'), new Set(['#9ddadb']))
+  assert.deepEqual(fills('cup'), new Set(['#fdea6b']))
+  assert.deepEqual(fills('ink'), new Set(['#000000']))
+  assert.match(renderToStaticMarkup(new Peep({ type: 'bust', face: 'awe', paper: '#fde9d0' }).group()), /fill="#fde9d0"[^>]*data-piece="eye"/, 'the whites of the eyes are the paper')
+})
+
+test('a part can take its own ink, paper and pieces; the rest keeps the peep colours', () => {
+  const html = renderToStaticMarkup(new Peep({ ink: '#111111', colors: { head: { ink: '#6b2d1a', bandana: '#c68642' }, body: { top: '#e63946' } } }).group())
   const slot = (name: string) => html.slice(html.indexOf(`data-slot="${name}"`), html.indexOf('data-slot=', html.indexOf(`data-slot="${name}"`) + 1) >>> 0)
-  assert.match(slot('head'), /fill="#6b2d1a"/); assert.match(slot('head'), /fill="#c68642"/)
-  assert.match(slot('body'), /fill="#ffffff"/); assert.doesNotMatch(slot('body'), /#c68642/)
+  assert.match(slot('head'), /fill="#6b2d1a"[^>]*data-piece="ink"/); assert.match(slot('head'), /fill="#c68642"[^>]*data-piece="bandana"/)
+  assert.match(slot('body'), /fill="#111111"[^>]*data-piece="ink"/); assert.match(slot('body'), /fill="#e63946"[^>]*data-piece="top"/)
   assert.deepEqual(new Peep().colors, {})
 })
 
-test('one skin colour for head and body: the parts are drawn again in it, masked to their skin areas; the clothes keep their own', async () => {
-  const { skinAreas } = await import('../src/index.ts')
-  const html = renderToStaticMarkup(new Peep({ type: 'bust', body: 'tee-1', skin: '#8d5524', colors: { body: { paper: '#38b6ff' } } }).group())
-  assert.equal((html.match(/<mask/g) ?? []).length, 2, 'head and body')
-  assert.match(html, /data-skin=""><g><g [^>]*><path[^>]*fill="#8d5524"/)
-  assert.match(html, /fill="#38b6ff"/)
-  const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1])
-  assert.equal(new Set(ids).size, ids.length, 'mask ids are unique')
-  assert.doesNotMatch(renderToStaticMarkup(new Peep({ type: 'bust' }).group()), /<mask/, 'no skin colour, no second copy')
-  for (const c of ['body', 'standing', 'sitting', 'head'] as const) for (const a of catalogue[c].values()) if (a.id !== 'none') assert.ok(`${c}/${a.id}` in skinAreas, `${c}/${a.id} has skin areas`)
+test('one skin colour for head and body, under a part\'s own', () => {
+  const skins = (o: ConstructorParameters<typeof Peep>[0]) => new Set([...renderToStaticMarkup(new Peep({ type: 'bust', ...o }).group()).matchAll(/fill="([^"]+)"[^>]*data-piece="skin"/g)].map((m) => m[1]))
+  assert.deepEqual(skins({ skin: '#8d5524' }), new Set(['#8d5524']))
+  assert.deepEqual(skins({ skin: '#8d5524', colors: { head: { skin: '#ffdbac' } } }), new Set(['#8d5524', '#ffdbac']))
+  for (const c of ['body', 'standing', 'sitting', 'head'] as const) for (const a of catalogue[c].values()) if (a.id !== 'none') assert.ok(a.shapes.some((s) => s.piece === 'skin'), `${c}/${a.id} has skin`)
 })
 
-test('what a body holds keeps the peep paper when the clothes take a colour', () => {
-  const held = (colors: PartColors) => renderToStaticMarkup(new Peep({ type: 'bust', body: 'device', paper: '#fff', colors }).group())
-  assert.match(held({ body: { paper: '#38b6ff' } }), /data-prop=""><g><g [^>]*><path[^>]*fill="#fff"/, 'the phone is drawn again in the paper')
-  assert.doesNotMatch(held({}), /data-prop/, 'clothes in the paper colour, nothing to keep')
+test('mono: the lines in the ink, every other piece in the paper', () => {
+  const html = renderToStaticMarkup(new Peep({ type: 'sitting', body: 'bike', mono: true, ink: '#111111', paper: '#ffffff', skin: '#8d5524', colors: { body: { top: '#e63946' } } }).group())
+  assert.deepEqual(new Set([...html.matchAll(/(?:fill|stroke)="(#[^"]+)"/g)].map((m) => m[1])), new Set(['#111111', '#ffffff']))
 })
 
-test('a gap the art leaves unpainted inside the skin is filled in the skin colour, under the atom', () => {
-  const html = (skin?: string) => renderToStaticMarkup(new Peep({ type: 'sitting', body: 'mid-1', skin }).group())
-  assert.match(html('#8d5524'), /data-slot="body"><path [^>]*fill="#8d5524" data-hole=""/)
-  assert.doesNotMatch(html(), /data-hole/, 'no skin colour, the art as it is')
+test('an item offers its pieces with their colours; the standing and sitting poses keep the colours they came in before', () => {
+  assert.deepEqual(lookup('sitting', 'bike').pieces, { shoes: '#111111', 'bicycle-iron': '#ffffff', 'bicycle-frame': '#ec7495', jacket: '#a99cc8', top: '#111111' })
+  assert.deepEqual(lookup('sitting', 'closed-legs-2').pieces, { shoes: '#ffffff', pants: '#ffcf77', jacket: '#ffffff', top: '#ffffff' }, 'but closed-legs-2, in its Figma colours')
+  assert.deepEqual(lookup('standing', 'blazer-1').pieces, { pants: '#c8b48a', shoes: '#d9a441', jacket: '#d9a441' })
+  assert.deepEqual(lookup('face', 'awe').pieces, {}, 'a face\'s eyes are its paper')
+  assert.deepEqual(lookup('facialHair', 'full-4').pieces, { hair: '#e8e1e1' }, 'a beard\'s grey is its hair')
 })
 
-test('a role colours only its piece: white pieces as paper, solid black ones (hair, a black shirt) as ink', () => {
-  const html = (colors: PartColors, o: { body?: string; head?: string; facialHair?: string } = {}) =>
-    renderToStaticMarkup(new Peep({ type: 'standing', body: 'walking-2', head: 'bun', ...o, colors }).group())
-  const both = html({ body: { top: '#c0392b', shoes: '#f39c12' }, head: { hair: '#e67e22', hat: '#8e44ad' } })
-  const copy = (name: string) => both.match(new RegExp(`data-${name}="">(.*?)</g></g>`))?.[1] ?? ''
-  assert.match(copy('top-ink'), /fill="#c0392b"/, 'the black tee is drawn again in its colour as ink')
-  assert.match(copy('shoes'), /^<g><g [^>]*><path[^>]*fill="#f39c12"/, 'the white shoes are drawn again in their colour as paper')
-  assert.match(both, /data-hair-ink=""/, 'black hair')
-  assert.match(both, /data-hat=""/, 'the band of the bun, a white piece')
-  assert.doesNotMatch(both, /data-bottoms/, 'a role with no colour draws nothing')
-  assert.doesNotMatch(html({}), /<mask/, 'no colours, no second copies')
-  // A pencil moustache has no hair shape: its hair colour is its ink.
-  assert.match(html({ facialHair: { hair: '#a0522d' } }, { facialHair: 'moustache-8' }), /data-slot="facialHair">[^]*?stroke="#a0522d"|data-slot="facialHair">[^]*?fill="#a0522d"/)
+test('a mask goes over the face and the beard, under the glasses; the doctors come with scrubs and a cap', () => {
+  const peep = new Peep({ type: 'standing', body: 'doctor-nurse-2', head: 'doctor-nurse-3', face: 'masked-calm', mask: 'medical-mask', accessories: 'glasses' })
+  assert.deepEqual(peep.layout().map((p) => [p.slot, p.atom.id]).slice(3), [['facialHair', 'none'], ['mask', 'medical-mask'], ['accessories', 'glasses']])
+  assert.deepEqual(peep.layout()[4].at, { x: 404 + 23, y: 180 + 281 }, 'where the Figma file puts it on the head')
+  const html = renderToStaticMarkup(peep.group({}))
+  assert.match(html, /data-slot="mask"><g><path[^>]*fill="#ffffff"[^>]*data-piece="mask"/i, "white, so the paper")
+  assert.deepEqual(lookup('mask', 'respirator').pieces, { mask: '#9ddadb' })
+  assert.deepEqual(lookup('head', 'doctor-nurse-1').pieces, { cap: '#8fa7df', 'face-mask': '#ffffff' })
+  assert.deepEqual(lookup('standing', 'doctor-nurse-2').pieces, { scrubs: '#8fa7df', shoes: '#ffffff', coat: '#ffffff', top: '#9fd8e5' })
 })

@@ -21,7 +21,7 @@ export interface CreatorState {
   extra?: { id: string; ink: string; paper: string }
   /** Ink and paper of single parts of the peep (hair, clothes, ...), over `ink` and `paper`. */
   partColors: PartColors
-  /** One colour for all the skin (face, neck, hands); without it the skin is the paper. */
+  /** One colour for all the skin (face, neck, hands); without it each item's skin keeps its own. */
   skin?: string
   /** Members of the scene, back to front. Empty until something is added from the Scene tab. */
   scene: SceneEntry[]
@@ -62,8 +62,8 @@ export interface Upload { id: string; name: string; href: string; width: number;
 
 export type Tab = 'type' | Slot | 'extra' | 'figures' | 'scene'
 
-/** The skin a peep starts with. */
-export const SKIN = '#ffdbbe'
+/** The skin a peep starts with: the one of the Figma symbols. */
+export const SKIN = '#d08b5b'
 
 export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', skin: SKIN, bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null, partColors: {}, scene: [], frame: { ratio: '1:1', zoom: 1 } }
 

@@ -1,7 +1,6 @@
 export { Background, TRANSPARENT, type Box } from './background.ts'
-export { atom, INK, PAPER, type Atom, type AtomMeta, type AtomProps, type Category, type Draw } from './atom.ts'
+export { atom, fillOf, INK, PAPER, type Atom, type AtomMeta, type AtomProps, type Category, type Role, type Shape } from './atom.ts'
 export { bodyCategory, canvas, onHead, origins, slotOrder, type PeepType, type Point, type Slot } from './layout.ts'
 export { defaults, Peep, type PartColors, type Placed, type PeepOptions, type PeepParts, type PeepTypeName } from './peep.ts'
 export { catalogue, lookup } from './registry.ts'
-export { props as propAreas, roles as roleAreas, skin as skinAreas, whites as faceWhites, type Role } from './skin.ts'
 export { Scene, type Art, type Drawable, type Placement, type SceneItem, type SceneOptions } from './scene.ts'

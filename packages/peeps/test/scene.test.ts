@@ -24,7 +24,7 @@ test('a transparent scene has no rectangle', () => {
 
 test('art takes its colours from the placement; a peep keeps its own', () => {
   const html = renderToStaticMarkup(new Scene({ width: 2000, height: 2000 })
-    .add(lookup('head', 'afro'), { ink: '#112233', paper: '#ddeeff' })
+    .add(lookup('face', 'awe'), { ink: '#112233', paper: '#ddeeff' })
     .add(new Peep({ ink: '#445566' }))
     .render())
   assert.match(html, /#112233/)
@@ -44,12 +44,10 @@ test('a scene nests inside another', () => {
   assert.match(html, /<g transform="translate\(1000 0\) scale\(1 1\)" data-item="0"><g><rect x="0" y="0" width="1200" height="3300" fill="#abcdef"/)
 })
 
-test('two copies of one peep do not share mask ids', () => {
-  const peep = new Peep({ type: 'sitting', body: 'one-leg-up-2' })
+test('two copies of one peep need no ids: plain paths, no masks', () => {
+  const peep = new Peep({ type: 'sitting', body: 'one-leg-up-2', skin: '#8d5524' })
   const html = renderToStaticMarkup(new Scene({ width: 4000, height: 3000 }).add(peep).add(peep, { x: 2000 }).render())
-  const ids = [...html.matchAll(/ id="([^"]+)"/g)].map((m) => m[1])
-  assert.ok(ids.length >= 4)
-  assert.equal(new Set(ids).size, ids.length)
+  assert.doesNotMatch(html, / id="|<mask|<clipPath/)
 })
 
 test('a scene without a size is refused', () => {

@@ -100,7 +100,7 @@ export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit
           <Slider label="Size" value={e.size} min={0.2} max={2} step={0.05} reset={1} onChange={(size) => onLive(selected, { size })} />
           <Slider label="Lift" value={Math.round(((e.lift ?? 0) / SCENE) * 100)} min={LIFT.min * 100} max={LIFT.max * 100} step={1} unit="%" reset={0} onChange={(v) => onLive(selected, { lift: (v / 100) * SCENE })} />
           {/* A member keeps one Lines chip; the lines of each part are set in the builder. */}
-          {!e.upload && <ColorTargets compact used={used} targets={e.thing ? thingTargets({ ...e, thing: e.thing }, (p) => onLive(selected, p)) : peepTargets(e, (p) => onLive(selected, p), !!e.figure).filter((t) => !t.id.endsWith('-line'))} />}
+          {!e.upload && <ColorTargets compact used={used} targets={e.thing ? thingTargets({ ...e, thing: e.thing }, (p) => onLive(selected, p)) : peepTargets(e, (p) => onLive(selected, p), !!e.figure).filter((t) => t.id !== 'line' && !t.id.endsWith('-line'))} />}
           <div className="pc-row">
             <button className="pc-btn" aria-label="Flip" title="Flip" aria-pressed={e.flip} onClick={() => onCommit(selected, { flip: !e.flip })}><I.flip /><span>Flip</span></button>
             <button className="pc-btn" aria-label="Back" title="Back" onClick={() => onMove(selected, -1)} disabled={selected === 0}><I.back /><span>Back</span></button>

@@ -1,15 +1,15 @@
-// Every item of the pack comes in its own colours, which it carries (`atom.pieces`, written by scripts/build-peeps-skin.ts from the labels), so
-// its thumbnail and the peep wearing it agree: the hair of a head, its hat, the top and shoes of a body, a tie. A colour the person picks for a
+// Every item comes in its own colours, which it carries (`atom.pieces`, its layer groups in the Figma file, by packages/peeps/scripts/build-figma.ts),
+// so its thumbnail and the peep wearing it agree: the hair of a head, its bandana, the top, pants and shoes of a body. A colour the person picks for a
 // piece is drawn over them until another item is chosen there; choosing the item again brings its own back.
 import { bodyCategory, defaults, lookup, type Category, type PartColors, type PeepType, type Slot } from '@kit/peeps'
 import type { Parts } from './types.ts'
 
-const slots: readonly Slot[] = ['body', 'head', 'face', 'facialHair', 'accessories']
+const slots: readonly Slot[] = ['body', 'head', 'face', 'facialHair', 'mask', 'accessories']
 
 /** The atom a slot draws: "standing/walking-2", "head/bun". */
 export const atomKey = (type: PeepType, slot: Slot, id: string) => `${slot === 'body' ? bodyCategory[type] : slot}/${id}`
 
-/** The colours an item comes in, one per piece, by atom key: `itemColors('head/bun')` is `{ hair: '#111111', hat: '#90a7e0' }`. */
+/** The colours an item comes in, one per piece, by atom key: `itemColors('head/bun')` is `{ bandana: '#9fd8e5' }`. */
 export function itemColors(key: string): Readonly<Record<string, string>> {
   const [category, id] = key.split('/') as [Category, string]
   return lookup(category, id).pieces

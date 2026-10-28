@@ -12,6 +12,7 @@ export const icons = {
   extra: draw(<path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />),
   face: draw(<><circle cx="12" cy="12" r="9" /><path d="M8 14c1.2 1.6 2.6 2.4 4 2.4s2.8-.8 4-2.4M9 9.5h.01M15 9.5h.01" /></>),
   facialHair: draw(<path d="M3 13c3-4 6-2 9 0 3-2 6-4 9 0-3 1-5 5-9 1-4 4-6 0-9-1z" />),
+  mask: draw(<path d="M4 9c3-1 5-2 8-2s5 1 8 2v4c0 3-4 6-8 6s-8-3-8-6zM4 10H2M20 10h2M8 12h8M8 15h8" />),
   accessories: draw(<><circle cx="6.5" cy="14" r="3.5" /><circle cx="17.5" cy="14" r="3.5" /><path d="M10 14h4M3 14l2-6M21 14l-2-6" /></>),
   dice: draw(<><rect x="4" y="4" width="16" height="16" rx="3.5" /><path d="M8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01" /></>),
   figure: draw(<><circle cx="13" cy="4.5" r="2" /><path d="m10 21 2-6-3-3 2-5 4 3 3 1M12 15l4 6" /></>),

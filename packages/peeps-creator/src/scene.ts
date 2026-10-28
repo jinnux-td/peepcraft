@@ -12,7 +12,7 @@ export const SIZE = 1024
 /** The peep of a state, in its items' own colours under the picked ones; `override` swaps items (a thumbnail), which come in their own. */
 export function peepOf(s: Pick<CreatorState, 'type' | 'ink' | 'paper' | 'parts'> & Partial<Pick<CreatorState, 'partColors' | 'skin' | 'mono'>>, override: Partial<Record<string, string>> = {}): Peep {
   const parts = { ...s.parts, ...override }, picked = { ...s.partColors }
-  if (s.mono) return new Peep({ type: s.type, ink: s.ink, paper: s.paper, ...parts })
+  if (s.mono) return new Peep({ type: s.type, ink: s.ink, paper: s.paper, mono: true, ...parts })
   for (const slot of Object.keys(override) as (keyof typeof picked)[]) picked[slot] = plain(picked[slot])
   return new Peep({ type: s.type, ink: s.ink, paper: s.paper, colors: wornColors(s.type, parts, picked), skin: s.skin, ...parts })
 }
@@ -148,8 +148,9 @@ export function sceneOf(s: CreatorState): PeepScene {
   return scene
 }
 
-/** The whole scene in its frame; `selected` outlines one member and adds a small handle at each corner to resize it (on the stage, never in
- *  an export). A handle is a dot, so it hides little of the picture, in a wider ring that is not drawn, so it is easy to grab. */
+/** The whole scene in its frame; `selected` outlines one member and adds a small handle at each corner to resize it, and a × just outside
+ *  its top right corner to remove it (on the stage, never in an export). A handle is a dot, so it hides little of the picture, in a wider
+ *  ring that is not drawn, so it is easy to grab; the × sits clear of that ring, inside the frame. */
 export function SceneView({ state, selected = null }: { state: CreatorState; selected?: number | null }): ReactElement {
   const picked = selected !== null ? state.scene[selected] : undefined
   const frame = frameBox(state), b = picked && entryBox(picked), r = frame.width * 0.008
@@ -159,5 +160,10 @@ export function SceneView({ state, selected = null }: { state: CreatorState; sel
     b && createElement('rect', { ...b, className: 'pc-selected', 'data-selected': selected }),
     ...(b ? [[-1, -1], [1, -1], [-1, 1], [1, 1]] : []).map(([sx, sy]) => createElement('g', { key: `${sx},${sy}`, className: 'pc-handle', 'data-handle': selected, 'data-corner': `${sx},${sy}`, style: { cursor: sx === sy ? 'nwse-resize' : 'nesw-resize' } },
       createElement('circle', { cx: b!.x + (b!.width * (sx + 1)) / 2, cy: b!.y + (b!.height * (sy + 1)) / 2, r: r * 2.5, fill: 'transparent' }),
-      createElement('circle', { cx: b!.x + (b!.width * (sx + 1)) / 2, cy: b!.y + (b!.height * (sy + 1)) / 2, r }))))
+      createElement('circle', { cx: b!.x + (b!.width * (sx + 1)) / 2, cy: b!.y + (b!.height * (sy + 1)) / 2, r }))),
+    b && ((cx, cy) => createElement('g', { className: 'pc-remove', 'data-remove': selected, role: 'button', 'aria-label': 'Remove from the scene' },
+      createElement('title', null, 'Remove from the scene'),
+      createElement('circle', { cx, cy, r: r * 2.2 }),
+      createElement('path', { d: `M${cx - r} ${cy - r}L${cx + r} ${cy + r}M${cx + r} ${cy - r}L${cx - r} ${cy + r}` })))(
+      Math.min(b.x + b.width + r * 3.6, frame.x + frame.width - r * 2.4), Math.max(b.y - r * 3.6, frame.y + r * 2.4)))
 }

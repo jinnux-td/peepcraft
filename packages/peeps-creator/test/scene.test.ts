@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createElement } from 'react'
 import { exportSvg } from '../src/export.ts'
 import { fallbackBox, sceneTransform, squareAround } from '../src/scene.ts'
 import { initialState } from '../src/types.ts'
@@ -58,7 +59,7 @@ test('the scene export: every member on the ground, back to front, no selection 
   const svg = exportSceneSvg(two)
   assert.match(svg, new RegExp(`^<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SCENE} ${SCENE}" width="1024" height="1024"><rect [^>]*fill="#f7d56e"`))
   assert.deepEqual([...svg.matchAll(/data-item="(\d)"/g)].map((m) => m[1]), ['0', '1', '2'])
-  assert.doesNotMatch(svg, /pc-selected|data-selected/)
+  assert.doesNotMatch(svg, /pc-selected|data-selected|data-remove/)
   const feet = two.scene.map((e) => { const b = entryBox(e); return b.y + e.bottom * (b.height / (e.figure ? 1080 : 3291)) })
   for (const f of feet) assert.ok(Math.abs(f - GROUND) < 1e-6, `feet at ${f}`)
   assert.doesNotMatch(exportSceneSvg({ ...two, bg: 'transparent' }), /<rect/)
@@ -88,14 +89,14 @@ test('things and uploads join the scene in the current colours, stand on the gro
 test('a member keeps its own colours: lines, fill, and the named parts of a thing, each its own until picked', async () => {
   const { exportSceneSvg } = await import('../src/export.ts')
   const { addToScene, updateEntry } = await import('../src/state.ts')
-  let s = addToScene(addToScene(initialState, undefined, { thing: 'potted-plant' }))
+  let s = addToScene({ ...addToScene(initialState, undefined, { thing: 'potted-plant' }), mono: true })
   s = updateEntry(s, 0, { ink: '#1d3557', paper: '#c9773e', colors: { leaves: '#2d6a4f' } })
   s = updateEntry(s, 1, { paper: '#ffe066' })
   const svg = exportSceneSvg(s)
   assert.match(svg, /<g stroke="#1d3557"/)
   assert.match(svg, /fill="#2d6a4f" data-part="leaves"/)
   assert.match(svg, /fill="#c9773e"/, 'the pot takes the fill')
-  assert.match(svg, /fill="#ffe066"/, 'the peep takes its own paper')
+  assert.match(svg, /fill="#ffe066"/, 'the peep in Contrast takes its own paper')
   assert.match(exportSceneSvg(updateEntry(s, 0, { colors: undefined })), /fill="#52b788" data-part="leaves"/, 'unpicked, the leaves come in their own green')
 })
 
@@ -116,38 +117,50 @@ test('the frame: a ratio widens the scene and keeps members in place across it, 
   assert.match(exportSceneSvg(far), new RegExp(`viewBox="${-SCENE / 2} ${-GROUND} ${SCENE * 2} ${SCENE * 2}"[^>]*><rect x="${-SCENE / 2}" y="${-GROUND}" width="${SCENE * 2}"`), 'zoomed out, the background still fills the picture')
 })
 
-test('part colours: one skin for head and body, hair and clothes apart, carried into the scene and the colours of the design', async () => {
+test('part colours: one skin for head and body, each piece of an item apart, carried into the scene and the colours of the design', async () => {
   const { exportSceneSvg, exportSvg } = await import('../src/export.ts')
   const { addToScene, designColors } = await import('../src/state.ts')
-  const { peepTargets } = await import('../src/colors.ts')
+  const { peepTargets, tabColors } = await import('../src/colors.ts')
   let s = { ...initialState }
   const set = (p: Partial<typeof s>) => { s = { ...s, ...p } }
   const t = () => Object.fromEntries(peepTargets(s, set).map((x) => [x.id, x]))
-  assert.deepEqual(Object.keys(t()), ['skin', 'hair', 'hat', 'head-line', 'top', 'body-line', 'clothes', 'face', 'accessories', 'ink', 'paper'], 'a tee and a bun with a hair tie: no jacket, no shoes, no beard; the lines of each part')
+  const piece = (svg: string, name: string) => [...svg.matchAll(new RegExp(`fill="([^"]+)"[^>]*data-piece="${name}"`, 'g'))].map((m) => m[1])
+  assert.deepEqual(Object.keys(t()), ['skin', 'bandana', 'head-line', 'top', 'body-line', 'face', 'accessories', 'ink'], 'a tee and a bun with a bandana, as grouped in Figma; the lines of each part')
   assert.equal(t()['body-line'].label, 'Line')
-  t()['body-line'].onChange('#3048c8'); assert.deepEqual(s.partColors, { body: { ink: '#3048c8' } }, "a part's lines are its ink"); s = { ...s, partColors: {} }
-  const { tabColors } = await import('../src/colors.ts')
-  const twists = { ...initialState, parts: { head: 'twists' } }
-  assert.deepEqual(tabColors('head', peepTargets(twists, () => {})).map((x) => x.label), ['Hair', 'Line', 'Line 1', 'Skin'], 'white lines in the hair: Line 1, after the black ones')
-  assert.equal(peepTargets(twists, () => {}).find((x) => x.label === 'Line 1')!.value, '#ffffff')
+  t()['body-line'].onChange('#3048c8'); assert.deepEqual(s.partColors, { body: { ink: '#3048c8' } }, "a part's lines are its ink")
+  assert.deepEqual(new Set(piece(exportSvg(s, fallbackBox(s)), 'ink')), new Set(['#3048c8', '#111111'])); s = { ...s, partColors: {} }
+  const bangs = { ...initialState, parts: { head: 'bangs' } }
+  assert.deepEqual(tabColors('head', peepTargets(bangs, () => {})).map((x) => x.label), ['Hair', 'Line', 'Skin'], 'a head with a hair layer of its own')
   assert.deepEqual(peepTargets(s, set, true).map((x) => x.id), ['ink', 'paper'], 'a figure has only lines and fill')
-  t().skin.onChange('#c68642'); t().hair.onChange('#6b2d1a'); t().clothes.onChange('#e63946')
+  t().skin.onChange('#c68642'); t().bandana.onChange('#6b2d1a')
   assert.equal(s.skin, '#c68642')
-  assert.deepEqual(s.partColors, { head: { hair: '#6b2d1a' }, body: { paper: '#e63946' } })
+  assert.deepEqual(s.partColors, { head: { bandana: '#6b2d1a' } })
   const { itemColors } = await import('../src/outfit.ts')
   assert.equal(t().top.value, itemColors('body/tee-1').top, 'an untouched piece shows the colour its item comes in'); assert.equal(t().top.reset, undefined)
   t().top.onChange('#1d3557')
-  assert.equal(t().top.reset?.label, 'Back to its own colour'); assert.equal(t().hair.reset?.label, 'Back to its own colour')
-  assert.match(exportSvg(s, fallbackBox(s)), /data-top="">(?:(?!data-).)*fill="#1d3557"/s, 'the tee in its own colour')
-  assert.equal(t().face.value, s.ink, 'an untouched part shows the peep colour'); assert.equal(t().face.reset, undefined)
+  assert.equal(t().top.reset?.label, 'Back to its own colour'); assert.equal(t().bandana.reset?.label, 'Back to its own colour')
   const svg = exportSvg(s, fallbackBox(s))
-  assert.equal((svg.match(/data-skin=""/g) ?? []).length, 2, 'the skin of the head and of the body')
-  assert.match(svg, /fill="#c68642"/); assert.match(svg, /fill="#e63946"/)
-  assert.match(svg, /data-slot="head">(?:(?!data-slot).)*fill="#6b2d1a"/s, 'the hair is inside the head')
+  assert.deepEqual(piece(svg, 'top'), ['#1d3557'], 'the tee in its colour')
+  assert.equal(t().face.value, s.ink, 'an untouched part shows the peep colour'); assert.equal(t().face.reset, undefined)
+  assert.deepEqual(piece(svg, 'skin'), ['#c68642', '#c68642'], 'the skin of the body and of the head')
+  assert.match(svg, /data-slot="head">(?:(?!data-slot).)*fill="#6b2d1a"/s, 'the bandana is inside the head')
   t().skin.reset!.run()
-  assert.equal(s.skin, '#ffdbbe', 'back to the skin a peep starts with'); assert.equal(t().skin.reset, undefined)
-  assert.match(exportSvg(s, fallbackBox(s)), /data-skin=""><g><g [^>]*><path[^>]*fill="#ffdbbe"/)
+  assert.equal(s.skin, '#d08b5b', 'back to the skin a peep starts with, the one of the Figma symbols'); assert.equal(t().skin.reset, undefined)
   const scene = addToScene({ ...s, skin: '#8d5524' })
   assert.match(exportSceneSvg(scene), /fill="#8d5524"/)
   assert.ok(designColors(scene).includes('#8d5524') && designColors(scene).includes('#6b2d1a'))
+})
+
+test('the picked member has a × at its top right corner, clear of the resize handle and inside the frame', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server')
+  const { addToScene } = await import('../src/state.ts')
+  const { entryBox, frameBox, SceneView } = await import('../src/scene.ts')
+  const s = addToScene(initialState)
+  assert.doesNotMatch(renderToStaticMarkup(createElement(SceneView, { state: s })), /data-remove/, 'nothing picked, no ×')
+  const html = renderToStaticMarkup(createElement(SceneView, { state: s, selected: 0 }))
+  const [cx, cy] = html.match(/data-remove="0"[^]*?<circle cx="([\d.]+)" cy="(-?[\d.]+)"/)!.slice(1).map(Number)
+  const b = entryBox(s.scene[0]), f = frameBox(s), r = f.width * 0.008
+  assert.ok(cx > b.x + b.width && cy < b.y, 'beyond the top right corner')
+  assert.ok(Math.hypot(cx - (b.x + b.width), cy - b.y) > r * 2.5 + r * 2.2, 'clear of the handle')
+  assert.match(html, /aria-label="Remove from the scene"/)
 })

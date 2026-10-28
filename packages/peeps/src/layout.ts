@@ -3,14 +3,14 @@
 import type { Category } from './atom.ts'
 
 export type PeepType = 'standing' | 'sitting' | 'bust'
-export type Slot = 'body' | 'head' | 'face' | 'facialHair' | 'accessories'
+export type Slot = 'body' | 'head' | 'face' | 'facialHair' | 'mask' | 'accessories'
 export interface Point { x: number; y: number }
 
 /** Which atom category fills the body slot of each type. */
 export const bodyCategory: Record<PeepType, Category> = { standing: 'standing', sitting: 'sitting', bust: 'body' }
 
 /** Draw order, back to front. */
-export const slotOrder: readonly Slot[] = ['body', 'head', 'face', 'facialHair', 'accessories']
+export const slotOrder: readonly Slot[] = ['body', 'head', 'face', 'facialHair', 'mask', 'accessories']
 
 /** Origin of the body and of the head, per type. */
 export const origins: Record<PeepType, { body: Point; head: Point }> = {
@@ -19,10 +19,11 @@ export const origins: Record<PeepType, { body: Point; head: Point }> = {
   bust: { body: { x: 147, y: 639 }, head: { x: 372, y: 180 } },
 }
 
-/** Origin of the face parts, relative to the head origin; the same for every type. */
-export const onHead: Record<'face' | 'facialHair' | 'accessories', Point> = {
+/** Origin of the face parts, relative to the head origin; the same for every type. The mask's is from the Figma file's "a person" symbols. */
+export const onHead: Record<'face' | 'facialHair' | 'mask' | 'accessories', Point> = {
   face: { x: 159, y: 186 },
   facialHair: { x: 123, y: 338 },
+  mask: { x: 23, y: 281 },
   accessories: { x: 47, y: 241 },
 }
 

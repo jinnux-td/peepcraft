@@ -13,7 +13,8 @@ import { FigureThumb, LookThumb, Thumb, type Boxes } from './Thumb.tsx'
 const types: PeepType[] = ['standing', 'sitting', 'bust']
 export const tabs: ReadonlyArray<{ id: Tab; label: string; icon: IconName }> = [
   { id: 'type', label: 'Type', icon: 'type' }, { id: 'body', label: 'Body', icon: 'body' }, { id: 'head', label: 'Hair', icon: 'head' },
-  { id: 'face', label: 'Face', icon: 'face' }, { id: 'facialHair', label: 'Facial hair', icon: 'facialHair' }, { id: 'accessories', label: 'Accessories', icon: 'accessories' },
+  { id: 'face', label: 'Face', icon: 'face' }, { id: 'facialHair', label: 'Facial hair', icon: 'facialHair' },
+  { id: 'mask', label: 'Mask', icon: 'mask' }, { id: 'accessories', label: 'Accessories', icon: 'accessories' },
   { id: 'extra', label: 'Extra', icon: 'extra' },
   { id: 'figures', label: 'Figures', icon: 'figure' }, { id: 'scene', label: 'Scene', icon: 'scene' },
 ]

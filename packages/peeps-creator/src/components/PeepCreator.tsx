@@ -124,10 +124,11 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     addEventListener('scroll', fit, { passive: true }); addEventListener('resize', fit)
     return () => { removeEventListener('scroll', fit); removeEventListener('resize', fit) }
   }, [inScene])
-  // Grabbing a corner handle of the picked member resizes it; grabbing a member moves it.
+  // Grabbing a corner handle of the picked member resizes it, its × removes it; grabbing a member moves it.
   const drag = useRef<{ i: number; x: number; lift: number; size: number; resize: boolean; corner: [number, number]; px: number; py: number; unit: number; moved: boolean } | null>(null)
   const grab = (ev: PointerEvent<HTMLDivElement>) => {
-    const target = ev.target as Element, handle = target.closest('[data-handle]')
+    const target = ev.target as Element, handle = target.closest('[data-handle]'), remove = target.closest('[data-remove]')
+    if (remove) { const i = Number(remove.getAttribute('data-remove')); setPicked(null); record((s) => removeEntry(s, i)); return }
     const hit = handle?.getAttribute('data-handle') ?? target.closest('[data-item]')?.getAttribute('data-item')
     if (hit == null) { setPicked(null); return }
     const i = Number(hit), e = state.scene[i]
