@@ -1,5 +1,6 @@
 // The creator's state as plain functions: choosing, history. No React, so it is tested without a browser.
 import { catalogue, defaults, type Atom, type Box, type Category, type PeepType, type Slot } from '@kit/peeps'
+import { lookup as lookupThing } from '@kit/things'
 import { drawn, GROUND, LIFT, SCENE, sceneWidth } from './scene.ts'
 import { plain } from './outfit.ts'
 import { RATIOS, type CreatorState, type Lockable, type Ratio, type SceneEntry } from './types.ts'
@@ -29,6 +30,12 @@ export const setType = (s: CreatorState, type: PeepType): CreatorState => (type 
 /** Back to building a peep (or onto a figure): a figure and the parts are two ways to fill the stage. */
 export const chooseFigure = (s: CreatorState, id: string | null): CreatorState => ({ ...s, figure: id })
 export const showPeep = (s: CreatorState, type: PeepType): CreatorState => ({ ...setType(s, type), figure: null })
+/** An extra on the peep (null: none), in the colours it comes in, even when the same one is chosen again. */
+export function chooseExtra(s: CreatorState, id: string | null): CreatorState {
+  if (!id) { const { extra: _, ...rest } = s; return rest }
+  const t = lookupThing(id)
+  return { ...s, extra: { id, ink: t.ink ?? s.ink, paper: t.paper ?? s.paper } }
+}
 
 /** Where new members stand, as a share of the width, so a second one does not hide behind the first. */
 const SPREAD = [0.5, 0.2, 0.8, 0.35, 0.65]
@@ -37,7 +44,9 @@ const SPREAD = [0.5, 0.2, 0.8, 0.35, 0.65]
  *  of the peep or figure; without one the feet are the bottom of the canvas. */
 export function addToScene(s: CreatorState, outline?: Box, what: Pick<SceneEntry, 'thing' | 'upload'> = {}): CreatorState {
   const other = !!(what.thing || what.upload)
-  const look = { type: s.type, parts: s.parts, figure: other ? null : s.figure, ink: s.ink, paper: s.paper, partColors: s.partColors, skin: s.skin, ...(s.mono ? { mono: true } : {}), ...what }
+  // A thing with colours of its own (a speech bubble) comes in them, not the peep's.
+  const own = what.thing ? lookupThing(what.thing) : undefined
+  const look = { type: s.type, parts: s.parts, figure: other ? null : s.figure, ink: own?.ink ?? s.ink, paper: own?.paper ?? s.paper, partColors: s.partColors, skin: s.skin, ...(s.extra && !other && !s.figure ? { extra: s.extra } : {}), ...(s.mono ? { mono: true } : {}), ...what }
   const bottom = outline && !other ? outline.y + outline.height : drawn(look).height
   const entry: SceneEntry = { ...look, flip: other ? false : s.flip, x: sceneWidth(s) * SPREAD[s.scene.length % SPREAD.length], size: 1, bottom }
   return { ...s, scene: [...s.scene, entry] }
@@ -46,7 +55,7 @@ export function addToScene(s: CreatorState, outline?: Box, what: Pick<SceneEntry
 /** Members drawn from an upload go when the upload is deleted. */
 export const dropUpload = (s: CreatorState, id: string): CreatorState => ({ ...s, scene: s.scene.filter((e) => e.upload?.id !== id) })
 
-export const updateEntry = (s: CreatorState, i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'flip' | 'lift' | 'ink' | 'paper' | 'colors' | 'partColors' | 'skin'>>): CreatorState =>
+export const updateEntry = (s: CreatorState, i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'flip' | 'lift' | 'ink' | 'paper' | 'colors' | 'partColors' | 'skin' | 'extra'>>): CreatorState =>
   ({ ...s, scene: s.scene.map((e, j) => (j === i ? { ...e, ...patch } : e)) })
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
@@ -57,15 +66,16 @@ export const dragEntry = (s: CreatorState, i: number, from: { x: number; lift: n
 
 export const SIZES = { min: 0.2, max: 2 }
 
-/** Resizing from the bottom-right handle: the size follows the pointer, (dx, dy) scene units from where the drag started, and the top-left
- *  corner stays where it was. */
-export function resizeEntry(s: CreatorState, i: number, from: { x: number; lift: number; size: number }, dx: number, dy: number): CreatorState {
+/** Resizing from a corner handle (`corner`: -1 left or top, 1 right or bottom): the size follows the pointer, (dx, dy) scene units from
+ *  where the drag started, and the opposite corner stays where it was. */
+export function resizeEntry(s: CreatorState, i: number, from: { x: number; lift: number; size: number }, dx: number, dy: number, [sx, sy]: readonly [number, number] = [1, 1]): CreatorState {
   const e = s.scene[i], { width, height, base } = drawn(e), k0 = base * from.size
   const left = from.x - (width * k0) / 2, top = GROUND - e.bottom * k0 - from.lift
   // The larger stretch wins, so a drag along either edge resizes.
-  const grow = Math.max((width * k0 + dx) / (width * k0), (height * k0 + dy) / (height * k0))
+  const grow = Math.max((width * k0 + sx * dx) / (width * k0), (height * k0 + sy * dy) / (height * k0))
   const size = clamp(from.size * grow, SIZES.min, SIZES.max), k = base * size
-  return updateEntry(s, i, { size, x: left + (width * k) / 2, lift: clamp(GROUND - e.bottom * k - top, LIFT.min * SCENE, LIFT.max * SCENE) })
+  const x = sx > 0 ? left + (width * k) / 2 : left + width * k0 - (width * k) / 2, newTop = sy > 0 ? top : top + height * k0 - height * k
+  return updateEntry(s, i, { size, x, lift: clamp(GROUND - e.bottom * k - newTop, LIFT.min * SCENE, LIFT.max * SCENE) })
 }
 
 /** Another shape for the scene: members keep their place as a share of the width. */
@@ -77,6 +87,14 @@ export function setRatio(s: CreatorState, ratio: Ratio): CreatorState {
 export const removeEntry = (s: CreatorState, i: number): CreatorState => ({ ...s, scene: s.scene.filter((_, j) => j !== i) })
 
 /** One step to the front (+1, drawn later) or the back (-1); at either end nothing changes. */
+/** A member dragged from place `from` to place `to` in the back-to-front order; the others close up around it. */
+export function reorderEntry(s: CreatorState, from: number, to: number): CreatorState {
+  if (from === to || from < 0 || to < 0 || from >= s.scene.length || to >= s.scene.length) return s
+  const scene = [...s.scene], [e] = scene.splice(from, 1)
+  scene.splice(to, 0, e)
+  return { ...s, scene }
+}
+
 export function moveEntry(s: CreatorState, i: number, by: 1 | -1): CreatorState {
   const j = i + by
   if (j < 0 || j >= s.scene.length) return s

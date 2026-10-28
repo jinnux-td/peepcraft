@@ -85,18 +85,18 @@ test('things and uploads join the scene in the current colours, stand on the gro
   assert.throws(() => exportSceneSvg(addToScene(initialState, undefined, { thing: 'nope' })), /no thing "nope"/)
 })
 
-test('a member keeps its own colours: lines, fill, and the named parts of a thing', async () => {
+test('a member keeps its own colours: lines, fill, and the named parts of a thing, each its own until picked', async () => {
   const { exportSceneSvg } = await import('../src/export.ts')
   const { addToScene, updateEntry } = await import('../src/state.ts')
   let s = addToScene(addToScene(initialState, undefined, { thing: 'potted-plant' }))
-  s = updateEntry(s, 0, { ink: '#1d3557', paper: '#c9773e', colors: { leaves: '#52b788' } })
+  s = updateEntry(s, 0, { ink: '#1d3557', paper: '#c9773e', colors: { leaves: '#2d6a4f' } })
   s = updateEntry(s, 1, { paper: '#ffe066' })
   const svg = exportSceneSvg(s)
   assert.match(svg, /<g stroke="#1d3557"/)
-  assert.match(svg, /fill="#52b788" data-part="leaves"/)
+  assert.match(svg, /fill="#2d6a4f" data-part="leaves"/)
   assert.match(svg, /fill="#c9773e"/, 'the pot takes the fill')
   assert.match(svg, /fill="#ffe066"/, 'the peep takes its own paper')
-  assert.doesNotMatch(exportSceneSvg(updateEntry(s, 0, { colors: undefined })), /#52b788/)
+  assert.match(exportSceneSvg(updateEntry(s, 0, { colors: undefined })), /fill="#52b788" data-part="leaves"/, 'unpicked, the leaves come in their own green')
 })
 
 test('the frame: a ratio widens the scene and keeps members in place across it, zoom closes in about the ground, the PNG follows the shape', async () => {
@@ -123,7 +123,13 @@ test('part colours: one skin for head and body, hair and clothes apart, carried 
   let s = { ...initialState }
   const set = (p: Partial<typeof s>) => { s = { ...s, ...p } }
   const t = () => Object.fromEntries(peepTargets(s, set).map((x) => [x.id, x]))
-  assert.deepEqual(Object.keys(t()), ['skin', 'hair', 'hat', 'top', 'clothes', 'face', 'facialHair', 'accessories', 'ink', 'paper'], 'a tee and a bun with a hair tie: no jacket, no shoes')
+  assert.deepEqual(Object.keys(t()), ['skin', 'hair', 'hat', 'head-line', 'top', 'body-line', 'clothes', 'face', 'accessories', 'ink', 'paper'], 'a tee and a bun with a hair tie: no jacket, no shoes, no beard; the lines of each part')
+  assert.equal(t()['body-line'].label, 'Line')
+  t()['body-line'].onChange('#3048c8'); assert.deepEqual(s.partColors, { body: { ink: '#3048c8' } }, "a part's lines are its ink"); s = { ...s, partColors: {} }
+  const { tabColors } = await import('../src/colors.ts')
+  const twists = { ...initialState, parts: { head: 'twists' } }
+  assert.deepEqual(tabColors('head', peepTargets(twists, () => {})).map((x) => x.label), ['Hair', 'Line', 'Line 1', 'Skin'], 'white lines in the hair: Line 1, after the black ones')
+  assert.equal(peepTargets(twists, () => {}).find((x) => x.label === 'Line 1')!.value, '#ffffff')
   assert.deepEqual(peepTargets(s, set, true).map((x) => x.id), ['ink', 'paper'], 'a figure has only lines and fill')
   t().skin.onChange('#c68642'); t().hair.onChange('#6b2d1a'); t().clothes.onChange('#e63946')
   assert.equal(s.skin, '#c68642')
@@ -139,8 +145,8 @@ test('part colours: one skin for head and body, hair and clothes apart, carried 
   assert.match(svg, /fill="#c68642"/); assert.match(svg, /fill="#e63946"/)
   assert.match(svg, /data-slot="head">(?:(?!data-slot).)*fill="#6b2d1a"/s, 'the hair is inside the head')
   t().skin.reset!.run()
-  assert.equal(s.skin, '#d08b5b', 'back to the skin a peep starts with'); assert.equal(t().skin.reset, undefined)
-  assert.match(exportSvg(s, fallbackBox(s)), /data-skin=""><g><g [^>]*><path[^>]*fill="#d08b5b"/)
+  assert.equal(s.skin, '#ffdbbe', 'back to the skin a peep starts with'); assert.equal(t().skin.reset, undefined)
+  assert.match(exportSvg(s, fallbackBox(s)), /data-skin=""><g><g [^>]*><path[^>]*fill="#ffdbbe"/)
   const scene = addToScene({ ...s, skin: '#8d5524' })
   assert.match(exportSceneSvg(scene), /fill="#8d5524"/)
   assert.ok(designColors(scene).includes('#8d5524') && designColors(scene).includes('#6b2d1a'))

@@ -3,7 +3,7 @@ import type { Box, PeepType, Slot } from '@kit/peeps'
 import { exportSceneSvg, exportSvg, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
 import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
-import { addToScene, choose, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
+import { addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
 import { creatorCss } from '../styles.ts'
 import { initialState, RATIOS, swatches, type CreatorState, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
 import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
@@ -124,8 +124,8 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     addEventListener('scroll', fit, { passive: true }); addEventListener('resize', fit)
     return () => { removeEventListener('scroll', fit); removeEventListener('resize', fit) }
   }, [inScene])
-  // Grabbing the handle of the picked member resizes it; grabbing a member moves it.
-  const drag = useRef<{ i: number; x: number; lift: number; size: number; resize: boolean; px: number; py: number; unit: number; moved: boolean } | null>(null)
+  // Grabbing a corner handle of the picked member resizes it; grabbing a member moves it.
+  const drag = useRef<{ i: number; x: number; lift: number; size: number; resize: boolean; corner: [number, number]; px: number; py: number; unit: number; moved: boolean } | null>(null)
   const grab = (ev: PointerEvent<HTMLDivElement>) => {
     const target = ev.target as Element, handle = target.closest('[data-handle]')
     const hit = handle?.getAttribute('data-handle') ?? target.closest('[data-item]')?.getAttribute('data-item')
@@ -133,7 +133,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     const i = Number(hit), e = state.scene[i]
     setPicked(i)
     ev.currentTarget.setPointerCapture(ev.pointerId)
-    drag.current = { i, x: e.x, lift: e.lift ?? 0, size: e.size, resize: !!handle, px: ev.clientX, py: ev.clientY, unit: frameBox(state).width / ev.currentTarget.getBoundingClientRect().width, moved: false }
+    drag.current = { i, x: e.x, lift: e.lift ?? 0, size: e.size, resize: !!handle, corner: (handle?.getAttribute('data-corner') ?? '1,1').split(',').map(Number) as [number, number], px: ev.clientX, py: ev.clientY, unit: frameBox(state).width / ev.currentTarget.getBoundingClientRect().width, moved: false }
   }
   const pull = (ev: PointerEvent<HTMLDivElement>) => {
     const d = drag.current
@@ -142,7 +142,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     if (!d.moved && Math.hypot(ev.clientX - d.px, ev.clientY - d.py) < 3) return
     const first = !d.moved
     d.moved = true
-    setHist((h) => (first ? commit : tweak)(h, (d.resize ? resizeEntry : dragEntry)(h.now, d.i, d, dx, dy)))
+    setHist((h) => (first ? commit : tweak)(h, (d.resize ? resizeEntry(h.now, d.i, d, dx, dy, d.corner) : dragEntry(h.now, d.i, d, dx, dy))))
   }
 
   return (
@@ -167,7 +167,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
       <div className="pc-main">
         <PartPicker
           state={state} tab={tab} onTab={openTab} boxes={boxes} colors={peepTargets(state, live, !!state.figure || !!state.mono)} used={used} onLock={(slot) => live(toggleLock(state, slot))}
-          onChoose={(slot: Slot, id) => record((s) => choose(s, slot, id))} onType={(t) => record((s) => showPeep(s, t))} onFigure={(id) => record((s) => chooseFigure(s, id))} onDice={(t) => dice(t)}
+          onChoose={(slot: Slot, id) => record((s) => choose(s, slot, id))} onType={(t) => record((s) => showPeep(s, t))} onFigure={(id) => record((s) => chooseFigure(s, id))} onExtra={(id) => record((s) => chooseExtra(s, id))} onDice={(t) => dice(t)}
         >
           <SceneSources
             state={state} onAdd={(what) => { setPicked(state.scene.length); record((s) => addToScene(s, boxes[boxKey(s)], what)) }}
@@ -187,7 +187,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
               </div>
               <Slider label="Zoom" value={state.frame.zoom} min={0.5} max={2} step={0.05} unit="×" reset={1} onChange={(zoom) => setHist((h) => tweak(h, { ...h.now, frame: { ...h.now.frame, zoom } }))} />
             </div>
-            <p className="pc-hint">{state.scene.length ? <>Drag someone to move them, or the corner of the picked one to resize it. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
+            <p className="pc-hint">{state.scene.length ? <>Drag someone to move them, or a corner of the picked one to resize it. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
           </> : <>
           <div style={{ display: 'contents' }} onClick={(e) => pickPart(e.target)}>
             <Stage state={state} box={box} measured={!!boxes[key]} onMeasure={onMeasure} />
@@ -209,6 +209,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
               onCommit={(i, patch) => record((s) => updateEntry(s, i, patch))}
               onRemove={(i) => { setPicked(null); record((s) => removeEntry(s, i)) }}
               onMove={(i, by) => { setPicked(i + by); record((s) => moveEntry(s, i, by)) }}
+              onReorder={(from, to) => { setPicked(to); record((s) => reorderEntry(s, from, to)) }}
             />
           )}
           {/* These edit the peep or figure being built; in the scene each member keeps the look it was added with. */}

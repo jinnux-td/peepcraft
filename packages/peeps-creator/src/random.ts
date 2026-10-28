@@ -1,11 +1,12 @@
 // Dice. One per tab changes that slot only; the toolbar one changes every part.
 import type { Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
-import { choose, optionsFor, partId, showPeep } from './state.ts'
+import { extras } from '@kit/things'
+import { choose, chooseExtra, optionsFor, partId, showPeep } from './state.ts'
 import { swatches, type CreatorState } from './types.ts'
 
 export type Rng = () => number
-export type Target = 'all' | 'type' | 'figures' | Slot
+export type Target = 'all' | 'type' | 'figures' | 'extra' | Slot
 
 const types = ['standing', 'sitting', 'bust'] as const
 export const slots: readonly Slot[] = ['body', 'head', 'face', 'facialHair', 'accessories']
@@ -20,6 +21,7 @@ function other<T>(list: readonly T[], current: T | null, rng: Rng): T {
 export function randomize(s: CreatorState, target: Target, rng: Rng = Math.random): CreatorState {
   if (target === 'figures') return { ...s, figure: other(figures.map((f) => f.id), s.figure, rng) }
   if (target === 'type') return showPeep(s, other(types, s.type, rng))
+  if (target === 'extra') return chooseExtra(s, other(extras.map((t) => t.id), s.extra?.id ?? null, rng))
   if (target !== 'all') return choose(s, target, other(optionsFor(s.type, target).map((a) => a.id), partId(s, target), rng))
   // A transparent background is a decision, not a colour to shuffle; a locked one or a locked part stays too.
   const bg = s.bg === 'transparent' || s.locked?.includes('bg') ? s.bg : other(swatches.bg, s.bg, rng)

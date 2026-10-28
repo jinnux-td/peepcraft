@@ -21,7 +21,9 @@ export interface AtomMeta {
   height: number
 }
 
-export type Atom = ((props: AtomProps) => ReactElement) & AtomMeta
+/** The meta, plus the pieces that can take their own colour (hair, a top, a tie) with the colour each comes in: `{ top: '#90a7e0' }`.
+ *  A Peep draws them only when given a colour; the creator draws each in its own until one is picked. Empty for a face or an accessory. */
+export type Atom = ((props: AtomProps) => ReactElement) & AtomMeta & { pieces: Readonly<Record<string, string>> }
 
 export interface Draw {
   ink: string
@@ -39,5 +41,5 @@ export function atom(meta: AtomMeta, draw: (c: Draw) => ReactElement[]): Atom {
     return createElement('g', rest, ...draw({ ink, paper, ref: (id) => `${uid}-${id}` }))
   }
   Component.displayName = `Peep${meta.category}.${meta.id}`
-  return Object.assign(Component, meta)
+  return Object.assign(Component, meta, { pieces: {} })
 }

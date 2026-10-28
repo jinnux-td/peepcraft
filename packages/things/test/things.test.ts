@@ -2,12 +2,12 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
-import { catalogue, lookup, things } from '../src/index.ts'
+import { catalogue, extras, lookup, things } from '../src/index.ts'
 
-test('18 things in four groups, ids unique and kebab-case', () => {
-  assert.equal(things.length, 18)
+test('22 things in five groups, ids unique and kebab-case', () => {
+  assert.equal(things.length, 22)
   assert.equal(catalogue.size, things.length)
-  assert.deepEqual([...new Set(things.map((t) => t.group))], ['furniture', 'home', 'small', 'pets'])
+  assert.deepEqual([...new Set(things.map((t) => t.group))], ['furniture', 'home', 'small', 'pets', 'extra'])
   for (const t of things) assert.match(t.id, /^[a-z]+(-[a-z]+)*$/)
   assert.throws(() => lookup('nope'), /no thing "nope"; known: chair/)
 })
@@ -34,13 +34,24 @@ test('every point is inside the canvas, so the bottom edge is the floor', () => 
   }
 })
 
-test('named parts take their own colour and fall back to paper; the menu lists them once, in drawing order', () => {
+test('named parts take their own colour and fall back to paper; each lists the colour it comes in, once, in drawing order', () => {
   const plant = lookup('potted-plant')
-  assert.deepEqual(plant.slots, ['leaves'])
-  assert.deepEqual(lookup('desk').slots, ['drawers', 'top'])
-  assert.deepEqual(lookup('mug').slots, [])
+  assert.deepEqual(plant.pieces, { leaves: '#52b788' })
+  assert.deepEqual(Object.keys(lookup('desk').pieces), ['drawers', 'top'])
+  assert.deepEqual(lookup('mug').pieces, {})
   const html = renderToStaticMarkup(createElement(plant, { paper: '#eeeeee', colors: { leaves: '#2d6a4f' } }))
   assert.match(html, /fill="#2d6a4f" data-part="leaves"/)
   assert.match(html, /fill="#eeeeee"/, 'the pot keeps the paper colour')
   assert.match(renderToStaticMarkup(createElement(plant, { paper: '#eeeeee' })), /fill="#eeeeee" data-part="leaves"/)
+})
+
+test('extras: bubbles come in black lines on light grey, take other colours, and each has a place by the head', () => {
+  assert.deepEqual(extras.map((t) => t.id), ['bubble', 'round-bubble', 'thought-bubble', 'aura'])
+  for (const t of extras) assert.ok(t.group === 'extra' && t.place, t.id)
+  for (const t of extras.slice(0, 3)) assert.ok(t.ink === '#111111' && t.paper === '#f2f2f2', t.id)
+  assert.deepEqual(lookup('aura').place, { around: 150 })
+  const B = lookup('bubble')
+  assert.deepEqual([B.ink, B.paper], ['#111111', '#f2f2f2'])
+  assert.match(renderToStaticMarkup(createElement(B)), /^<g stroke="#111111".*fill="#f2f2f2"/)
+  assert.match(renderToStaticMarkup(createElement(B, { ink: '#e63946', paper: '#ffffff' })), /^<g stroke="#e63946".*fill="#ffffff"/)
 })

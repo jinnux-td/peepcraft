@@ -260,18 +260,18 @@ test('scene colours: the leaves and the pot of a plant apart, and the own lines 
   const roles = full.getByRole('radiogroup', { name: 'Colour of' });
   assert.deepEqual(await roles.getByRole('radio').allInnerTexts(), ['Lines', 'Fill', 'Leaves']);
   await roles.getByRole('radio', { name: 'Leaves' }).click();
-  await full.getByRole('button', { name: 'Leaves #52b788' }).click();
+  await full.getByRole('button', { name: 'Leaves #2d6a4f' }).click();
   await roles.getByRole('radio', { name: 'Fill' }).click();
   await full.getByRole('button', { name: 'Fill #fde9d0' }).click();
-  assert.equal(await stage.locator('[data-part=leaves][fill="#52b788"]').count(), 7);
+  assert.equal(await stage.locator('[data-part=leaves][fill="#2d6a4f"]').count(), 7);
   assert.ok(await stage.locator('[data-item="0"] path[fill="#fde9d0"]').count() > 0, 'the pot takes the fill');
 
   await full.getByRole('button', { name: 'Add', exact: true }).click();
-  assert.deepEqual(await roles.getByRole('radio').allInnerTexts(), ['Skin', 'Hair', 'Hat', 'Top', 'Clothes', 'Face', 'Facial hair', 'Accessories', 'Lines', 'Fill'], 'a peep has its parts, and the pieces its head and outfit have');
+  assert.deepEqual(await roles.getByRole('radio').allInnerTexts(), ['Skin', 'Hair', 'Hat', 'Top', 'Clothes', 'Face', 'Accessories', 'Lines', 'Fill'], 'a peep has its parts, and the pieces its head and outfit have');
   await roles.getByRole('radio', { name: 'Lines' }).click();
   await full.getByRole('button', { name: 'Lines #1d3557' }).click();
   assert.ok(await stage.locator('[data-item="1"] [fill="#1d3557"]').count() > 0);
-  assert.equal(await stage.locator('[data-part=leaves][fill="#52b788"]').count(), 7, 'the plant keeps its colours');
+  assert.equal(await stage.locator('[data-part=leaves][fill="#2d6a4f"]').count(), 7, 'the plant keeps its colours');
   await page.close();
 });
 
@@ -283,7 +283,8 @@ test('scene frame: 16:9 widens the stage and the PNG, zoom closes in, the corner
   const box = (await stage.boundingBox())!;
   assert.ok(Math.abs(box.width / box.height - 16 / 9) < 0.02, `the stage is 16:9 (${box.width} x ${box.height})`);
 
-  const handle = stage.locator('[data-handle]');
+  assert.equal(await stage.locator('[data-handle]').count(), 4, 'a handle at each corner');
+  const handle = stage.locator('[data-handle][data-corner="1,1"]');
   const before = (await stage.locator('[data-item="0"]').boundingBox())!;
   const h = (await handle.boundingBox())!;
   await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
@@ -368,8 +369,8 @@ const pickIn = async (full: Locator, tab: string, part: string, colour: string) 
 test('part colours in the builder: each tab shows the colours of its items, skin tones for Skin, back to the default skin', async () => {
   const page = await open(); const full = page.locator('#full'); const stage = full.getByTestId('pc-stage');
   const dots = async (tab: string) => { await full.getByRole('tab', { name: tab, exact: true }).click(); return full.getByRole('radiogroup', { name: 'Colour of' }).getByRole('radio').allInnerTexts(); };
-  assert.deepEqual(await dots('Hair'), ['Hair', 'Hat', 'Skin'], 'the bun has a hair tie');
-  assert.deepEqual(await dots('Body'), ['Top', 'Clothes', 'Skin'], 'a tee: no jacket, no shoes');
+  assert.deepEqual(await dots('Hair'), ['Hair', 'Hat', 'Line', 'Skin'], 'the bun has a hair tie, and its own lines');
+  assert.deepEqual(await dots('Body'), ['Top', 'Line', 'Clothes', 'Skin'], 'a tee: no jacket, no shoes');
   await full.getByRole('tab', { name: 'Hair', exact: true }).click();
   await full.getByRole('radiogroup', { name: 'Colour of' }).getByRole('radio', { name: 'Skin', exact: true }).click();
   assert.ok(await full.getByRole('button', { name: 'Skin #c68642' }).isVisible(), 'skin tones are offered first');
@@ -385,7 +386,7 @@ test('part colours in the builder: each tab shows the colours of its items, skin
   await full.getByRole('radiogroup', { name: 'Colour of' }).getByRole('radio', { name: 'Skin', exact: true }).click();
   await full.getByRole('button', { name: 'Back to its own colour' }).click();
   assert.ok(!(await slot('head').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#c68642'))), 'the picked skin is gone');
-  assert.ok(await slot('head').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#d08b5b')), 'back to the skin a peep starts with');
+  assert.ok(await slot('head').evaluateAll((ps) => ps.some((p) => p.getAttribute('fill') === '#ffdbbe')), 'back to the skin a peep starts with');
   assert.ok(await stage.locator('[data-slot=head] [data-hair-ink] path[fill="#a55728"]').count() > 0, 'the hair stays');
   await page.close();
 });

@@ -112,7 +112,7 @@ export const creatorCss = `
 .pc-add span:last-child svg{width:14px;height:14px}
 .pc-selected{fill:none;stroke:#1b1b1b;stroke-width:2.5;stroke-dasharray:8 6;vector-effect:non-scaling-stroke;pointer-events:none;filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff)}
 .pc-stage[data-view=scene]{aspect-ratio:var(--pc-ratio,1);width:min(100%,calc(72vh * var(--pc-ratio,1)))}
-.pc-handle{fill:#fff;stroke:#1b1b1b;stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
+.pc-members .pc-tile[draggable]{cursor:grab}.pc-members .pc-tile[data-over]{outline:2px dashed var(--pc-accent);outline-offset:2px}.pc-handle{touch-action:none}.pc-handle circle:last-child{fill:#fff;stroke:#1b1b1b;stroke-width:1.5;vector-effect:non-scaling-stroke}
 .pc-frame{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:center;width:100%}
 .pc-frame .pc-pill button{padding:6px 12px;font-size:13px;text-transform:none}
 .pc-frame .pc-slider{width:320px;max-width:100%}

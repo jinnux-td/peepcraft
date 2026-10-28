@@ -1,16 +1,21 @@
 // Finds the white areas of each body, pose, head and beard atom of @kit/peeps, as enclosed by its lines, and its solid black shapes (hair, a
-// black shirt), so the skin and each piece (hair, hat, top, jacket, bottoms, shoes) can take its own colour: the pack draws skin, clothes and
+// black shirt), so the skin and each piece (hair, hat, top, a tie: any name) can take its own colour: the pack draws skin, clothes and
 // hats as one white shape, and hair and black clothes in the ink of the lines. Two steps, needs Chromium (playwright-core, a root dev dependency):
 //   node scripts/build-peeps-skin.ts sheets <dir> [atoms]   numbered contact sheets of every area (white 0, 1, ...; solid k0, k1, ...)
 //   node scripts/build-peeps-skin.ts review [dir]   a picture per atom in test colours with its areas numbered (default review/skin)
-//   node scripts/build-peeps-skin.ts write          packages/peeps/scripts/skin-labels.json -> packages/peeps/src/skin.ts
-// The labels list, per atom, the numbers of its skin areas, of the things it holds (props) and of each role. Numbers are stable for the same
+//   node scripts/build-peeps-skin.ts write          packages/peeps/scripts/skin-labels.json -> packages/peeps/src/skin.ts (areas and the
+//                                                   colours each piece comes in, from peeps-item-colors.ts and the labels' own)
+//   node scripts/build-peeps-skin.ts refine [port]  a page to fix areas, lassos and colours by hand -> packages/peeps/scripts/skin-feedback.json
+//   node scripts/build-peeps-skin.ts apply          skin-feedback.json -> skin-labels.json (areas, lassos and colours)
+// The labels list, per atom, the numbers of its skin areas, of the things it holds (props) and of each piece. Numbers are stable for the same
 // art, K, gap closing, cuts and splits. A head or a beard's unlabelled pieces are its hair.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { chromium, type Page } from 'playwright-core'
 import { catalogue, type Atom, type Category } from '../packages/peeps/src/index.ts'
+import { itemColors, KNOWN } from './peeps-item-colors.ts'
 
 /** Raster scale: 1 px is 4 units, finer than the lines (12 to 20 units) that the edges hide under. */
 const K = 0.25
@@ -22,8 +27,9 @@ const OUT = new URL('../packages/peeps/src/skin.ts', import.meta.url)
 
 interface Area { area: number; cx: number; cy: number; runs: [number, number, number][] }
 
-/** In the page: draw the atom (paper red, ink black), find the 4-connected red areas, give every drawn pixel to the nearest one, return row runs. */
-async function segment([svg, w, h, k, close]: [string, number, number, number, number]): Promise<Area[]> {
+/** In the page: draw the atom (paper red, ink black), find the 4-connected red areas, give every drawn pixel to the nearest one, return row
+ *  runs; and the white left to no area (a white line over black, dashes in hair), as the atom's own lines. */
+async function segment([svg, w, h, k, close]: [string, number, number, number, number]): Promise<{ areas: Area[]; lines: [number, number, number][] }> {
   const img = new Image()
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
   await img.decode()
@@ -83,7 +89,22 @@ async function segment([svg, w, h, k, close]: [string, number, number, number, n
       x = e + 1
     }
   }
-  return found.map(({ cells }, n) => {
+  // White too thin or too far from every area to be one, and its blend into the black around it; a speck of 1 or 2 px is noise.
+  const loose = (i: number) => owner[i] < 0 && px[4 * i + 3] > 30 && px[4 * i] > 90 && px[4 * i + 1] < 90 && px[4 * i + 2] < 90
+  const keep = new Uint8Array(W * H), done = new Uint8Array(W * H)
+  for (let s = 0; s < W * H; s++) {
+    if (done[s] || !loose(s)) continue
+    const bit = [s], stack = [s]
+    done[s] = 1
+    while (stack.length) {
+      const i = stack.pop()!, x = i % W
+      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < W * H && !done[j] && loose(j)) { done[j] = 1; bit.push(j); stack.push(j) }
+    }
+    if (bit.length >= 3) for (const i of bit) keep[i] = 1
+  }
+  const lines: [number, number, number][] = []
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (keep[y * W + x]) { let e = x; while (e + 1 < W && keep[y * W + e + 1]) e++; lines.push([y, x, e]); x = e }
+  const areas = found.map(({ cells }, n) => {
     let sx = 0, sy = 0
     for (const i of cells) { sx += i % W; sy += (i / W) | 0 }
     // Where its number goes: the area's own pixel nearest its centre, so an L-shaped area is not numbered outside itself.
@@ -92,6 +113,7 @@ async function segment([svg, w, h, k, close]: [string, number, number, number, n
     for (const i of cells) { const e = (i % W - mx) ** 2 + (((i / W) | 0) - my) ** 2; if (e < d) { d = e; best = i } }
     return { area: cells.length, cx: (best % W) / k, cy: ((best / W) | 0) / k, runs: runsOf[n] }
   })
+  return { areas, lines }
 }
 
 /** In the page: the solid black shapes of the atom (hair, a black shirt), as row runs, without the strokes. Every black pixel less than `rim`
@@ -267,27 +289,137 @@ const boxOf = async (page: Page, A: Atom): Promise<Box> => {
 const markup = (A: Atom, ink: string, paper: string, cuts: string[] = [], [x, y, w, h]: Box = [0, 0, A.width, A.height], splits: string[] = []) => renderToStaticMarkup(createElement('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: `${x} ${y} ${w} ${h}`, width: w, height: h },
   createElement(A, { ink, paper }), ...[...cuts.map((d) => [d, ink]), ...splits.map((d) => [d, paper])].map(([d, stroke], i) => createElement('path', { key: i, d, fill: 'none', stroke, strokeWidth: 8, strokeLinecap: 'round', strokeLinejoin: 'round' }))))
 
-/** What a part of an outfit or a head is, for its own colour. */
-const ROLES = ['hair', 'hat', 'top', 'jacket', 'bottoms', 'shoes'] as const
-type Role = (typeof ROLES)[number]
+/** A piece of an outfit or a head that takes its own colour: 'hair', 'top', or any name a label gives ('tie', 'sleeves'). */
+type Role = string
 /** A white area by its number, or a solid black shape as "k" and its number. */
 type Ref = number | `k${number}`
+/** The keys of a label that are not a piece. */
+const META = new Set(['skin', 'props', 'close', 'cuts', 'splits', 'holes', 'lasso', 'zonesAt', 'joins', 'colors'])
 /** A label is the list of skin areas, or that list with the areas of what the atom holds (props, which keep the peep's paper when the
- *  clothes take a colour), the areas of each role, the gap closing (px) and the cuts it was segmented with. */
-type Label = number[] | ({ skin: number[]; props?: number[]; close?: number; cuts?: string[]; splits?: string[]; holes?: string[] } & { [R in Role]?: Ref[] })
+ *  clothes take a colour), the gap closing (px), the cuts it was segmented with, the lassos and, per zone (the labelled areas of one piece:
+ *  skin, props, top), how many of them lie under it (`zonesAt`, 0 if not set: all over it), shapes joined to an area (`joins`), the colours
+ *  set by hand, and under any other key the areas of that piece. */
+type Label = number[] | { skin: number[]; props?: number[]; close?: number; cuts?: string[]; splits?: string[]; holes?: string[]; lasso?: Lasso[]; zonesAt?: Record<string, number>; joins?: Join[]; colors?: Record<Role, string> }
+/** A shape drawn by hand in the refine page ("M x y L x y ... Z", atom units, one or more closed shapes): what it covers of the drawing
+ *  becomes `role` ('none': the base fill). Lassos are layers, the first lowest; each zone of the labelled areas is a layer among them. Applied
+ *  to pixels after the areas are found, so it never renumbers them. */
+interface Lasso { role: Role | 'skin' | 'props' | 'none'; d: string; note?: string }
+/** A shape drawn by hand and joined to one of the atom's own areas ("6", or "k0" for a solid): what it covers is part of that area, takes
+ *  its piece and lies with it under the lassos. */
+interface Join { ref: string; d: string }
+/** The areas a label gives a piece. */
+const refsOf = (l: Label | undefined, r: Role): Ref[] => (Array.isArray(l) || !l ? [] : (l as unknown as Record<string, Ref[]>)[r] ?? [])
+/** The pieces of an atom, known ones first: those its label and lassos name, and hair for a head or a beard. */
+function namesOf(key: string, l: Label | undefined): Role[] {
+  const named = Array.isArray(l) || !l ? [] : Object.keys(l).filter((k) => !META.has(k))
+  const all = new Set([...(key.startsWith('head/') || key.startsWith('facialHair/') ? ['hair'] : []), ...named, ...lassosOf(l).map((s) => s.role).filter((r) => r !== 'skin' && r !== 'props' && r !== 'none')])
+  return [...KNOWN.filter((r) => all.has(r)), ...[...all].filter((r) => !(KNOWN as readonly string[]).includes(r))]
+}
+const colorsOf = (l: Label | undefined) => (Array.isArray(l) ? {} : l?.colors ?? {})
+/** The colours an item comes in: its pieces' (the rules', or set by hand), and its black lines when set by hand (`line`), as its ink. */
+const ownColors = (key: string, has: Parameters<typeof itemColors>[1], l: Label | undefined) =>
+  ({ ...itemColors(key, has, colorsOf(l)), ...(colorsOf(l).line ? { ink: colorsOf(l).line } : {}) })
+/** A piece's test colour in the review and refine pages: its own for the known pieces, a hue from its name for any other. */
+const TEST: Record<Role, string> = { hair: '#e0533d', hat: '#8e44ad', top: '#38b6ff', jacket: '#16a085', bottoms: '#3048c8', shoes: '#f39c12' }
+const test = (r: Role) => TEST[r] ?? `hsl(${[...r].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 3600, 7) % 360} 70% 50%)`
 const labelsOf = (): Record<string, Label> => JSON.parse(readFileSync(LABELS, 'utf8'))
 const skinOf = (l: Label | undefined) => (Array.isArray(l) ? l : l?.skin ?? [])
 const propsOf = (l: Label | undefined) => (Array.isArray(l) ? [] : l?.props ?? [])
 const cutsOf = (l: Label | undefined) => (Array.isArray(l) ? [] : l?.cuts ?? [])
 const splitsOf = (l: Label | undefined) => (Array.isArray(l) ? [] : l?.splits ?? [])
 const holesOf = (l: Label | undefined) => (Array.isArray(l) ? [] : l?.holes ?? [])
+const lassosOf = (l: Label | undefined) => (Array.isArray(l) ? [] : l?.lasso ?? [])
+const joinsOf = (l: Label | undefined) => (Array.isArray(l) ? [] : l?.joins ?? [])
+const zonesAtOf = (l: Label | undefined) => (Array.isArray(l) ? {} : l?.zonesAt ?? {})
 const runsOf = (areas: Area[], list: number[]) => list.flatMap((i) => areas[i].runs)
+type Runs = [number, number, number][]
+
+/** The pixels of row runs inside (or outside) a polygon in atom units, each pixel tested at its centre. */
+function clipRuns(runs: Runs, poly: number[][], [ox, oy]: Box, inside: boolean): Runs {
+  const out: Runs = []
+  for (const [y, a, b] of runs) {
+    const py = (y + 0.5) / K + oy, xs: number[] = []
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [x1, y1] = poly[i], [x2, y2] = poly[j]
+      if (y1 > py !== y2 > py) xs.push((x1 + ((py - y1) / (y2 - y1)) * (x2 - x1) - ox) * K - 0.5)
+    }
+    xs.sort((p, q) => p - q)
+    const segs: [number, number][] = []
+    for (let i = 0; i + 1 < xs.length; i += 2) segs.push([Math.max(a, Math.ceil(xs[i])), Math.min(b, Math.floor(xs[i + 1]))])
+    const hit = segs.filter(([s, e]) => s <= e)
+    if (inside) { for (const [s, e] of hit) out.push([y, s, e]); continue }
+    let x = a
+    for (const [s, e] of hit) { if (s > x) out.push([y, x, s - 1]); x = Math.max(x, e + 1) }
+    if (x <= b) out.push([y, x, b])
+  }
+  return out
+}
+/** Row runs without the pixels of `cut`. */
+function minus(runs: Runs, cut: Runs): Runs {
+  const rows = new Map<number, [number, number][]>()
+  for (const [y, a, b] of cut) (rows.get(y) ?? rows.set(y, []).get(y)!).push([a, b])
+  const out: Runs = []
+  for (const [y, a, b] of runs) {
+    let x = a
+    for (const [s, e] of (rows.get(y) ?? []).filter(([s, e]) => e >= a && s <= b).sort((p, q) => p[0] - q[0])) { if (s > x) out.push([y, x, s - 1]); x = Math.max(x, e + 1) }
+    if (x <= b) out.push([y, x, b])
+  }
+  return out
+}
+// Self-check: a cut in the middle of a run leaves both ends; another row is untouched.
+if (JSON.stringify(minus([[1, 0, 9], [2, 0, 3]], [[1, 3, 5]])) !== '[[1,0,2],[1,6,9],[2,0,3]]') throw new Error('minus')
+// Self-check: a 4 px square lasso over one 8 px run keeps pixels 2..5 inside and the rest outside.
+{ const sq = [[2, 0], [6, 0], [6, 4], [2, 4]].map(([x, y]) => [x / K, y / K]), r: Runs = [[1, 0, 7]]
+  if (JSON.stringify([clipRuns(r, sq, [0, 0, 0, 0], true), clipRuns(r, sq, [0, 0, 0, 0], false)]) !== '[[[1,2,5]],[[1,0,1],[1,6,7]]]') throw new Error('clipRuns') }
+
+/** Every coloured piece of an atom as row runs: its skin, props, and each role's white (`paper`) and solid (`ink`) areas, with its lassos
+ *  laid over them in order. Each zone of the labelled areas (skin, props, a piece's) is a layer too: a lasso under it (`zonesAt`) shows
+ *  only where the zone is not; a head's hair zone is all its areas not labelled otherwise, other unlabelled areas are under every lasso. */
+function pieces(key: string, l: Label | undefined, areas: Area[], black: Area[], box: Box, lines: Runs = []): Record<string, Runs> {
+  const r = rolesOf(key, l, areas, black)
+  const out: Record<string, Runs> = { skin: runsOf(areas, skinOf(l)), props: runsOf(areas, propsOf(l)) }
+  for (const x of Object.keys(r)) { out[`${x}.paper`] = runsOf(areas, r[x].white); out[`${x}.ink`] = runsOf(black, r[x].solid) }
+  // The atom's own white lines are a piece, line-1; a lasso can give part of them to another (line-2, or the top).
+  if (lines.length) { out['line-1.paper'] = [...(out['line-1.paper'] ?? []), ...lines]; out['line-1.ink'] ??= [] }
+  const white = [...areas.flatMap((a) => a.runs), ...lines], solid = black.flatMap((a) => a.runs)
+  // What a shape covers becomes `role` (none: no piece): each closed shape of it in turn, so they add up.
+  const lay = (role: string | undefined, d: string) => {
+    for (const shape of d.split(/(?=M)/)) {
+      const n = shape.match(/-?[\d.]+/g)!.map(Number), poly = Array.from({ length: n.length / 2 }, (_, j) => [n[2 * j], n[2 * j + 1]])
+      for (const k in out) out[k] = clipRuns(out[k], poly, box, false)
+      if (role === 'skin' || role === 'props') out[role].push(...clipRuns(white, poly, box, true))
+      else if (role && role !== 'none') { out[`${role}.paper`].push(...clipRuns(white, poly, box, true)); out[`${role}.ink`].push(...clipRuns(solid, poly, box, true)) }
+    }
+  }
+  // Joined shapes are part of the drawing's own areas: they take their area's piece before any zone or lasso.
+  for (const { ref, d } of joinsOf(l)) {
+    const n = Number(ref.replace('k', '')), list = ref[0] === 'k' ? 'solid' : 'white'
+    lay(list === 'white' && skinOf(l).includes(n) ? 'skin' : list === 'white' && propsOf(l).includes(n) ? 'props' : Object.keys(r).find((x) => r[x][list].includes(n)), d)
+  }
+  const lassos = lassosOf(l), at = zonesAtOf(l)
+  // The areas by zone, each taken off while the lassos under it are drawn.
+  const labelled: Record<string, Runs> = Object.fromEntries(Object.entries(out).map(([k, v]) => [k, [...v]]))
+  const under = (k: string) => Math.min(at[k.split('.')[0]] ?? 0, lassos.length)
+  for (const k in out) if (under(k)) out[k] = minus(out[k], labelled[k])
+  // The zones over `i` lassos laid back over them: white areas over white pixels, solids over solid ones.
+  const ink = (k: string) => k.endsWith('.ink'), relabel = (i: number) => {
+    const keys = Object.keys(labelled).filter((k) => under(k) === i && labelled[k].length)
+    if (!keys.length) return
+    for (const k in out) out[k] = [...minus(out[k], keys.filter((z) => ink(z) === ink(k)).flatMap((z) => labelled[z])), ...(keys.includes(k) ? labelled[k] : [])]
+  }
+  lassos.forEach(({ role, d }, i) => {
+    if (i) relabel(i)
+    lay(role, d)
+  })
+  if (lassos.length) relabel(lassos.length)
+  return out
+}
 /** The white areas and solids of each role. A head or a beard's are hair unless labelled otherwise (a hat, a band): its solids, and its
  *  white areas that are not skin. */
 function rolesOf(key: string, l: Label | undefined, areas: Area[], black: Area[]): Record<Role, { white: number[]; solid: number[] }> {
-  const out = Object.fromEntries(ROLES.map((r) => [r, { white: [] as number[], solid: [] as number[] }])) as Record<Role, { white: number[]; solid: number[] }>
+  const out = Object.fromEntries(namesOf(key, l).map((r) => [r, { white: [] as number[], solid: [] as number[] }])) as Record<Role, { white: number[]; solid: number[] }>
   const taken = new Set<string>(skinOf(l).map(String))
-  for (const r of ROLES) for (const ref of (Array.isArray(l) ? [] : l?.[r]) ?? []) {
+  for (const r of Object.keys(out)) for (const ref of refsOf(l, r)) {
     const solid = typeof ref === 'string', n = solid ? Number(ref.slice(1)) : ref
     if (!(solid ? black : areas)[n]) throw new Error(`${key} has no ${solid ? 'solid' : 'area'} ${ref}; was the art, K, close or a cut changed?`)
     out[r][solid ? 'solid' : 'white'].push(n)
@@ -305,22 +437,53 @@ async function areasOfAll() {
   const labels = labelsOf()
   const browser = await chromium.launch()
   const page = await browser.newPage()
-  const all = new Map<string, { atom: Atom; box: Box; areas: Area[]; solids: Area[] }>()
+  const all = new Map<string, { atom: Atom; box: Box; areas: Area[]; solids: Area[]; lines: Runs }>()
   for (const c of CATEGORIES) for (const A of catalogue[c].values()) {
     if (A.id === 'none') continue
     const key = `${c}/${A.id}`, l = labels[key]
     // --close=n tries a gap closing on the atoms listed for sheets, before it is written into their labels.
     const close = Number.isFinite(closeArg) ? closeArg : Array.isArray(l) || !l ? 0 : l.close ?? 0
     const box = await boxOf(page, A)
-    const areas = await page.evaluate(segment, [markup(A, '#000000', '#ff0000', cutsOf(l), box), box[2], box[3], K, close] as [string, number, number, number, number])
+    const { areas, lines } = await page.evaluate(segment, [markup(A, '#000000', '#ff0000', cutsOf(l), box), box[2], box[3], K, close] as [string, number, number, number, number])
     const black = await page.evaluate(solids, [markup(A, '#000000', '#ffffff', [], box, splitsOf(l)), box[2], box[3], K, RIM] as [string, number, number, number, number])
     const shift = (a: Area) => ({ ...a, cx: a.cx + box[0], cy: a.cy + box[1] })
-    all.set(key, { atom: A, box, areas: areas.map(shift), solids: black.map(shift) })
+    all.set(key, { atom: A, box, areas: areas.map(shift), solids: black.map(shift), lines })
   }
   return { all, page, browser }
 }
 
+/** What the refine page saves, per atom key: areas moved to another piece ("3" or "k0" to 'top', 'none' for unlabelled), the lassos (all
+ *  of them, replacing the label's) and how many lie under each zone, the joined shapes (replacing the label's), colours set by hand and a free note; and the piece names added in the
+ *  page, used or not yet. */
+interface Feedback { types?: Role[]; items: Record<string, { areas?: Record<string, Lasso['role']>; lassos?: Lasso[]; zonesAt?: Record<string, number>; joins?: Join[]; colors?: Record<Role, string>; note?: string }> }
+const FEEDBACK = new URL('../packages/peeps/scripts/skin-feedback.json', import.meta.url)
+/** JSON with a space after each `:` and `,` outside strings, as skin-labels.json is written. */
+const spaced = (v: unknown) => JSON.stringify(v).replace(/("(?:[^"\\]|\\.)*")|([,:])/g, (_, s, p) => s ?? p + ' ')
+
+/** skin-feedback.json into skin-labels.json (areas, lassos and colours). Notes are printed, for what labels can't say. */
+function applyFeedback() {
+  const fb: Feedback = JSON.parse(readFileSync(FEEDBACK, 'utf8')), labels = labelsOf()
+  for (const [key, f] of Object.entries(fb.items)) {
+    const was = labels[key], l = (Array.isArray(was) ? { skin: was } : { skin: [], ...was }) as Exclude<Label, number[]>
+    const lists = l as unknown as Record<string, Ref[]>, pieceKeys = () => Object.keys(l).filter((k) => !META.has(k))
+    for (const [ref, role] of Object.entries(f.areas ?? {})) {
+      const v: Ref = ref.startsWith('k') ? (ref as Ref) : Number(ref)
+      for (const list of ['skin', 'props', ...pieceKeys()]) if (lists[list]) lists[list] = lists[list].filter((x) => x !== v)
+      if (role === 'skin' || role === 'props') { if (typeof v === 'number') (l[role] ??= []).push(v) } else if (role !== 'none') (lists[role] ??= []).push(v)
+    }
+    for (const r of ['props', ...pieceKeys()]) if (lists[r]?.length === 0) delete lists[r]
+    if (f.lassos) { if (f.lassos.length) l.lasso = f.lassos; else delete l.lasso; if (Object.keys(f.zonesAt ?? {}).length) l.zonesAt = f.zonesAt; else delete l.zonesAt }
+    if (f.joins) { if (f.joins.length) l.joins = f.joins; else delete l.joins }
+    if (f.colors && Object.keys(f.colors).length) l.colors = { ...l.colors, ...f.colors }
+    labels[key] = l
+    console.log(`${key}: ${Object.keys(f.areas ?? {}).length} areas, ${f.lassos?.length ?? 0} lassos, ${Object.keys(f.colors ?? {}).length} colours${f.note ? ` · note: ${f.note}` : ''}`)
+  }
+  writeFileSync(LABELS, `{\n${Object.entries(labels).map(([k, l]) => `${JSON.stringify(k)}: ${spaced(l)}`).join(',\n')}\n}\n`)
+  console.log(`applied ${Object.keys(fb.items).length} items; next: node scripts/build-peeps-skin.ts write`)
+}
+
 const mode = process.argv[2]
+if (mode === 'apply') { applyFeedback(); process.exit(0) }
 const { all, page, browser } = await areasOfAll()
 if (mode === 'sheets') {
   const dir = process.argv[3]
@@ -353,27 +516,27 @@ if (mode === 'sheets') {
   mkdirSync(dir, { recursive: true })
   const labels = labelsOf()
   const SKIN = '#8d5524', CLOTHES = '#cfcfcf', PROP = '#ffffff'
-  const TEST: Record<Role, string> = { hair: '#e0533d', hat: '#8e44ad', top: '#38b6ff', jacket: '#16a085', bottoms: '#3048c8', shoes: '#f39c12' }
   const pictures: [string, string][] = []
   for (const [key, { atom: A, box, areas, solids: black }] of all) {
     const l = labels[key], skin = new Set(skinOf(l)), props = new Set(propsOf(l)), roles = rolesOf(key, l, areas, black)
-    const roleOf = (i: number, solid = false) => ROLES.find((r) => roles[r][solid ? 'solid' : 'white'].includes(i))
+    const roleOf = (i: number, solid = false) => Object.keys(roles).find((r) => roles[r][solid ? 'solid' : 'white'].includes(i))
     const valid = (set: Set<number>) => [...set].filter((i) => areas[i])
     const art = (paper: string, ink = '#111111') => markup(A, ink, paper, [], box).replace(/^<svg[^>]*>|<\/svg>$/g, '')
     const id = key.replace('/', '-')
-    const clipped = (name: string, list: number[], paper: string, from = areas, ink?: string) => list.length ? `<mask id="${name}${id}"><path fill="#fff" d="${outline(runsOf(from, list), box)}"/></mask><g mask="url(#${name}${id})">${art(ink ? '#ffffff' : paper, ink)}</g>` : ''
-    const roleLayers = ROLES.map((r) => clipped(`w${r}`, roles[r].white, TEST[r]) + clipped(`b${r}`, roles[r].solid, '', black, TEST[r])).join('')
+    const got = pieces(key, { ...(Array.isArray(l) ? { skin: [...skin] } : l), skin: valid(skin), props: valid(props) }, areas, black, box)
+    const clipped = (name: string, runs: Runs, paper: string, ink?: string) => runs.length ? `<mask id="${name}${id}"><path fill="#fff" d="${outline(runs, box)}"/></mask><g mask="url(#${name}${id})">${art(ink ? '#ffffff' : paper, ink)}</g>` : ''
+    const roleLayers = Object.keys(roles).map((r) => clipped(`w${r}`, got[`${r}.paper`], test(r)) + clipped(`b${r}`, got[`${r}.ink`], '', test(r))).join('')
     const holes = holesOf(l).map((d) => `<path d="${d}" fill="${SKIN}"/>`).join('')
-    const coloured = `<svg viewBox="${box.join(' ')}" style="width:100%;display:block;background:#f7d56e">${holes}${art(CLOTHES)}${clipped('p', valid(props), PROP)}${roleLayers}${clipped('s', valid(skin), SKIN)}</svg>`
+    const coloured = `<svg viewBox="${box.join(' ')}" style="width:100%;display:block;background:#f7d56e">${holes}${art(CLOTHES)}${clipped('p', got.props, PROP)}${roleLayers}${clipped('s', got.skin, SKIN)}</svg>`
     const fs = Math.max(A.width, A.height) / 20
-    const fill = (i: number) => (skin.has(i) ? SKIN : props.has(i) ? PROP : TEST[roleOf(i)!] ?? CLOTHES)
-    const cuts = cutsOf(l).map((c) => `<path d="${c}" fill="none" stroke="#e00" stroke-width="10" stroke-dasharray="24 16"/>`).join('')
+    const fill = (i: number) => { const r = roleOf(i); return skin.has(i) ? SKIN : props.has(i) ? PROP : r ? test(r) : CLOTHES }
+    const cuts = [...cutsOf(l), ...lassosOf(l).map((s) => s.d)].map((c) => `<path d="${c}" fill="none" stroke="#e00" stroke-width="10" stroke-dasharray="24 16"/>`).join('')
     const marks = areas.map((a, i) => `<path d="${outline(a.runs, box)}" fill="${fill(i)}" fill-opacity="${skin.has(i) ? 0.85 : 0.55}"/><text x="${a.cx}" y="${a.cy}" font-size="${fs}" font-family="sans-serif" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${skin.has(i) ? '#fff' : '#000'}" stroke="${skin.has(i) ? '#000' : '#fff'}" stroke-width="${fs / 7}" paint-order="stroke">${i}</text>`).join('') +
-      black.map((a, i) => `<path d="${outline(a.runs, box)}" fill="${TEST[roleOf(i, true)!] ?? '#555'}" fill-opacity=".8"/><text x="${a.cx}" y="${a.cy}" font-size="${fs * 0.8}" font-family="sans-serif" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="#fff" stroke="#000" stroke-width="${fs / 7}" paint-order="stroke">k${i}</text>`).join('')
+      black.map((a, i) => `<path d="${outline(a.runs, box)}" fill="${roleOf(i, true) ? test(roleOf(i, true)!) : '#555'}" fill-opacity=".8"/><text x="${a.cx}" y="${a.cy}" font-size="${fs * 0.8}" font-family="sans-serif" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="#fff" stroke="#000" stroke-width="${fs / 7}" paint-order="stroke">k${i}</text>`).join('')
     const numbered = `<svg viewBox="${box.join(' ')}" style="width:100%;display:block;background:#fff">${art('#ffffff')}${marks}${cuts}</svg>`
     pictures.push([key, coloured])
     await page.setViewportSize({ width: 1200, height: 700 })
-    await page.setContent(`<body style="margin:0;font:600 20px sans-serif"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px">${coloured}${numbered}</div><div style="padding:0 12px 12px">${key} &middot; skin areas: ${[...skin].join(', ') || 'none'} &middot; props: ${[...props].join(', ') || 'none'}${ROLES.map((r) => roles[r].white.length || roles[r].solid.length ? ` &middot; ${r}: ${[...roles[r].white, ...roles[r].solid.map((i) => `k${i}`)].join(', ')}` : '').join('')} &middot; ${areas.length} areas, ${black.length} solids</div></body>`)
+    await page.setContent(`<body style="margin:0;font:600 20px sans-serif"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px">${coloured}${numbered}</div><div style="padding:0 12px 12px">${key} &middot; skin areas: ${[...skin].join(', ') || 'none'} &middot; props: ${[...props].join(', ') || 'none'}${Object.keys(roles).map((r) => roles[r].white.length || roles[r].solid.length ? ` &middot; ${r}: ${[...roles[r].white, ...roles[r].solid.map((i) => `k${i}`)].join(', ')}` : '').join('')} &middot; ${areas.length} areas, ${black.length} solids</div></body>`)
     await page.screenshot({ path: `${dir}/${id}.png`, fullPage: true })
   }
   for (let s = 0; s * 12 < pictures.length; s++) {
@@ -384,22 +547,24 @@ if (mode === 'sheets') {
   console.log(`${pictures.length} pictures in ${dir}`)
 } else if (mode === 'write') {
   const labels = labelsOf()
-  const skin: string[] = [], props: string[] = [], holes: string[] = [], roles: string[] = [], whites: string[] = []
+  const skin: string[] = [], props: string[] = [], holes: string[] = [], roles: string[] = [], colors: string[] = [], whites: string[] = []
   for (const A of catalogue.face.values()) {
     const box = await boxOf(page, A)
     const runs = await page.evaluate(enclosed, [markup(A, '#000000', '#ffffff', [], box), box[2], box[3], K, 2] as [string, number, number, number, number])
     if (runs.length) whites.push(`  ${JSON.stringify(`face/${A.id}`)}: ${JSON.stringify(outline(runs, box))},`)
   }
-  for (const [key, { box, areas, solids: black }] of all) {
+  for (const [key, { box, areas, solids: black, lines }] of all) {
     if (!labels[key] && !key.startsWith('facialHair/')) throw new Error(`no label for ${key}: add its skin areas to skin-labels.json (an empty list for none)`)
-    const parts = Object.entries(rolesOf(key, labels[key], areas, black)).flatMap(([r, { white, solid }]) => white.length || solid.length
-      ? [`${r}: { ${[white.length ? `paper: ${JSON.stringify(outline(runsOf(areas, white), box))}` : '', solid.length ? `ink: ${JSON.stringify(outline(runsOf(black, solid), box))}` : ''].filter(Boolean).join(', ')} }`] : [])
-    if (parts.length) roles.push(`  ${JSON.stringify(key)}: { ${parts.join(', ')} },`)
-    if (key.startsWith('facialHair/')) continue
     const s = skinOf(labels[key]), p = propsOf(labels[key])
     for (const i of [...s, ...p]) if (!areas[i]) throw new Error(`${key} has no area ${i} (it has ${areas.length}); was the art, K, close or a cut changed?`)
-    skin.push(`  ${JSON.stringify(key)}: ${JSON.stringify(outline(runsOf(areas, s), box))},`)
-    if (p.length) props.push(`  ${JSON.stringify(key)}: ${JSON.stringify(outline(runsOf(areas, p), box))},`)
+    const got = pieces(key, labels[key], areas, black, box, lines)
+    const has = [...new Set([...namesOf(key, labels[key]), ...(got['line-1.paper']?.length ? ['line-1'] : [])])].filter((r) => got[`${r}.paper`].length || got[`${r}.ink`].length)
+    const parts = has.map((r) => `${JSON.stringify(r)}: { ${[got[`${r}.paper`].length ? `paper: ${JSON.stringify(outline(got[`${r}.paper`], box))}` : '', got[`${r}.ink`].length ? `ink: ${JSON.stringify(outline(got[`${r}.ink`], box))}` : ''].filter(Boolean).join(', ')} }`)
+    if (parts.length) roles.push(`  ${JSON.stringify(key)}: { ${parts.join(', ')} },`)
+    if (has.length || colorsOf(labels[key]).line) colors.push(`  ${JSON.stringify(key)}: ${JSON.stringify(ownColors(key, Object.fromEntries(has.map((r) => [r, { paper: got[`${r}.paper`].length > 0 }])), labels[key]))},`)
+    if (key.startsWith('facialHair/')) continue
+    skin.push(`  ${JSON.stringify(key)}: ${JSON.stringify(outline(got.skin, box))},`)
+    if (got.props.length) props.push(`  ${JSON.stringify(key)}: ${JSON.stringify(outline(got.props, box))},`)
     if (holesOf(labels[key]).length) holes.push(`  ${JSON.stringify(key)}: ${JSON.stringify(holesOf(labels[key]).join(''))},`)
   }
   writeFileSync(OUT, `// Generated by scripts/build-peeps-skin.ts from scripts/skin-labels.json. Do not edit.
@@ -410,13 +575,39 @@ export const skin: Readonly<Record<string, string>> = {\n${skin.join('\n')}\n}
 export const props: Readonly<Record<string, string>> = {\n${props.join('\n')}\n}
 /** Gaps the art leaves unpainted inside the skin (the inside of an elbow), filled in the skin colour under the atom. */
 export const holes: Readonly<Record<string, string>> = {\n${holes.join('\n')}\n}
-/** What a part of an outfit or a head is, for its own colour. */
-export type Role = ${ROLES.map((r) => `'${r}'`).join(' | ')}
-/** The areas of each role: \`paper\`, white areas, drawn again in the role's colour as paper; \`ink\`, solid black shapes (hair, a black shirt)
- *  less their edge, drawn again in it as ink. */
-export const roles: Readonly<Record<string, Partial<Record<Role, { paper?: string; ink?: string }>>>> = {\n${roles.join('\n')}\n}
+/** A piece of an outfit or a head that takes its own colour: 'hair', 'top', or any name its label gives ('tie', 'sleeves'). */
+export type Role = string
+/** The areas of each piece: \`paper\`, white areas, drawn again in the piece's colour as paper; \`ink\`, solid black shapes (hair, a black
+ *  shirt) less their edge, drawn again in it as ink. */
+export const roles: Readonly<Record<string, Readonly<Record<Role, { paper?: string; ink?: string }>>>> = {\n${roles.join('\n')}\n}
+/** The colour each piece of an atom comes in, known pieces first (hair, hat, top, jacket, bottoms, shoes). */
+export const colors: Readonly<Record<string, Readonly<Record<Role, string>>>> = {\n${colors.join('\n')}\n}
 /** The whites of each face the pack leaves see-through (eyes, teeth, a tear), filled in the face's paper under its lines. */
 export const whites: Readonly<Record<string, string>> = {\n${whites.join('\n')}\n}\n`)
   console.log(`wrote ${OUT.pathname}: ${skin.length} atoms, ${props.length} with props, ${(readFileSync(OUT).length / 1024).toFixed(0)} KB`)
-} else console.log('usage: build-peeps-skin.ts sheets <dir> [atoms] | review [dir] | write')
+} else if (mode === 'refine') {
+  // A page on 127.0.0.1 to move areas to another piece by clicking, draw lassos, add or remove piece names and set colours by hand; it saves
+  // skin-feedback.json as you go.
+  const labels = labelsOf(), INK = '#010101', PAPER = '#fefefe'
+  const items = [...all].map(([key, { atom: A, box, areas, solids: black, lines }]) => {
+    const shape = (a: Area) => ({ d: outline(a.runs, box), x: Math.round(a.cx), y: Math.round(a.cy) })
+    const r = rolesOf(key, labels[key], areas, black), has = Object.fromEntries(Object.entries(r).map(([n, a]) => [n, { paper: a.white.length > 0 || !a.solid.length }]))
+    // The white lines over black (line-1) are a piece of their own: listed, with their colour, though they are no area to click.
+    if (lines.length) has['line-1'] = { paper: true }
+    return { key, box, label: labels[key] ?? null, lines: lines.length > 0, colors: ownColors(key, has, labels[key]), art: markup(A, INK, PAPER, [], box).replace(/^<svg[^>]*>|<\/svg>$/g, ''), areas: areas.map(shape), solids: black.map(shape) }
+  })
+  const named = new Set(Object.entries(labels).flatMap(([k, l]) => namesOf(k, l)))
+  const data = JSON.stringify({ ink: INK, paper: PAPER, roles: [...KNOWN, ...[...named].filter((r) => !(KNOWN as readonly string[]).includes(r))], items })
+  const port = Number(process.argv[3] ?? 4184)
+  createServer((req, res) => {
+    const send = (type: string, body: string | Buffer, code = 200) => { res.writeHead(code, { 'content-type': type }); res.end(body) }
+    if (req.method === 'PUT' && req.url === '/feedback') {
+      let body = ''
+      req.on('data', (c) => (body += c))
+      req.on('end', () => { try { if (!JSON.parse(body).items) throw 0; writeFileSync(FEEDBACK, body); send('application/json', '{"ok":true}') } catch { send('text/plain', 'not a feedback file', 400) } })
+    } else if (req.url === '/data') send('application/json', data)
+    else if (req.url === '/feedback') send('application/json', existsSync(FEEDBACK) ? readFileSync(FEEDBACK) : '{"items":{}}')
+    else send('text/html; charset=utf-8', readFileSync(new URL('peeps-refine.html', import.meta.url)))
+  }).listen(port, '127.0.0.1', () => console.log(`refine: http://127.0.0.1:${port} (saves ${FEEDBACK.pathname})`))
+} else console.log('usage: build-peeps-skin.ts sheets <dir> [atoms] | review [dir] | write | refine [port] | apply')
 await browser.close()

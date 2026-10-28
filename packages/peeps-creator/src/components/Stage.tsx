@@ -12,7 +12,7 @@ export function Stage({ state, box, measured, onMeasure }: { state: CreatorState
     if (!el || measured) return
     const b = el.getBBox()
     if (b.width > 0) onMeasure(boxKey(state), { x: b.x, y: b.y, width: b.width, height: b.height })
-  }, [state.type, state.figure, measured, onMeasure])
+  }, [state.type, state.figure, state.extra?.id, measured, onMeasure])
   return (
     <div className="pc-stage" data-transparent={state.bg === 'transparent' || undefined} data-testid="pc-stage">
       <Scene state={state} box={box} measure={ref} />

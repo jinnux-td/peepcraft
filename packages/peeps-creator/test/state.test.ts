@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { choose, commit, optionsFor, partId, redo, setType, startHistory, tweak, undo } from '../src/state.ts'
 import { initialState } from '../src/types.ts'
 
@@ -51,7 +52,7 @@ test('the scene: add copies the look, members spread out, update, reorder and re
   let s = addToScene(choose(initialState, 'head', 'afro'), { x: 0, y: 100, width: 900, height: 1400 })
   s = addToScene({ ...s, figure: 'runner', ink: '#112233' })
   assert.equal(s.scene.length, 2)
-  assert.deepEqual({ ...s.scene[0], x: 0 }, { type: 'bust', parts: { head: 'afro' }, figure: null, ink: '#111111', paper: '#ffffff', partColors: {}, skin: '#d08b5b', flip: false, x: 0, size: 1, bottom: 1500 })
+  assert.deepEqual({ ...s.scene[0], x: 0 }, { type: 'bust', parts: { head: 'afro' }, figure: null, ink: '#111111', paper: '#ffffff', partColors: {}, skin: '#ffdbbe', flip: false, x: 0, size: 1, bottom: 1500 })
   assert.equal(s.scene[1].bottom, 1080, 'unmeasured: the bottom of the canvas')
   assert.equal(s.scene[1].ink, '#112233')
   assert.notEqual(s.scene[0].x, s.scene[1].x, 'the second member does not stand on the first')
@@ -89,6 +90,15 @@ test('resizing from the bottom-right handle keeps the top-left corner and stays 
   assert.equal(resizeEntry(s, 0, { x: e.x, lift: 0, size: 1 }, -99999, -99999).scene[0].size, SIZES.min)
   assert.equal(resizeEntry(s, 0, { x: e.x, lift: 0, size: 1 }, 99999, 0).scene[0].size, SIZES.max)
 })
+test('resizing from the top-left handle keeps the bottom-right corner', async () => {
+  const { addToScene, resizeEntry } = await import('../src/state.ts')
+  const { entryBox } = await import('../src/scene.ts')
+  const s = addToScene(initialState, undefined, { thing: 'table' })
+  const e = s.scene[0], b = entryBox(e)
+  const big = resizeEntry(s, 0, { x: e.x, lift: 0, size: 1 }, -b.width / 2, 0, [-1, -1]).scene[0], nb = entryBox(big)
+  assert.equal(big.size, 1.5)
+  assert.ok(Math.abs(nb.x + nb.width - b.x - b.width) < 1e-6 && Math.abs(nb.y + nb.height - b.y - b.height) < 1e-6, 'the bottom-right corner stays')
+})
 
 test('colours: a typed hex becomes #rrggbb, a name goes to the browser, the design lists its colours once', async () => {
   const { addToScene, designColors, toHex, updateEntry } = await import('../src/state.ts')
@@ -97,11 +107,11 @@ test('colours: a typed hex becomes #rrggbb, a name goes to the browser, the desi
   assert.equal(toHex('blue', (t) => (t === 'blue' ? '#0000ff' : null)), '#0000ff')
   let s = addToScene({ ...initialState, bg: 'transparent' }, undefined, { thing: 'potted-plant' })
   s = updateEntry(s, 0, { ink: '#1D3557', colors: { leaves: '#52b788' } })
-  assert.deepEqual(designColors(s), ['#111111', '#ffffff', '#d08b5b', '#1d3557', '#52b788'])
+  assert.deepEqual(designColors(s), ['#111111', '#ffffff', '#ffdbbe', '#1d3557', '#52b788'])
 })
 
 test('another item comes in its own colours: the pieces picked for the last one go, its lines and fill stay', async () => {
-  const { itemColors, wornColors } = await import('../src/outfit.ts')
+  const { atomKey, itemColors, wornColors } = await import('../src/outfit.ts')
   assert.deepEqual(itemColors('body/tee-1'), itemColors('body/tee-1'), 'the same colours on every load')
   assert.ok(itemColors('standing/walking-2').shoes && itemColors('head/bun').hat, 'one per piece the item has')
   const s = { ...initialState, partColors: { body: { top: '#123456', ink: '#1d3557' }, head: { hair: '#a55728' } } }
@@ -109,6 +119,8 @@ test('another item comes in its own colours: the pieces picked for the last one 
   assert.deepEqual(next.partColors, { body: { ink: '#1d3557' }, head: { hair: '#a55728' } })
   assert.equal(wornColors(next.type, next.parts, next.partColors).body?.top, itemColors('body/gym-shirt').top)
   assert.equal(wornColors(s.type, s.parts, s.partColors).body?.top, '#123456', 'a picked colour wins over the item own')
+  const back = choose(next, 'body', s.parts.body ?? 'tee-1')
+  assert.equal(wornColors(back.type, back.parts, back.partColors).body?.top, itemColors(atomKey(back.type, 'body', 'tee-1')).top, 'chosen again, it comes in its own colours')
 })
 
 test('glasses with a white frame have a Frame colour, white whatever the fill; a white moustache is white', async () => {
@@ -118,14 +130,17 @@ test('glasses with a white frame have a Frame colour, white whatever the fill; a
   assert.ok(ids('glasses-4').includes('frame')); assert.ok(!ids('glasses').includes('frame'), 'other glasses are lines only')
   const frame = peepTargets({ ...initialState, paper: '#fde9d0', parts: { accessories: 'glasses-4' } }, () => {}).find((t) => t.id === 'frame')!
   assert.equal(frame.value, '#ffffff')
-  assert.equal(itemColors('facialHair/moustache-6').hair, '#e8e1e1')
+  assert.equal(itemColors('facialHair/moustache-9').hair, '#feffff')
 })
 
 test('an outfit holds together: three colours at most, shoes repeat one of them, the top under a jacket white or black', async () => {
   const { itemColors } = await import('../src/outfit.ts')
   const { catalogue, roleAreas } = await import('@kit/peeps')
+  // Colours set by hand in a label are the person's choice, not the rules'.
+  const labels = JSON.parse(readFileSync(new URL('../../peeps/scripts/skin-labels.json', import.meta.url), 'utf8'))
   for (const c of ['body', 'standing', 'sitting'] as const) for (const a of catalogue[c].values()) {
     const key = `${c}/${a.id}`, o = itemColors(key), pieces = roleAreas[key] ?? {}
+    if (labels[key]?.colors) continue
     const worn = [o.top, o.jacket, o.bottoms, o.shoes].filter(Boolean)
     assert.ok(new Set(worn).size <= 3, `${key}: ${worn}`)
     if (o.shoes && pieces.shoes?.paper && (o.top || o.jacket || o.bottoms)) assert.ok([o.top, o.jacket, o.bottoms].includes(o.shoes), `${key} shoes`)
@@ -138,14 +153,39 @@ test('contrast: black lines on white only, the colours kept for when it is off',
   const { renderToStaticMarkup } = await import('react-dom/server')
   const s = { ...initialState, partColors: { body: { top: '#123456' } } }
   const html = (x: typeof s) => renderToStaticMarkup(peepOf(x).group())
-  assert.match(html(s), /#123456/); assert.match(html(s), /#d08b5b/)
+  assert.match(html(s), /#123456/); assert.match(html(s), /#ffdbbe/)
   const mono = html({ ...s, mono: true })
-  assert.doesNotMatch(mono, /#123456|#d08b5b|data-skin|data-top|<mask/, 'no colours, no skin')
+  assert.doesNotMatch(mono, /#123456|#ffdbbe|data-skin|data-top|<mask/, 'no colours, no skin')
   assert.deepEqual(s.partColors, { body: { top: '#123456' } })
 })
 
 test('colours set by hand for an item win over the rules, piece by piece', async () => {
   const { itemColors } = await import('../src/outfit.ts')
-  assert.equal(itemColors('facialHair/moustache-6').hair, '#e8e1e1')
+  assert.equal(itemColors('facialHair/moustache-6').hair, '#000000')
   assert.ok(itemColors('standing/walking-2').top, 'items without an entry keep the rules')
+})
+
+test('an extra on the peep: comes in its own colours, again when chosen again, goes into the scene with the peep, grows its canvas', async () => {
+  const { addToScene, chooseExtra } = await import('../src/state.ts')
+  const { drawn, withExtra } = await import('../src/scene.ts')
+  const { canvas } = await import('@kit/peeps')
+  const s = chooseExtra(initialState, 'bubble')
+  assert.deepEqual(s.extra, { id: 'bubble', ink: '#111111', paper: '#f2f2f2' })
+  const red = { ...s, extra: { ...s.extra!, paper: '#e63946' } }
+  assert.equal(chooseExtra(red, 'bubble').extra!.paper, '#f2f2f2', 'chosen again: its own colours')
+  assert.equal(chooseExtra(red, null).extra, undefined)
+  assert.deepEqual(addToScene(red).scene[0].extra, red.extra)
+  assert.equal(addToScene(red, undefined, { thing: 'mug' }).scene[0].extra, undefined, 'a thing wears none')
+  const c = canvas.bust, w = withExtra('bust', 'bubble'), d = drawn({ ...red, figure: null })
+  assert.ok(w.width > c.width && w.height >= c.height, 'room for the bubble')
+  assert.deepEqual([d.width, d.height], [w.width, w.height])
+  assert.equal(drawn({ ...red, figure: null }).item, d.item, 'one drawing per look, so a click on it is not lost')
+})
+
+test('dragging a member to another place in the order: the others close up around it', async () => {
+  const { addToScene, reorderEntry } = await import('../src/state.ts')
+  const s = ['chair', 'table', 'mug'].reduce((t, thing) => addToScene(t, undefined, { thing }), initialState)
+  assert.deepEqual(reorderEntry(s, 0, 2).scene.map((e) => e.thing), ['table', 'mug', 'chair'])
+  assert.deepEqual(reorderEntry(s, 2, 0).scene.map((e) => e.thing), ['mug', 'chair', 'table'])
+  assert.equal(reorderEntry(s, 1, 1), s); assert.equal(reorderEntry(s, 0, 9), s)
 })

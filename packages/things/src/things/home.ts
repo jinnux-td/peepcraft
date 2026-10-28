@@ -9,7 +9,7 @@ export const pottedPlant = thing({ id: 'potted-plant', label: 'Potted plant', gr
   ...fan(380, 560, [[-150, 380], [-30, 380], [-120, 470], [-60, 470], [-95, 520], [-170, 300], [-10, 300]]),
   [poly(160, 600, 600, 600, 535, 1090, 225, 1090)],
   [rect(125, 545, 510, 100, 30)],
-])
+], { leaves: '#52b788' })
 
 /** A tall plant: leaves along a stem, alternating sides. */
 const stem = (x: number, top: number, bottom: number): Part[] => {
@@ -27,7 +27,7 @@ export const tallPlant = thing({ id: 'tall-plant', label: 'Tall plant', group: '
   [vein(660, 380, -95, 330), 'none'],
   [poly(330, 2250, 970, 2250, 900, 2890, 400, 2890)],
   [rect(290, 2190, 720, 120, 40)],
-])
+], { leaves: '#2d6a4f' })
 
 export const floorLamp = thing({ id: 'floor-lamp', label: 'Floor lamp', group: 'home', width: 900, height: 2980 }, [
   [rect(428, 600, 44, 2320, 22)],
@@ -35,7 +35,7 @@ export const floorLamp = thing({ id: 'floor-lamp', label: 'Floor lamp', group: '
   ['M450 560V720', 'none'],
   [poly(300, 120, 600, 120, 770, 640, 130, 640), 'shade'],
   ['M190 600H710', 'none'],
-])
+], { shade: '#ffe066' })
 
 /** Books standing on a shelf from x0 to x1 at y: [width, height, dark] each, with a gap after a leaning one. */
 const books = (x0: number, y: number, list: ReadonlyArray<[number, number, boolean?]>): Part[] => {
@@ -57,10 +57,10 @@ export const bookshelf = thing({ id: 'bookshelf', label: 'Bookshelf', group: 'ho
   [rect(80, 2380, 1480, 60, 8)],
   [rect(250, 2700, 1140, 360, 30)],
   [ellipse(820, 2880, 40), 'ink'],
-])
+], { books: '#ff8fa3' })
 
 export const rug = thing({ id: 'rug', label: 'Rug', group: 'home', width: 4000, height: 380 }, [
   [ellipse(2000, 190, 1960, 170)],
   [ellipse(2000, 190, 1660, 120), 'none'],
   [ellipse(2000, 190, 1300, 80), 'centre'],
-])
+], { centre: '#ff8fa3' })

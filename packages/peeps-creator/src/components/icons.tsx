@@ -9,6 +9,7 @@ export const icons = {
   type: draw(<><circle cx="12" cy="5" r="2.5" /><path d="M12 8v7M8 11h8M10 21l2-6 2 6" /></>),
   body: draw(<path d="M8 4 3 7l2 4 3-1v10h8V10l3 1 2-4-5-3c0 2-1.5 3-4 3S8 6 8 4z" />),
   head: draw(<path d="M12 3c-4 0-7 3-7 7v3c0 2 1 3 2 3v-6c3 0 6-1 8-3 1 1 2 2 2 4v5c1 0 2-1 2-3v-3c0-4-3-7-7-7z" />),
+  extra: draw(<path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />),
   face: draw(<><circle cx="12" cy="12" r="9" /><path d="M8 14c1.2 1.6 2.6 2.4 4 2.4s2.8-.8 4-2.4M9 9.5h.01M15 9.5h.01" /></>),
   facialHair: draw(<path d="M3 13c3-4 6-2 9 0 3-2 6-4 9 0-3 1-5 5-9 1-4 4-6 0-9-1z" />),
   accessories: draw(<><circle cx="6.5" cy="14" r="3.5" /><circle cx="17.5" cy="14" r="3.5" /><path d="M10 14h4M3 14l2-6M21 14l-2-6" /></>),

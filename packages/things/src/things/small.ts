@@ -20,7 +20,7 @@ export const books = thing({ id: 'books', label: 'Books', group: 'small', width:
   [rect(55, 120, 380, 90, 14), 'ink'],
   [rect(30, 30, 400, 90, 14), 'covers'],
   ['M70 60H390M70 90H390', 'none'],
-])
+], { covers: '#52b788' })
 
 export const phone = thing({ id: 'phone', label: 'Phone', group: 'small', width: 150, height: 290 }, [
   [rect(15, 10, 120, 270, 26)],

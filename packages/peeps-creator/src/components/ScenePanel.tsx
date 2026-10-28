@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { things } from '@kit/things'
 import { lookup as lookupFigure } from '@kit/transhumans'
 import { LIFT, SCENE, sceneWidth } from '../scene.ts'
@@ -33,7 +33,7 @@ export function SceneSources({ state, onAdd, uploads, uploadNote, onUpload, onDe
       <div className="pc-grid pc-small pc-things" aria-label="Things">
         {things.map((t) => (
           <button key={t.id} className="pc-tile" onClick={() => onAdd({ thing: t.id })} aria-label={`Add ${t.label.toLowerCase()}`} title={`Add ${t.label.toLowerCase()}`}>
-            <LookThumb look={{ ...state, figure: null, thing: t.id }} bg={state.bg} /><span>{t.label}</span>
+            <LookThumb look={{ ...state, figure: null, thing: t.id, ink: t.ink ?? state.ink, paper: t.paper ?? state.paper }} bg={state.bg} /><span>{t.label}</span>
           </button>
         ))}
       </div>
@@ -59,18 +59,22 @@ export function SceneSources({ state, onAdd, uploads, uploadNote, onUpload, onDe
 }
 
 /** The right side of the Scene tab: the members, back to front; pick one to move, size, lift, flip, reorder or remove it. */
-export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit, onRemove, onMove }: {
+export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit, onRemove, onMove, onReorder }: {
   state: CreatorState; selected: number | null; onSelect: (i: number | null) => void
   /** Colours already in the picture, offered first under "more colours". */
   used: readonly string[]
   /** Sliders and colours: no undo step of their own. */
-  onLive: (i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'lift' | 'ink' | 'paper' | 'colors' | 'partColors'>>) => void
+  onLive: (i: number, patch: Partial<Pick<SceneEntry, 'x' | 'size' | 'lift' | 'ink' | 'paper' | 'colors' | 'partColors' | 'extra'>>) => void
   onCommit: (i: number, patch: Partial<Pick<SceneEntry, 'flip'>>) => void
   onRemove: (i: number) => void; onMove: (i: number, by: 1 | -1) => void
+  /** A member dragged to another place in the order. */
+  onReorder: (from: number, to: number) => void
 }) {
   const I = icons
   const e = selected !== null ? state.scene[selected] : undefined
   const grid = useRef<HTMLDivElement>(null)
+  // The member being dragged, and the place it would land.
+  const [dragged, setDragged] = useState<number | null>(null), [over, setOver] = useState<number | null>(null)
   useEffect(() => { grid.current?.querySelector('[aria-checked=true]')?.scrollIntoView({ block: 'nearest' }) }, [selected])
   return (
     <>
@@ -78,7 +82,13 @@ export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit
       {state.scene.length > 0 && (
         <div className="pc-grid pc-members" role="radiogroup" aria-label="Scene" ref={grid}>
           {state.scene.map((m, i) => (
-            <button key={i} role="radio" aria-checked={selected === i} className="pc-tile" onClick={() => onSelect(selected === i ? null : i)} title={`${i + 1}. ${name(m)}`}>
+            <button key={i} role="radio" aria-checked={selected === i} className="pc-tile" onClick={() => onSelect(selected === i ? null : i)} title={`${i + 1}. ${name(m)}. Drag to change the order`}
+              draggable data-over={over === i && dragged !== i ? '' : undefined}
+              onDragStart={(ev) => { setDragged(i); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(i)) }}
+              onDragOver={(ev) => { if (dragged === null) return; ev.preventDefault(); setOver(i) }}
+              onDragLeave={() => setOver((o) => (o === i ? null : o))}
+              onDrop={(ev) => { ev.preventDefault(); if (dragged !== null) onReorder(dragged, i); setDragged(null); setOver(null) }}
+              onDragEnd={() => { setDragged(null); setOver(null) }}>
               <LookThumb look={m} bg={state.bg} /><span>{i + 1}. {name(m)}</span>
             </button>
           ))}
@@ -89,7 +99,8 @@ export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit
           <Slider label="Position" value={Math.round((e.x / sceneWidth(state)) * 100)} min={0} max={100} step={1} unit="%" reset={50} onChange={(v) => onLive(selected, { x: (v / 100) * sceneWidth(state) })} />
           <Slider label="Size" value={e.size} min={0.2} max={2} step={0.05} reset={1} onChange={(size) => onLive(selected, { size })} />
           <Slider label="Lift" value={Math.round(((e.lift ?? 0) / SCENE) * 100)} min={LIFT.min * 100} max={LIFT.max * 100} step={1} unit="%" reset={0} onChange={(v) => onLive(selected, { lift: (v / 100) * SCENE })} />
-          {!e.upload && <ColorTargets compact used={used} targets={e.thing ? thingTargets({ ...e, thing: e.thing }, (p) => onLive(selected, p)) : peepTargets(e, (p) => onLive(selected, p), !!e.figure)} />}
+          {/* A member keeps one Lines chip; the lines of each part are set in the builder. */}
+          {!e.upload && <ColorTargets compact used={used} targets={e.thing ? thingTargets({ ...e, thing: e.thing }, (p) => onLive(selected, p)) : peepTargets(e, (p) => onLive(selected, p), !!e.figure).filter((t) => !t.id.endsWith('-line'))} />}
           <div className="pc-row">
             <button className="pc-btn" aria-label="Flip" title="Flip" aria-pressed={e.flip} onClick={() => onCommit(selected, { flip: !e.flip })}><I.flip /><span>Flip</span></button>
             <button className="pc-btn" aria-label="Back" title="Back" onClick={() => onMove(selected, -1)} disabled={selected === 0}><I.back /><span>Back</span></button>
@@ -97,7 +108,7 @@ export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit
             <button className="pc-btn" aria-label="Remove" title="Remove" onClick={() => onRemove(selected)}><I.remove /><span>Remove</span></button>
           </div>
         </div>
-      ) : state.scene.length > 0 && <p className="pc-note">Pick one here, or drag it on the stage.</p>}
+      ) : state.scene.length > 0 && <p className="pc-note">Pick one here, or drag it on the stage. Drag one here to change the order.</p>}
     </>
   )
 }

@@ -2,14 +2,14 @@
 // shape as a peeps atom or a transhumans figure (width, height, ink, paper), so a peeps Scene places it with no import between the packages.
 import { createElement, type ReactElement, type SVGProps } from 'react'
 
-export type Group = 'furniture' | 'home' | 'small' | 'pets'
+export type Group = 'furniture' | 'home' | 'small' | 'pets' | 'extra'
 
 export interface ThingProps extends Omit<SVGProps<SVGGElement>, 'ref'> {
   /** Line colour, and the dark fills. */
   ink?: string
   /** Fill inside the lines. */
   paper?: string
-  /** Colours of the named parts (`slots`), such as `{ pot: '#c96' }`; a part left out takes `paper`. */
+  /** Colours of the named parts (`pieces`), such as `{ pot: '#c96' }`; a part left out takes `paper`. */
   colors?: Partial<Record<string, string>>
 }
 
@@ -21,10 +21,18 @@ export interface ThingMeta {
   /** Canvas size in the peeps' hi-res units (a standing peep is about 3100 tall, so about 18 units per cm). The bottom edge is the floor. */
   width: number
   height: number
+  /** The line and fill colours it comes in, when not the peeps' black on white (a speech bubble is light grey inside). */
+  ink?: string
+  paper?: string
+  /** An extra a peep wears. By the head (a speech bubble): where its canvas goes, its top left from the origin of the peep's head, and its
+   *  scale. Around the peep (an aura): drawn behind it following its outline, reaching `around` units out; the drawing itself is only for
+   *  a scene or a thumbnail. */
+  place?: { x: number; y: number; scale: number } | { around: number }
 }
 
-/** The meta, plus the named parts that can take their own colour, in drawing order. */
-export type Thing = ((props: ThingProps) => ReactElement) & ThingMeta & { slots: readonly string[] }
+/** The meta, plus the named parts that can take their own colour, in drawing order, with the colour each comes in: `{ leaves: '#52b788' }`.
+ *  The component draws them in \`colors\`, else in paper; the creator draws each in its own until one is picked. */
+export type Thing = ((props: ThingProps) => ReactElement) & ThingMeta & { pieces: Readonly<Record<string, string>> }
 
 /** One closed or open path, outlined in ink and filled with paper, ink, nothing, or a named part's colour (`'pot'`). */
 export type Part = [d: string, fill?: 'paper' | 'ink' | 'none' | (string & {})]
@@ -36,13 +44,14 @@ export const PAPER = '#FFFFFF'
 /** Line width; close to the strokes of the Open Peeps art at the same scale. */
 export const LINE = 20
 
-export function thing(meta: ThingMeta, parts: readonly Part[]): Thing {
-  const Component = ({ ink = INK, paper = PAPER, colors = {}, ...rest }: ThingProps) =>
+/** `colors`: the colour each named part comes in; one left out comes in paper white. */
+export function thing(meta: ThingMeta, parts: readonly Part[], colors: Readonly<Record<string, string>> = {}): Thing {
+  const Component = ({ ink = meta.ink ?? INK, paper = meta.paper ?? PAPER, colors = {}, ...rest }: ThingProps) =>
     createElement('g', { ...rest, stroke: ink, strokeWidth: LINE, strokeLinecap: 'round', strokeLinejoin: 'round' },
       ...parts.map(([d, fill = 'paper'], i) => createElement('path', { key: i, d, fill: fill === 'ink' ? ink : fill === 'none' ? 'none' : fill === 'paper' ? paper : colors[fill] ?? paper, 'data-part': FIXED.includes(fill) ? undefined : fill })))
   Component.displayName = `Thing.${meta.id}`
   const slots = [...new Set(parts.map(([, f = 'paper']) => f).filter((f) => !FIXED.includes(f)))]
-  return Object.assign(Component, meta, { slots })
+  return Object.assign(Component, meta, { pieces: Object.fromEntries(slots.map((s) => [s, colors[s] ?? PAPER])) })
 }
 
 // Path helpers. Numbers are rounded so the generated markup stays short.
