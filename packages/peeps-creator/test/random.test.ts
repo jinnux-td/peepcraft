@@ -23,8 +23,26 @@ test('the dice of one tab changes that slot only, to another valid option', () =
 test('the dice of all changes every part, deterministically for one seed', () => {
   const a = randomize(initialState, 'all', seeded(3)), b = randomize(initialState, 'all', seeded(3))
   assert.deepEqual(a, b)
-  for (const slot of slots) assert.notEqual(partId(a, slot), partId(initialState, slot), slot)
+  for (const slot of slots.filter((x) => x !== 'mask')) assert.notEqual(partId(a, slot), partId(initialState, slot), slot)
   assert.ok((swatches.bg as readonly string[]).includes(a.bg))
+  assert.notEqual(a.skin, initialState.skin, 'the skin too'); assert.notEqual(a.ink, a.paper, 'lines never in the fill colour')
+  assert.equal(a.type, 'bust', 'the type is locked at first'); assert.equal(partId(a, 'mask'), 'none', 'so are the mask'); assert.equal(a.extra, undefined, 'and the extra')
+})
+
+test('unlocked, Shuffle all rolls the type first and then parts of that type, a mask and an extra; a locked colour stays', async () => {
+  const { toggleLock } = await import('../src/state.ts')
+  const open = (['type', 'mask', 'extra'] as const).reduce((t, w) => toggleLock(t, w), toggleLock(initialState, 'skin'))
+  assert.deepEqual(open.locked, ['skin'])
+  // One after another, as pressed: never the same item twice in a row, so None comes back after a mask or an extra.
+  const rng = seeded(7), rolls: CreatorState[] = []
+  for (let i = 0, t = open; i < 40; i++) rolls.push(t = randomize(t, 'all', rng))
+  assert.ok(rolls.some((r) => r.type !== 'bust'), 'another type')
+  for (const r of rolls) {
+    assert.ok(optionsFor(r.type, 'body').some((a) => a.id === partId(r, 'body')), `${r.type} wears a body of its own type`)
+    assert.equal(r.skin, initialState.skin, 'the locked skin stays')
+  }
+  assert.ok(rolls.some((r) => partId(r, 'mask') !== 'none') && rolls.some((r) => r.extra), 'masks and extras come up')
+  assert.ok(rolls.some((r) => !r.extra), 'and none of them too')
 })
 
 test('the dice of all leaves a transparent background alone', () => {
@@ -67,10 +85,10 @@ test('the dice of the type tab takes a figure off the stage', () => {
 test('shuffle all leaves what is locked: the background, a part', async () => {
   const { toggleLock } = await import('../src/state.ts')
   let s: CreatorState = toggleLock(toggleLock({ ...initialState, parts: { head: 'afro' } }, 'bg'), 'head')
-  assert.deepEqual(s.locked, ['bg', 'head'])
+  assert.deepEqual(s.locked, ['type', 'mask', 'extra', 'bg', 'head'])
   assert.notEqual(partId(randomize(s, 'all'), 'body'), 'tee-1', 'the rest still rolls')
   for (let i = 0; i < 20; i++) s = randomize(s, 'all')
   assert.equal(s.bg, initialState.bg); assert.equal(s.parts.head, 'afro')
   assert.equal(randomize(s, 'head', () => 0).parts.head !== 'afro', true, 'the dice of the tab still changes a locked part')
-  assert.deepEqual(toggleLock(s, 'head').locked, ['bg'])
+  assert.deepEqual(toggleLock(s, 'head').locked, ['type', 'mask', 'extra', 'bg'])
 })

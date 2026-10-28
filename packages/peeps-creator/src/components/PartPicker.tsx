@@ -4,7 +4,7 @@ import { extras } from '@kit/things'
 import { figures } from '@kit/transhumans'
 import { tabColors, type ColorTarget } from '../colors.ts'
 import { optionsFor, partId } from '../state.ts'
-import type { CreatorState, Tab } from '../types.ts'
+import type { CreatorState, Lockable, Tab } from '../types.ts'
 import { icons, type IconName } from './icons.tsx'
 import { Lock } from './Lock.tsx'
 import { Swatches } from './Swatches.tsx'
@@ -25,11 +25,13 @@ export const nice = (label: string) => { const t = label.replace(/[_-]+/g, ' ').
 /** Category tabs on the left, the options of the open tab as a grid, a dice that changes only this tab, and the colours of what the tab is
  *  about (the hair and the hat, the pieces of the outfit) as dots: one opens its swatches. The Scene tab shows `children`. */
 export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, onType, onFigure, onExtra, onDice, onLock, children }: {
-  state: CreatorState; tab: Tab; onTab: (t: Tab) => void; boxes: Boxes; colors: ColorTarget[]; used: readonly string[]; onLock: (slot: Slot) => void
+  state: CreatorState; tab: Tab; onTab: (t: Tab) => void; boxes: Boxes; colors: ColorTarget[]; used: readonly string[]; onLock: (what: Lockable) => void
   onChoose: (slot: Slot, id: string) => void; onType: (t: PeepType) => void; onFigure: (id: string | null) => void; onExtra: (id: string | null) => void; onDice: (target: Exclude<Tab, 'scene'>) => void
   children?: ReactNode
 }) {
   const slot = tab === 'type' || tab === 'figures' || tab === 'scene' || tab === 'extra' ? null : tab
+  // What the padlock of the tab keeps when shuffling all: its part, the type, or the extra.
+  const lockable: Lockable | null = slot ?? (tab === 'type' || tab === 'extra' ? tab : null)
   // Parts belong to the peep builder; while a figure is on the stage they have nothing to act on.
   const onFigureNow = state.figure !== null && tab !== 'figures'
   const label = tabs.find((t) => t.id === tab)!.label
@@ -72,14 +74,14 @@ export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, o
           <span>{label}<small>{tab === 'figures' ? `${figures.length} whole figures` : tab === 'extra' ? `${extras.length} to choose from, worn by the peep` : slot ? `${options.length} to choose from` : 'the shape of the figure'}</small></span>
           {slot && <button className="pc-chip" aria-pressed={onPeep} onClick={() => setOnPeep(!onPeep)} title="Show each item on the whole peep">On peep</button>}
           <button className="pc-view" aria-pressed={list} aria-label="Show as a list" title={list ? 'Show as a grid' : 'Show as a list'} onClick={() => setList(!list)}><View /></button>
-          {slot && <Lock what={label} locked={!!state.locked?.includes(slot)} onToggle={() => onLock(slot)} />}
+          {lockable && <Lock what={label} locked={!!state.locked?.includes(lockable)} onToggle={() => onLock(lockable)} />}
           <button className="pc-dice" disabled={onFigureNow} onClick={() => onDice(tab as Exclude<Tab, 'scene'>)} aria-label={`Random ${label.toLowerCase()}`} title={`Random ${label.toLowerCase()}`}><Dice /></button>
         </h2>
         {!onFigureNow && dots.length > 0 && (
           <div className="pc-dots" role="radiogroup" aria-label="Colour of">
             {dots.map((d) => (
               <button key={d.id} role="radio" aria-checked={d.id === open} data-tip={`${d.label} ${d.value}`} className="pc-token" onClick={() => setOpen(d.id === open ? null : d.id)}>
-                <i style={{ background: d.value }} data-changed={d.reset ? '' : undefined} /><span>{d.label}</span>
+                <i style={{ background: d.value }} data-changed={d.reset ? '' : undefined}>{d.lock?.locked && <span className="pc-token-lock" aria-hidden="true"><icons.lock /></span>}</i><span>{d.label}</span>
               </button>
             ))}
           </div>
@@ -87,6 +89,7 @@ export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, o
         {!onFigureNow && picked && (
           <div className="pc-picked">
             <Swatches label={picked.label} value={picked.value} options={picked.options} used={used} onChange={picked.onChange} />
+            {picked.lock && <Lock what={picked.label} locked={picked.lock.locked} onToggle={picked.lock.toggle} />}
             {picked.reset && <button className="pc-link" onClick={picked.reset.run}>{picked.reset.label}</button>}
           </div>
         )}

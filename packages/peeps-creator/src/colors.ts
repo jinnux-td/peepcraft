@@ -7,7 +7,11 @@ import { SKIN, swatches, type Parts } from './types.ts'
 
 /** One thing that can be coloured: a label for its chip, its colour now, the dots offered first, and how to set or clear it. `slot`, for a
  *  piece an item carries (hair, a top, a tie): the slot of that item. */
-export interface ColorTarget { id: string; label: string; value: string; options: readonly string[]; onChange: (c: string) => void; reset?: { label: string; run: () => void }; slot?: Slot }
+export interface ColorTarget {
+  id: string; label: string; value: string; options: readonly string[]; onChange: (c: string) => void; reset?: { label: string; run: () => void }; slot?: Slot
+  /** A colour of the whole peep (skin, lines, fill) can be kept as it is when shuffling all. */
+  lock?: { locked: boolean; toggle: () => void }
+}
 
 type Look = { ink: string; paper: string; partColors?: PartColors; skin?: string; type?: PeepType; parts?: Parts; extra?: { id: string; ink: string; paper: string } }
 

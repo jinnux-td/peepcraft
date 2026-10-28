@@ -5,14 +5,14 @@ import { randomize, type Target } from '../random.ts'
 import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
 import { addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
 import { creatorCss } from '../styles.ts'
-import { initialState, RATIOS, swatches, type CreatorState, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
+import { initialState, RATIOS, swatches, type CreatorState, type Lockable, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
 import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
 import { icons } from './icons.tsx'
 import { Lock } from './Lock.tsx'
 import { useTip } from './Tip.tsx'
 import { PartPicker } from './PartPicker.tsx'
 import { SceneMembers, SceneSources } from './ScenePanel.tsx'
-import { peepTargets } from '../colors.ts'
+import { peepTargets, type ColorTarget } from '../colors.ts'
 import { Slider } from './Slider.tsx'
 import { Stage } from './Stage.tsx'
 import { Swatches } from './Swatches.tsx'
@@ -79,6 +79,9 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
 
   const record = (fn: (s: CreatorState) => CreatorState) => setHist((h) => commit(h, fn(h.now)))
   const live = (patch: Partial<CreatorState>) => setHist((h) => tweak(h, { ...h.now, ...patch }))
+  // The colours of the whole peep (skin, lines, fill) each have a padlock against Shuffle all.
+  const withLock = (t: ColorTarget): ColorTarget => (t.id === 'skin' || t.id === 'ink' || t.id === 'paper'
+    ? { ...t, lock: { locked: !!state.locked?.includes(t.id), toggle: () => live(toggleLock(state, t.id as Lockable)) } } : t)
   const dice = (target: Target) => record((s) => randomize(s, target))
   const onMeasure = useCallback((key: string, outline: Box) => setBoxes((b) => ({ ...b, [key]: outline })), [])
   const key = boxKey(state)
@@ -167,7 +170,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
 
       <div className="pc-main">
         <PartPicker
-          state={state} tab={tab} onTab={openTab} boxes={boxes} colors={peepTargets(state, live, !!state.figure || !!state.mono)} used={used} onLock={(slot) => live(toggleLock(state, slot))}
+          state={state} tab={tab} onTab={openTab} boxes={boxes} colors={peepTargets(state, live, !!state.figure || !!state.mono).map(withLock)} used={used} onLock={(slot) => live(toggleLock(state, slot))}
           onChoose={(slot: Slot, id) => record((s) => choose(s, slot, id))} onType={(t) => record((s) => showPeep(s, t))} onFigure={(id) => record((s) => chooseFigure(s, id))} onExtra={(id) => record((s) => chooseExtra(s, id))} onDice={(t) => dice(t)}
         >
           <SceneSources

@@ -459,6 +459,29 @@ test('locks: Shuffle all keeps a locked background and a locked part', async () 
   await page.close();
 });
 
+test('locks of the type, mask, extra and the colours of the whole peep: type, mask and extra locked at first; a locked colour shows a padlock', async () => {
+  const page = await open(); const full = page.locator('#full');
+  const lock = (name: string) => full.getByRole('button', { name: `Lock ${name}`, exact: true });
+  const tab = (name: string) => full.getByRole('tab', { name, exact: true }).click();
+  await tab('Type'); assert.equal(await lock('Type').getAttribute('aria-pressed'), 'true', 'the type is locked at first');
+  await tab('Mask'); assert.equal(await lock('Mask').getAttribute('aria-pressed'), 'true');
+  await tab('Extra'); assert.equal(await lock('Extra').getAttribute('aria-pressed'), 'true');
+  await tab('Type');
+  const dots = full.getByRole('radiogroup', { name: 'Colour of' });
+  await dots.getByRole('radio', { name: /^Skin/ }).click();
+  const skinDot = dots.getByRole('radio', { name: /^Skin/ }).locator('.pc-token-lock');
+  assert.equal(await skinDot.count(), 0);
+  await lock('Skin').click();
+  assert.equal(await skinDot.count(), 1, 'a padlock on the dot of a locked colour');
+  const skin = await dots.getByRole('radio', { name: /^Skin/ }).getAttribute('data-tip');
+  await lock('Type').click();
+  const types = new Set<string | null>();
+  for (let i = 0; i < 6; i++) { await full.getByRole('button', { name: 'Shuffle all' }).click(); types.add(await full.getByRole('radiogroup', { name: 'Type' }).getByRole('radio', { checked: true }).innerText()); }
+  assert.ok(types.size > 1, `unlocked, the type changes (${[...types]})`);
+  assert.equal(await dots.getByRole('radio', { name: /^Skin/ }).getAttribute('data-tip'), skin, 'the locked skin stays');
+  await page.close();
+});
+
 test('thumbnails show each item by itself, or on the whole peep with "On peep"; the page and a tab open at the top', async () => {
   const page = await open(); const full = page.locator('#full');
   assert.equal(await page.evaluate(() => scrollY), 0, 'the page loads at its top');

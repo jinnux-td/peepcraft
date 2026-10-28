@@ -143,7 +143,8 @@ export const creatorCss = `
 .pc-token[aria-checked=true]{background:var(--pc-tile);border-color:var(--pc-accent);color:var(--pc-text);font-weight:600}
 .pc-token i{position:relative;width:24px;height:24px;border-radius:50%;border:2px solid var(--pc-line);box-shadow:inset 0 0 0 1px #0000001a}
 .pc-token i[data-changed]::after{content:"";position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--pc-accent);border:2px solid var(--pc-surface)}
-.pc-token span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-token i .pc-token-lock{position:absolute;right:-7px;bottom:-7px;display:grid;place-items:center;width:15px;height:15px;border-radius:50%;background:var(--pc-accent);color:var(--pc-on-accent);border:1.5px solid var(--pc-surface)}.pc-token i .pc-token-lock svg{width:10px;height:10px;stroke-width:2.6}
+.pc-token>span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pc-picked{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:14px;background:var(--pc-tile)}
 .pc-picked>.pc-field>.pc-label,.pc-compact .pc-token span,.pc-compact>.pc-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .pc-compact .pc-picked>.pc-field>.pc-label{position:static;width:auto;height:auto;clip-path:none}

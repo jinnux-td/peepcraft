@@ -27,7 +27,7 @@ picture shows is what you get.
 | Colour dots (Top, Pants, Bandana, Mask, Skin, ...) | One per piece the current item carries (`atom.pieces`). Click one to open its swatches; hover for the hex. A colour you pick stays until you choose another item in that tab; any item chosen, even the same one again, comes in its own colours. "Back to its own colour" undoes a pick. |
 | **On peep** | Off: each picture shows the item alone. On: each item on the whole peep. Off on every load. |
 | Grid / list button | Grid of pictures, or a list with the full name of each. |
-| Padlock | Locks this part: **Shuffle all** leaves it alone. The dice of the tab still changes it. |
+| Padlock | Locks this part (on Type, the type; on Extra, the extra): **Shuffle all** leaves it alone. The dice of the tab still changes it. |
 | Dice | A random item in this tab only. |
 
 **Which dots each tab shows:**
@@ -43,7 +43,11 @@ picture shows is what you get.
 | Accessories | Accessories (its lines); Frame for glasses-4 (the white frame) |
 | Figures | Lines, Fill |
 
-**Shuffle all** rolls every part but the mask. The eyes-only faces (`masked-*`) come up only while a mask is worn.
+**Shuffle all** rolls, in order, the type, then each part of that type, the extra (or none), the skin, the lines and the fill; never the same
+choice twice in a row, and lines and fill never in one colour. Whatever is locked stays: the type, the mask and the extra are locked at
+first (so a shuffle keeps the type and adds no mask or extra until you unlock them). The colours of the whole peep (Skin, Lines, Fill) have
+a padlock beside their swatches; a locked one shows a small padlock on its dot. The eyes-only faces (`masked-*`) come up only while a mask
+is worn.
 
 **Right panel.** Background (with its own padlock), **Contrast** (lines in Lines, everything else in Fill; turning it off brings all colours
 back, picks included), Scale and Rotate, Flip (or `F`), PNG size, Save as SVG / PNG.
