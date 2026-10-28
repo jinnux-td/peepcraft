@@ -44,8 +44,8 @@ picture shows is what you get.
 | Figures | Lines, Fill |
 
 **Shuffle all** rolls, in order, the type, then each part of that type, the extra (or none), the skin, the lines and the fill; never the same
-choice twice in a row, and lines and fill never in one colour. Whatever is locked stays: the type, the mask and the extra are locked at
-first (so a shuffle keeps the type and adds no mask or extra until you unlock them). The colours of the whole peep (Skin, Lines, Fill) have
+choice twice in a row, and lines and fill never in one colour. Whatever is locked stays: the type, the lines, the mask and the extra are
+locked at first (so a shuffle keeps the type and the lines and adds no mask or extra until you unlock them). The colours of the whole peep (Skin, Lines, Fill) have
 a padlock beside their swatches; a locked one shows a small padlock on its dot. The eyes-only faces (`masked-*`) come up only while a mask
 is worn.
 

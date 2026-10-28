@@ -471,6 +471,7 @@ test('locks of the type, mask, extra and the colours of the whole peep: type, ma
   await dots.getByRole('radio', { name: /^Skin/ }).click();
   const skinDot = dots.getByRole('radio', { name: /^Skin/ }).locator('.pc-token-lock');
   assert.equal(await skinDot.count(), 0);
+  assert.equal(await dots.getByRole('radio', { name: /^Lines/ }).locator('.pc-token-lock').count(), 1, 'the lines are locked at first');
   await lock('Skin').click();
   assert.equal(await skinDot.count(), 1, 'a padlock on the dot of a locked colour');
   const skin = await dots.getByRole('radio', { name: /^Skin/ }).getAttribute('data-tip');

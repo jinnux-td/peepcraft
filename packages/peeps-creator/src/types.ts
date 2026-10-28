@@ -66,8 +66,8 @@ export type Tab = 'type' | Slot | 'extra' | 'figures' | 'scene'
 export const SKIN = '#d08b5b'
 
 export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', skin: SKIN, bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null, partColors: {}, scene: [], frame: { ratio: '1:1', zoom: 1 },
-  // Shuffle all keeps the type, and no mask or extra, until they are unlocked.
-  locked: ['type', 'mask', 'extra'] }
+  // Shuffle all keeps the type and the lines, and adds no mask or extra, until they are unlocked.
+  locked: ['type', 'ink', 'mask', 'extra'] }
 
 export const themes: ReadonlyArray<{ id: ThemeId; label: string; dot: string }> = [
   { id: 'sunny', label: 'Sunny', dot: '#f7d56e' }, { id: 'glass', label: 'Glass', dot: '#3d6bff' },
