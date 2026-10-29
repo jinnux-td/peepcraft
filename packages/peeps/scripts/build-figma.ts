@@ -26,9 +26,11 @@ const renamed: Record<string, string> = {
 const skipped = new Set(['head/Bun', 'head/Short 4', 'accessories/Glasses 5', 'head/doctor-nurse-2', 'head/doctor-nurse-2_2', 'head/doctor-nurse-3'])
 /** Layers named by Figma's defaults, by what they are: the yellow of a polo, the black of a face, a beard's grey. */
 const pieceNames: Record<string, string> = { path: 'top', shape: 'ink', 'path-4': 'ink', 'fill-4': 'clips', 'fill-6': 'clips' }
-/** The colours the standing and sitting poses came in before (the pack's, by the labels), kept over Figma's: their combinations read better.
+/** The colours the standing and sitting poses came in before (the pack's, by the labels), kept over Figma's: their combinations read better;
+ *  and Tee 1, the first peep's body, in white.
  *  Not closed-legs-2, whose Figma colours are kept. */
 const before: Record<string, Record<string, string>> = {
+  'body/tee-1': { top: '#ffffff' },
   'standing/blazer-1': { top: '#111111', jacket: '#d9a441', pants: '#c8b48a', shoes: '#d9a441' },
   'standing/blazer-2': { top: '#111111', jacket: '#8fae8b', pants: '#111111', shoes: '#8ead8a' },
   'standing/blazer-3': { top: '#111111', jacket: '#c49a6c', pants: '#7a6a45', shoes: '#7a6a45' },
