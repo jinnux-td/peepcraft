@@ -1,4 +1,4 @@
-// Browser test of the creator: a dice per tab, shuffle all, transparent background in the exports, theme button, undo, the panel layout, a phone.
+// Browser test of the creator: a dice per tab, shuffle all, transparent background in the exports, theme button, undo, full screen, a phone.
 // Needs Chromium (playwright-core finds the one Playwright installed).
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -101,14 +101,14 @@ test('the theme button changes the theme of this creator, and the choice is kept
   await page.close();
 });
 
-test('in a 560 px panel the creator stacks by its own width, the stage first', async () => {
+test('full screen: the creator fills the window edge to edge, the picker on the left', async () => {
   const page = await open(1440, 900);
-  const stage = (await page.locator('#panel [data-testid=pc-stage]').boundingBox())!;
-  const picker = (await page.locator('#panel [aria-label=Parts]').boundingBox())!;
-  assert.ok(picker.y > stage.y + stage.height - 1, 'the picker sits below the stage');
-  const wide = (await page.locator('#full [data-testid=pc-stage]').boundingBox())!;
-  const widePicker = (await page.locator('#full [aria-label=Parts]').boundingBox())!;
-  assert.ok(widePicker.x < wide.x, 'on a wide page the picker is on the left');
+  const box = (await page.locator('#full .pc').boundingBox())!;
+  assert.deepEqual([box.x, box.y, box.width], [0, 0, 1440], 'no margin around the creator');
+  assert.ok(box.height >= 900, `at least as tall as the window (${box.height})`);
+  const stage = (await page.locator('#full [data-testid=pc-stage]').boundingBox())!;
+  const picker = (await page.locator('#full [aria-label=Parts]').boundingBox())!;
+  assert.ok(picker.x < stage.x, 'on a wide page the picker is on the left');
   await page.close();
 });
 
