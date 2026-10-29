@@ -70,10 +70,12 @@ test('a transparent background: checkerboard on the stage, no rectangle in the S
   assert.equal(await full.getByTestId('pc-stage').getAttribute('data-transparent'), 'true');
 
   const [svg] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as SVG' }).click()]);
+  assert.equal(svg.suggestedFilename(), 'bust-bun-2-smile-tee-1.svg', 'named after the parts of the peep');
   const text = readFileSync((await svg.path())!, 'utf8');
   assert.match(text, /^<svg /); assert.doesNotMatch(text, /data-layer="background"/);
 
   const [png] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as PNG' }).click()]);
+  assert.equal(png.suggestedFilename(), 'bust-bun-2-smile-tee-1.png');
   const b64 = readFileSync((await png.path())!).toString('base64');
   const corner = await page.evaluate(async (data) => {
     const img = new Image(); img.src = `data:image/png;base64,${data}`; await img.decode();
@@ -194,7 +196,7 @@ test('a scene: add a peep and a figure, pick one on the stage, flip, reorder, re
   assert.equal(await stage.locator('[data-item="1"] [data-slot]').count(), 6, 'the peep is now drawn last');
 
   const [svg] = await Promise.all([page.waitForEvent('download'), full.getByRole('button', { name: 'Save as SVG' }).click()]);
-  assert.equal(svg.suggestedFilename(), 'scene.svg');
+  assert.equal(svg.suggestedFilename(), 'scene_figure-runner_bust-bun-2-smile-tee-1.svg', 'named after its members, in drawing order');
   const text = readFileSync((await svg.path())!, 'utf8');
   assert.equal([...text.matchAll(/data-item=/g)].length, 2); assert.doesNotMatch(text, /data-selected/);
 

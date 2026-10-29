@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import type { Box, PeepType, Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
-import { exportSceneSvg, exportSvg, svgToPng } from '../export.ts'
+import { exportSceneSvg, exportSvg, fileName, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
 import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
 import { addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
@@ -96,7 +96,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const save = async (kind: 'svg' | 'png') => {
     await Promise.all(figures.map((f) => f.load()))
     const svg = inScene ? exportSceneSvg(state) : exportSvg(state, box)
-    onExport({ kind, name: `${inScene ? 'scene' : 'peep'}.${kind}`, blob: kind === 'svg' ? new Blob([svg], { type: 'image/svg+xml' }) : await svgToPng(svg, px.width, px.height) })
+    onExport({ kind, name: fileName(state, inScene, kind), blob: kind === 'svg' ? new Blob([svg], { type: 'image/svg+xml' }) : await svgToPng(svg, px.width, px.height) })
   }
 
   const types: PeepType[] = ['standing', 'sitting', 'bust']

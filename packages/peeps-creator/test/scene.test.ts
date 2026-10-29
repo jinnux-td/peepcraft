@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createElement } from 'react'
 import { lookup } from '@kit/transhumans'
-import { exportSvg } from '../src/export.ts'
+import { exportSvg, fileName } from '../src/export.ts'
 import { fallbackBox, sceneTransform, squareAround } from '../src/scene.ts'
 import { initialState } from '../src/types.ts'
 
@@ -166,4 +166,17 @@ test('the picked member has a × at its top right corner, clear of the resize ha
   assert.ok(cx > b.x + b.width && cy < b.y, 'beyond the top right corner')
   assert.ok(Math.hypot(cx - (b.x + b.width), cy - b.y) > r * 2.5 + r * 2.2, 'clear of the handle')
   assert.match(html, /aria-label="Remove from the scene"/)
+})
+
+test('a download is named after what is in it: the parts head to toe, a figure, or each member of the scene', () => {
+  assert.equal(fileName(initialState, false, 'svg'), 'bust-bun-2-smile-tee-1.svg', 'parts left at none are not named')
+  assert.equal(fileName({ ...initialState, type: 'standing', parts: { head: 'afro', facialHair: 'goatee-1', accessories: 'glasses' } }, false, 'png'), 'standing-afro-smile-goatee-1-glasses-crossed-arms-1.png')
+  assert.equal(fileName({ ...initialState, figure: 'runner' }, false, 'png'), 'figure-runner.png')
+  const member = { type: 'bust', parts: {}, figure: null, ink: '#000', paper: '#fff', flip: false, x: 0, size: 1, bottom: 0 } as const
+  const upload = { id: 'u', name: 'My Logo (2).PNG', href: '', width: 1, height: 1 }
+  assert.equal(fileName({ ...initialState, scene: [{ ...member, figure: 'runner' }, member, { ...member, thing: 'chair' }, { ...member, upload }] }, true, 'svg'),
+    'scene_figure-runner_bust-bun-2-smile-tee-1_chair_my-logo-2.svg')
+  assert.equal(fileName(initialState, true, 'svg'), 'scene.svg')
+  const long = fileName({ ...initialState, scene: Array(30).fill({ ...member, thing: 'chair' }) }, true, 'svg')
+  assert.equal(long, `scene${'_chair'.repeat(19)}.svg`, 'cut after a whole member')
 })
