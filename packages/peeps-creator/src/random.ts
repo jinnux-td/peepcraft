@@ -32,14 +32,12 @@ export function randomize(s: CreatorState, target: Target, rng: Rng = Math.rando
   const bg = s.bg === 'transparent' || s.locked?.includes('bg') ? s.bg : other(swatches.bg, s.bg, rng)
   // On a figure there are no parts to roll: shuffle picks another figure.
   if (s.figure) return { ...s, figure: other(figures.map((f) => f.id), s.figure, rng), bg }
-  // The type first (locked at first), then what is not locked of that type: its parts, the extra (or none), the colours of the whole peep.
+  // The type first (locked at first), then what is not locked of that type: its parts, the extra (or none), the skin. Lines and fill are
+  // picked per tab, never shuffled.
   const open = (what: Lockable) => !s.locked?.includes(what)
   const typed = open('type') ? showPeep(s, other(types, s.type, rng)) : s
   const rolled = slots.filter(open).reduce((t, slot) => choose(t, slot, other(ids(t, slot), partId(t, slot), rng)), typed)
   const extra = open('extra') ? chooseExtra(rolled, other<string | null>([null, ...extras.map((t) => t.id)], rolled.extra?.id ?? null, rng)) : rolled
-  // Lines and fill never take the same colour, so the peep stays visible.
   const skin = open('skin') ? other(swatches.skin, extra.skin ?? null, rng) : extra.skin
-  const ink = open('ink') ? other(swatches.ink.filter((c) => c !== extra.paper), extra.ink, rng) : extra.ink
-  const paper = open('paper') ? other(swatches.paper.filter((c) => c !== ink), extra.paper, rng) : extra.paper
-  return { ...extra, skin, ink, paper, bg }
+  return { ...extra, skin, bg }
 }

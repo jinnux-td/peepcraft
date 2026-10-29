@@ -459,7 +459,7 @@ test('locks: Shuffle all keeps a locked background and a locked part', async () 
   await page.close();
 });
 
-test('locks of the type, mask, extra and the colours of the whole peep: type, mask and extra locked at first; a locked colour shows a padlock', async () => {
+test('locks of the type, mask, extra and the skin: type, mask and extra locked at first; the Type tab shows the skin only; figure colours have no padlock', async () => {
   const page = await open(); const full = page.locator('#full');
   const lock = (name: string) => full.getByRole('button', { name: `Lock ${name}`, exact: true });
   const tab = (name: string) => full.getByRole('tab', { name, exact: true }).click();
@@ -471,7 +471,7 @@ test('locks of the type, mask, extra and the colours of the whole peep: type, ma
   await dots.getByRole('radio', { name: /^Skin/ }).click();
   const skinDot = dots.getByRole('radio', { name: /^Skin/ }).locator('.pc-token-lock');
   assert.equal(await skinDot.count(), 0);
-  assert.equal(await dots.getByRole('radio', { name: /^Lines/ }).locator('.pc-token-lock').count(), 1, 'the lines are locked at first');
+  assert.deepEqual(await dots.getByRole('radio').allInnerTexts(), ['Skin'], 'each tab has its own lines; only the skin is shared');
   await lock('Skin').click();
   assert.equal(await skinDot.count(), 1, 'a padlock on the dot of a locked colour');
   const skin = await dots.getByRole('radio', { name: /^Skin/ }).getAttribute('data-tip');
@@ -480,6 +480,9 @@ test('locks of the type, mask, extra and the colours of the whole peep: type, ma
   for (let i = 0; i < 6; i++) { await full.getByRole('button', { name: 'Shuffle all' }).click(); types.add(await full.getByRole('radiogroup', { name: 'Type' }).getByRole('radio', { checked: true }).innerText()); }
   assert.ok(types.size > 1, `unlocked, the type changes (${[...types]})`);
   assert.equal(await dots.getByRole('radio', { name: /^Skin/ }).getAttribute('data-tip'), skin, 'the locked skin stays');
+  await tab('Figures'); await full.getByRole('radiogroup', { name: 'Figures' }).getByRole('radio').nth(1).click();
+  assert.deepEqual(await dots.getByRole('radio').allInnerTexts(), ['Lines', 'Fill']);
+  for (const name of ['Lines', 'Fill']) { await dots.getByRole('radio', { name: new RegExp(`^${name}`) }).click(); assert.equal(await lock(name).count(), 0, `${name} of a figure are not shuffled, so no padlock`); }
   await page.close();
 });
 

@@ -29,12 +29,12 @@ export interface CreatorState {
   frame: { ratio: Ratio; zoom: number }
   /** Contrast: black lines on white only, as the pack draws them; the colours of items, skin and picks are kept for when it is off. */
   mono?: boolean
-  /** What "Shuffle all" leaves alone: the background, the type, a part, the extra, or a colour of the whole peep (skin, lines, fill). */
+  /** What "Shuffle all" leaves alone: the background, the type, a part, the extra, or the skin. */
   locked?: readonly Lockable[]
 }
 
 /** What can be locked against "Shuffle all". */
-export type Lockable = 'bg' | 'type' | Slot | 'extra' | 'skin' | 'ink' | 'paper'
+export type Lockable = 'bg' | 'type' | Slot | 'extra' | 'skin'
 
 /** Width to height of the scene. */
 export const RATIOS = { '1:1': 1, '4:3': 4 / 3, '3:2': 3 / 2, '16:9': 16 / 9, '3:4': 3 / 4, '9:16': 9 / 16 } as const
@@ -66,8 +66,8 @@ export type Tab = 'type' | Slot | 'extra' | 'figures' | 'scene'
 export const SKIN = '#d08b5b'
 
 export const initialState: CreatorState = { type: 'bust', parts: {}, ink: '#111111', paper: '#ffffff', skin: SKIN, bg: '#f7d56e', scale: 1, rotate: 0, flip: false, figure: null, partColors: {}, scene: [], frame: { ratio: '1:1', zoom: 1 },
-  // Shuffle all keeps the type and the lines, and adds no mask or extra, until they are unlocked.
-  locked: ['type', 'ink', 'mask', 'extra'] }
+  // Shuffle all keeps the type, and adds no mask or extra, until they are unlocked.
+  locked: ['type', 'mask', 'extra'] }
 
 export const themes: ReadonlyArray<{ id: ThemeId; label: string; dot: string }> = [
   { id: 'sunny', label: 'Sunny', dot: '#f7d56e' }, { id: 'glass', label: 'Glass', dot: '#3d6bff' },

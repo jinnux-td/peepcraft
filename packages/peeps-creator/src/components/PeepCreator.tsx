@@ -5,7 +5,7 @@ import { randomize, type Target } from '../random.ts'
 import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
 import { addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
 import { creatorCss } from '../styles.ts'
-import { initialState, RATIOS, swatches, type CreatorState, type Lockable, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
+import { initialState, RATIOS, swatches, type CreatorState, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
 import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
 import { icons } from './icons.tsx'
 import { Lock } from './Lock.tsx'
@@ -79,9 +79,9 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
 
   const record = (fn: (s: CreatorState) => CreatorState) => setHist((h) => commit(h, fn(h.now)))
   const live = (patch: Partial<CreatorState>) => setHist((h) => tweak(h, { ...h.now, ...patch }))
-  // The colours of the whole peep (skin, lines, fill) each have a padlock against Shuffle all.
-  const withLock = (t: ColorTarget): ColorTarget => (t.id === 'skin' || t.id === 'ink' || t.id === 'paper'
-    ? { ...t, lock: { locked: !!state.locked?.includes(t.id), toggle: () => live(toggleLock(state, t.id as Lockable)) } } : t)
+  // The skin, the one colour of the whole peep, has a padlock against Shuffle all.
+  const withLock = (t: ColorTarget): ColorTarget => (t.id === 'skin'
+    ? { ...t, lock: { locked: !!state.locked?.includes('skin'), toggle: () => live(toggleLock(state, 'skin')) } } : t)
   const dice = (target: Target) => record((s) => randomize(s, target))
   const onMeasure = useCallback((key: string, outline: Box) => setBoxes((b) => ({ ...b, [key]: outline })), [])
   const key = boxKey(state)

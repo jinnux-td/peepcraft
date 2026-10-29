@@ -9,7 +9,7 @@ import { SKIN, swatches, type Parts } from './types.ts'
  *  piece an item carries (hair, a top, a tie): the slot of that item. */
 export interface ColorTarget {
   id: string; label: string; value: string; options: readonly string[]; onChange: (c: string) => void; reset?: { label: string; run: () => void }; slot?: Slot
-  /** A colour of the whole peep (skin, lines, fill) can be kept as it is when shuffling all. */
+  /** The skin, the one colour of the whole peep, can be kept as it is when shuffling all. */
   lock?: { locked: boolean; toggle: () => void }
 }
 
@@ -80,9 +80,9 @@ export function peepTargets(look: Look, set: (patch: Partial<Look>) => void, who
 }
 
 /** The colours each builder tab shows above its items after the pieces of the item in its slot: the Hair tab the hair and a hat, then the
- *  skin of the face. */
+ *  skin of the face. Each tab has its own lines; only the skin is shared. */
 const tabExtras: Partial<Record<string, readonly string[]>> = {
-  type: ['skin', 'ink', 'paper'], head: ['skin'], body: ['skin'], face: ['face'], accessories: ['accessories', 'frame'], figures: ['ink', 'paper'], extra: ['extraInk', 'extraPaper'],
+  type: ['skin'], head: ['skin'], body: ['skin'], face: ['face'], accessories: ['accessories', 'frame'], figures: ['ink', 'paper'], extra: ['extraInk', 'extraPaper'],
 }
 export const tabColors = (tab: string, targets: readonly ColorTarget[]): ColorTarget[] =>
   [...targets.filter((t) => t.slot === tab), ...(tabExtras[tab] ?? []).flatMap((id) => targets.filter((t) => t.id === id))]
