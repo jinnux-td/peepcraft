@@ -12,6 +12,7 @@ To reuse one, copy its folder into another project.
 | [`@kit/panel`](packages/panel) | a dashboard panel that **holds a view**: title bar, options form drawn from what the view declares, loading / error / empty states, full screen, and a view that cannot break its neighbours | none |
 | [`@kit/heatmap`](packages/heatmap) | activity heat map (a square per day) fed with **per-day counts**, not records: a `‹ year ›` selector that asks the host for one window, replay, scrubber, tooltip | none |
 | [`@kit/shell`](packages/shell) | the frame of a dashboard page: header with tab bar, actions and theme mode, a bar for filters, sidebar (a drawer on a phone), main; theme tokens reach every kit module | none |
+| [`@kit/folio`](packages/folio) | a portfolio page: header, a hero made of named parts, sections, footer; the same parts take six arrangements (type, character, world, object, work, quiet) at one switch, and a picker to switch them | none |
 | [`@kit/peeps`](packages/peeps) | Open Peeps illustrations as React components (177 atoms): a `Peep` that composes them, with defaults per type (standing, sitting, bust), and a `Scene` that puts peeps and figures on one background | `react` (peer) |
 | [`@kit/transhumans`](packages/transhumans) | Transhumans illustrations (Pablo Stanley, CC0): 38 whole black and white figures as React components that recolour (ink and paper) | `react` (peer) |
 | [`@kit/things`](packages/things) | things for a peeps scene, drawn in code in the same ink and paper style: 22 in five groups (furniture, plants and home, small props, pets, extras a peep wears) | `react` (peer) |
@@ -19,7 +20,7 @@ To reuse one, copy its folder into another project.
 | [`@kit/worldmap`](packages/worldmap) | world map, flat or globe (MapLibre), draws resolved layers; Natural Earth basemap bundled, works offline | `maplibre-gl` (BSD-3) |
 
 ## Rules
-1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder. An **assembly** (`map-view`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
+1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `folio`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder. An **assembly** (`map-view`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
 2. **Extract, don't invent.** A package comes from code that already works in an app and has, or is about to have, a
    second user. Keep its tests with it.
 3. **Small public API:** everything exported goes through `src/index.ts`.
