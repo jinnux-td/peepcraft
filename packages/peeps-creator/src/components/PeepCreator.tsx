@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import type { Box, PeepType, Slot } from '@kit/peeps'
+import { figures } from '@kit/transhumans'
 import { exportSceneSvg, exportSvg, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
 import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
@@ -67,6 +68,8 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const [pngScale, setPngScale] = useState(1)
   // No saved uploads when the browser keeps no storage (a private window): the library just starts empty.
   useEffect(() => { loadUploads().then(setUploads, () => {}) }, [])
+  // The drawings of the figures load after the first paint, so the Figures tab is ready by the time it is opened.
+  useEffect(() => { for (const f of figures) f.load().catch(() => {}) }, [])
   const theme = themeProp ?? innerTheme
   const state = hist.now
   const inScene = tab === 'scene'
@@ -91,6 +94,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const base = inScene ? frameSize(state) : { width: SIZE, height: SIZE }
   const px = { width: base.width * pngScale, height: base.height * pngScale }
   const save = async (kind: 'svg' | 'png') => {
+    await Promise.all(figures.map((f) => f.load()))
     const svg = inScene ? exportSceneSvg(state) : exportSvg(state, box)
     onExport({ kind, name: `${inScene ? 'scene' : 'peep'}.${kind}`, blob: kind === 'svg' ? new Blob([svg], { type: 'image/svg+xml' }) : await svgToPng(svg, px.width, px.height) })
   }

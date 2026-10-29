@@ -1,4 +1,4 @@
-export { figure, INK, PAPER, type Figure, type FigureMeta, type FigureProps } from './figure.ts'
+export { figure, INK, PAPER, type Figure, type FigureMeta, type FigureProps, type Paths } from './figure.ts'
 export { figures } from './figures/index.ts'
 import { figures } from './figures/index.ts'
 import type { Figure } from './figure.ts'

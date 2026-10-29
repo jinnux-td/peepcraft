@@ -4,10 +4,11 @@ import type { Box } from '@kit/peeps'
 import { Scene, SceneView, SIZE } from './scene.ts'
 import type { CreatorState } from './types.ts'
 
-/** The picture as an SVG document. A transparent background leaves no rectangle, so the file is transparent too. */
+/** The picture as an SVG document. A transparent background leaves no rectangle, so the file is transparent too. A figure in it must be loaded
+ *  first (`await figure.load()`), or it is left empty. */
 export const exportSvg = (state: CreatorState, box: Box): string => renderToStaticMarkup(createElement(Scene, { state, box }))
 
-/** The whole scene as an SVG document, with no selection outline. */
+/** The whole scene as an SVG document, with no selection outline. Figures as for exportSvg. */
 export const exportSceneSvg = (state: CreatorState): string => renderToStaticMarkup(createElement(SceneView, { state }))
 
 /** Draws the SVG on a canvas (square unless a height is given) without filling it first, so transparent stays transparent. Browser only. */

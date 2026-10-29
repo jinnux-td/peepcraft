@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createElement } from 'react'
+import { lookup } from '@kit/transhumans'
 import { exportSvg } from '../src/export.ts'
 import { fallbackBox, sceneTransform, squareAround } from '../src/scene.ts'
 import { initialState } from '../src/types.ts'
@@ -33,8 +34,10 @@ test('the window is a square around the outline with air', () => {
   assert.equal(w.y + w.height / 2, 170)
 })
 
-test('a figure on the stage is drawn instead of the peep, in the ink and paper colours, and exported with it', () => {
+test('a figure on the stage is drawn instead of the peep, in the ink and paper colours, and exported with it', async () => {
   const s = { ...initialState, figure: 'runner', ink: '#112233', paper: '#ddeeff' }
+  assert.doesNotMatch(exportSvg(s, fallbackBox(s)), /fill="#112233"/, 'not loaded yet: an empty figure')
+  await lookup('runner').load()
   const svg = exportSvg(s, fallbackBox(s))
   assert.match(svg, /<g data-figure="runner">/)
   assert.doesNotMatch(svg, /data-slot=/)

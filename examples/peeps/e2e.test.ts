@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright-core';
 import type { Browser, Locator, Page } from 'playwright-core';
 import { servePeeps } from './serve.ts';
@@ -109,6 +109,20 @@ test('full screen: the creator fills the window edge to edge, the picker on the 
   const stage = (await page.locator('#full [data-testid=pc-stage]').boundingBox())!;
   const picker = (await page.locator('#full [aria-label=Parts]').boundingBox())!;
   assert.ok(picker.x < stage.x, 'on a wide page the picker is on the left');
+  await page.close();
+});
+
+test('the drawings of the figures are not in the page; they load after it, and every figure tile draws', async () => {
+  const html = await (await fetch(url)).text();
+  const astro = readFileSync(new URL('dist/figures/' + readdirSync(new URL('dist/figures/', import.meta.url)).find((f) => f.startsWith('Astro-'))!, import.meta.url), 'utf8');
+  assert.ok(!html.includes(/d:"(M[^"]{40})/.exec(astro)![1]), 'a path of Astro is only in its chunk');
+  const page = await open(); const full = page.locator('#full');
+  await full.getByRole('tab', { name: 'Figures', exact: true }).click();
+  const tiles = full.getByRole('radiogroup', { name: 'Figures' }).locator('svg');
+  await page.waitForFunction(() => [...document.querySelectorAll('#full [aria-label=Figures] svg')].every((s) => s.querySelector('path')));
+  assert.equal(await tiles.count(), 39, 'the Peep tile and 38 figures');
+  await full.getByRole('radiogroup', { name: 'Figures' }).getByRole('radio', { name: 'Astro' }).click();
+  assert.ok(await full.getByTestId('pc-stage').locator('[data-figure=astro] path').count() > 0, 'on the stage too');
   await page.close();
 });
 
