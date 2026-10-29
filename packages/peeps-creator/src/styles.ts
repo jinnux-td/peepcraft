@@ -62,7 +62,7 @@ export const creatorCss = `
 .pc-label .pc-lock{width:26px;height:26px;margin:0}
 .pc-label .pc-lock svg{width:16px;height:16px}
 .pc-stage-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
-.pc-stage{width:100%;max-width:680px;min-width:240px;aspect-ratio:1;border-radius:var(--pc-r);overflow:hidden;box-shadow:var(--pc-shadow);border:1px solid var(--pc-line)}
+.pc-stage{width:100%;max-width:var(--pc-stage-max,680px);min-width:240px;aspect-ratio:1;border-radius:var(--pc-r);overflow:hidden;box-shadow:var(--pc-shadow);border:1px solid var(--pc-line)}
 .pc-stage[data-transparent]{background:repeating-conic-gradient(#d4d4d4 0 25%,#fff 0 50%) 0 0/24px 24px}
 .pc-stage svg{display:block;width:100%;height:100%}
 .pc-pill{display:inline-flex;gap:4px;padding:5px;border-radius:999px;background:var(--pc-surface);border:1px solid var(--pc-line);backdrop-filter:blur(var(--pc-blur));box-shadow:var(--pc-shadow)}
