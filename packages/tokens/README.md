@@ -72,7 +72,7 @@ Every block is wrapped in `:where()` (specificity 0), so a plain `:root { --k-ac
 - `line` is a divider and has no contrast rule. `line-strong` is a boundary that identifies a control (an input, a checkbox) and needs 3:1.
 - With Tailwind, durations, layers and `page-fill` have no theme namespace. Use `duration-(--k-dur-base)`, `z-(--k-z-dialog)` and `bg-(image:--k-page-fill)`.
 
-`TOKEN_NAMES` lists every name without the prefix. Packages read only names on that list.
+`TOKEN_NAMES` lists every name without the prefix. Packages read only names on that list: `unknownTokens(sourceText)` returns the ones that aren't, and each package that reads tokens tests it is empty. A package names `@kit/tokens` as a **dev** dependency, because only its test imports it.
 
 ## Checks (`npm test`)
 

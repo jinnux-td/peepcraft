@@ -1,4 +1,4 @@
-export { TOKEN_NAMES, COLOR_ROLES, MODES, SCALES, BRANDS, BREAKPOINTS, brandColors } from './tokens.ts';
+export { TOKEN_NAMES, COLOR_ROLES, MODES, SCALES, BRANDS, BREAKPOINTS, brandColors, unknownTokens } from './tokens.ts';
 export type { Mode, ColorRole, Colors, Brand, ScaleName } from './tokens.ts';
 export { tokensCss, tailwindCss, toShadcnCss, fromShadcnCss, tokensJson, SHADCN } from './build.ts';
 export { contrast, over, parseHex } from './color.ts';

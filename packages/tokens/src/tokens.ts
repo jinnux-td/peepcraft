@@ -110,3 +110,7 @@ export const brandColors = (b: Brand): Colors => ({ ...MODES[b.mode], ...b.color
 
 // Every public name, without the `--k-` prefix. Packages may read only these (docs/ui/tokens.md, "Checks").
 export const TOKEN_NAMES: readonly string[] = [...COLOR_ROLES, ...Object.keys(SCALES)];
+
+// The --k-* names a stylesheet (or any source text) reads or sets that are not on the list: a typo, or a token that does not exist yet.
+export const unknownTokens = (css: string): string[] =>
+  [...new Set([...css.matchAll(/--k-([a-z0-9-]+)/g)].map((m) => m[1]))].filter((n) => !TOKEN_NAMES.includes(n));

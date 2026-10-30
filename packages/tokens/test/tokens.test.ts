@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BRANDS, COLOR_ROLES, MODES, SCALES, TOKEN_NAMES, brandColors, type Colors } from '../src/tokens.ts';
+import { BRANDS, COLOR_ROLES, MODES, SCALES, TOKEN_NAMES, brandColors, unknownTokens, type Colors } from '../src/tokens.ts';
 import { OUTPUTS, SHADCN, tokensCss, tailwindCss, toShadcnCss, fromShadcnCss, tokensJson } from '../src/build.ts';
 import { contrast, over, parseHex } from '../src/color.ts';
 
@@ -109,4 +109,9 @@ test('the generated files on disk are up to date (run npm run build)', () => {
 
 test('CSS braces balance (a broken rule would swallow the rest)', () => {
   for (const css of [tokensCss(), tailwindCss(), toShadcnCss(), fromShadcnCss()]) assert.equal(css.split('{').length, css.split('}').length);
+});
+
+test('unknownTokens names what is not on the list, once each, and ignores other prefixes', () => {
+  assert.deepEqual(unknownTokens('a{color:var(--k-text);--k-tetx:1;b:var(--k-tetx);--kh-line:var(--k-line,#000);--kf-x:1}'), ['tetx']);
+  assert.deepEqual(unknownTokens(tokensCss()), []);
 });
