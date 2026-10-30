@@ -46,7 +46,9 @@ ensureUiStyles()                                    // adds UI_CSS once, and the
 | `tooltip` | shows on hover only where the device can hover, and on keyboard focus; hides on leave, blur or Esc; linked by `aria-describedby` |
 | `toaster` | polite live region made before the first message; a toast waits while it's hovered or focused, and has a dismiss button; `timeout: 0` keeps it |
 
-The decisions (`step`, `typeahead`, `place`) have no DOM and are tested alone (`test/logic.test.ts`).
+**Light or dark, from the page.** `modeOf(el)` is the mode `el` is drawn in, read from its computed `color-scheme`. The tokens, every brand and a host's palette set it, so the answer comes from whatever `data-theme` or `data-brand` sits on an ancestor, else the system. `watchMode(el, cb)` calls back on a real change: an attribute or class on an ancestor, or the system switching. Packages that draw their own colours use it: the heat map's ramp and the world map's basemap. Their `setTheme()` only sets `data-theme` on their root.
+
+The decisions (`step`, `typeahead`, `place`, `schemeMode`) have no DOM and are tested alone (`test/logic.test.ts`).
 
 ## Rules the CSS keeps
 

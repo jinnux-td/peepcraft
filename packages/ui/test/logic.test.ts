@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { step, typeahead } from '../src/keys.ts';
 import { place } from '../src/place.ts';
+import { schemeMode } from '../src/mode.ts';
 
 test('step: arrows wrap, Home/End, orientation, disabled items skipped', () => {
   assert.equal(step(0, 'ArrowRight', 3), 1);
@@ -35,4 +36,14 @@ test('place: below by default, flips above near the bottom, stays inside the vie
   assert.equal(place({ top: 20, left: 380, width: 20, height: 30 }, pop, view).left, 272, 'pushed in from the right edge');
   assert.equal(place({ top: 100, left: 100, width: 40, height: 20 }, pop, view, 'top', 'center').left, 60);
   assert.equal(place({ top: 30, left: 100, width: 40, height: 20 }, pop, view, 'top').side, 'bottom', 'no room above: flips below');
+});
+
+test('schemeMode: the computed color-scheme decides; "light dark" or nothing set follows the system', () => {
+  assert.equal(schemeMode('dark', false), 'dark');
+  assert.equal(schemeMode('light', true), 'light');
+  assert.equal(schemeMode('light dark', true), 'dark');
+  assert.equal(schemeMode('light dark', false), 'light');
+  assert.equal(schemeMode('normal', true), 'dark');
+  assert.equal(schemeMode('normal', false), 'light');
+  assert.equal(schemeMode('only dark', false), 'dark');
 });

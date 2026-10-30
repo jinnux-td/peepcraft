@@ -5,6 +5,7 @@ import { TOKENS_CSS } from '@kit/tokens';
 import { UI_CSS } from './css.ts';
 import { step, typeahead, type Orientation } from './keys.ts';
 import { place, type Align, type Side } from './place.ts';
+import { schemeMode, type Mode } from './mode.ts';
 
 // The stylesheet, added to the document once, at the start of <head> so the host's and the packages' own CSS come after it and win.
 // The controls need the kit tokens: if the host does not load them (tokens.css, or TOKENS_CSS as <style id="k-tokens-css">), they are
@@ -233,4 +234,22 @@ export function bindOutput(range: HTMLInputElement, output: HTMLOutputElement, f
   const sync = () => { output.value = format(range.valueAsNumber); };
   range.addEventListener('input', sync); sync();
   return () => range.removeEventListener('input', sync);
+}
+
+// The mode `el` is drawn in now (see mode.ts).
+export function modeOf(el: Element): Mode {
+  const win = el.ownerDocument.defaultView!;
+  return schemeMode(win.getComputedStyle(el).colorScheme, win.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+
+// Calls `cb` whenever the mode `el` is drawn in changes: a data-theme, data-brand or class changed on it or an ancestor (or anywhere a
+// host keeps its theme), or the system switched. It calls only on a real change. Returns the function that stops watching.
+export function watchMode(el: Element, cb: (mode: Mode) => void): () => void {
+  const doc = el.ownerDocument, system = doc.defaultView!.matchMedia('(prefers-color-scheme: dark)');
+  let last = modeOf(el);
+  const check = () => { if (!el.isConnected) return; const m = modeOf(el); if (m !== last) { last = m; cb(m); } };
+  const mo = new MutationObserver(check);
+  mo.observe(doc.documentElement, { attributes: true, subtree: true, attributeFilter: ['data-theme', 'data-brand', 'class'] });
+  system.addEventListener('change', check);
+  return () => { mo.disconnect(); system.removeEventListener('change', check); };
 }

@@ -29,7 +29,7 @@ import { PeepCreator } from '@kit/peeps-creator'
 - **Look:** background (a colour, or **transparent**); a click on a part of the peep on the stage opens its tab; scale, rotate, flip (also the `F` key), undo / redo / reset.
 - **Numbers:** every slider has its value as a box to type in (kept in range) and a reset icon back to the default (scale 1, rotate 0°, position 50 %, size 1, lift 0 %, zoom 1×).
 - **Export:** SVG, and PNG at 1×, 2×, 3× or 4× (1024 px on the long side at 1×; the size is shown before saving). Transparent stays transparent in both (no rectangle in the SVG, alpha in the PNG).
-- **Themes:** `sunny`, `glass`, `noir`, `violet`, scoped to the component (`data-pc-theme`), so a host page is never restyled. The stylesheet ships inside the component.
+- **Themes:** `sunny`, `glass`, `noir`, `violet` are the brand themes of `@kit/tokens`, set as `data-brand` on the component's root, so a host page is never restyled (noir and violet are dark). `data-pc-theme` is still set as an alias for one release. The stylesheet ships inside the component; the buttons and the theme menu are `@kit/ui`.
 - **Size:** the layout follows the width of the component (container queries), not the window: three columns when wide, stacked in a narrow panel or on a phone.
 
 ## Folders
