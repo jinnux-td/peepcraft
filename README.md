@@ -6,6 +6,7 @@ To reuse one, copy its folder into another project.
 
 | Package | What it is | Dependencies |
 |---|---|---|
+| [`@kit/tokens`](packages/tokens) | **foundation**: the design tokens, one set of `--k-*` CSS variables for light, dark and brand themes (`data-theme`, `data-brand`), with generated Tailwind v4 and shadcn/ui bridges and `tokens.json`; WCAG contrast checked for every theme | none |
 | [`@kit/notes-graph`](packages/notes-graph) | markdown folder to a graph (links, prerequisites, lineage, incremental cache) | none (Node built-ins) |
 | [`@kit/layout`](packages/layout) | deterministic, local layouts: disc, timeline lanes, 3D | none |
 | [`@kit/data-layer`](packages/data-layer) | map-agnostic data layers: catalogue, providers (static, polled, pushed), time window, counts, legend, plus a layers panel and time bar (`/panel`, plain DOM) | none |
@@ -20,7 +21,7 @@ To reuse one, copy its folder into another project.
 | [`@kit/worldmap`](packages/worldmap) | world map, flat or globe (MapLibre), draws resolved layers; Natural Earth basemap bundled, works offline | `maplibre-gl` (BSD-3) |
 
 ## Rules
-1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `folio`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder. An **assembly** (`map-view`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
+1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `folio`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder, except the **foundation** packages (`@kit/tokens`, later `@kit/ui`), which a leaf may name in its `package.json` (decision D1, `~/services/docs/ui/migration.md`). An **assembly** (`map-view`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
 2. **Extract, don't invent.** A package comes from code that already works in an app and has, or is about to have, a
    second user. Keep its tests with it.
 3. **Small public API:** everything exported goes through `src/index.ts`.
@@ -32,7 +33,7 @@ To reuse one, copy its folder into another project.
 npm install
 npm test                    # every package's tests + examples
 npm run typecheck          # packages + examples (examples/contract.ts checks the seam between data-layer and worldmap)
-npm run e2e                # the world example in a real browser
+npm run e2e                # the examples and the token CSS in a real browser
 scripts/standalone.sh       # copy each package out of the repo and test it alone
 ```
 
