@@ -52,9 +52,12 @@ blocks that `shadcn init` writes, and make `dark:` follow the kit's attribute:
 | Attribute | Values | Effect |
 |---|---|---|
 | `data-theme` | `light`, `dark` | the mode. With no attribute, the root follows `prefers-color-scheme` |
-| `data-brand` | `sunny`, `glass`, `noir`, `violet` | a brand theme: a full colour set on top of its mode (`noir` and `violet` are dark), plus fonts, radius, shadow and blur |
+| `data-brand` | `sunny`, `glass`, `noir`, `violet`, `dashboard` | a brand theme: a full colour set on top of its mode (`noir` and `violet` are dark), plus fonts, radius, shadow and blur. `dashboard` has both modes and follows the page's |
 
 Both work on `<html>` or on any element, and nest: `<div data-brand="noir"><div data-theme="light">` is light colours with noir's radius.
+A brand with both modes (`light` and `dark` in `tokens.ts`, not `mode`) writes each colour as `light-dark(light, dark)` and sets no `color-scheme`, so
+it takes the mode of the nearest `data-theme` or the system: `<div data-brand="dashboard"><div data-theme="light">` is the dashboard's light colours.
+Its colours must be solid (`light-dark()` takes no gradient), and `getPropertyValue('--k-page')` returns the `light-dark(…)` text, not one colour.
 Every block is wrapped in `:where()` (specificity 0), so a plain `:root { --k-accent: … }` in a host overrides it.
 
 ## Names

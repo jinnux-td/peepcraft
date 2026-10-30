@@ -231,3 +231,23 @@
   --k-shadow-lg: 0 18px 50px #2a1f6a55;
   --k-blur: 16px;
 }
+:where([data-brand=dashboard], [data-brand=dashboard] [data-theme]) {
+  --k-page: light-dark(#e9eff5, #08121b);
+  --k-page-fill: light-dark(#e9eff5, #08121b);
+  --k-surface: light-dark(#ffffff, #0f1d2b);
+  --k-surface-2: light-dark(#f1f5f9, #152739);
+  --k-popover: light-dark(#ffffff, #0f1d2b);
+  --k-text: light-dark(#1b2733, #dbe7f2);
+  --k-muted: light-dark(#5a6b7b, #8aa0b4);
+  --k-line: light-dark(#cfd9e3, #23384d);
+  --k-line-strong: light-dark(#728498, #56718b);
+  --k-accent: light-dark(#16915a, #2fd07f);
+  --k-on-accent: light-dark(#04120b, #04120b);
+  --k-focus: light-dark(#16915a, #2fd07f);
+  --k-danger: light-dark(#c62828, #ff5d5d);
+  --k-on-danger: light-dark(#ffffff, #04120b);
+  --k-success: light-dark(#16915a, #2fd07f);
+  --k-warning: light-dark(#8f5a00, #f0b429);
+  --k-overlay: light-dark(#1b273373, #000000a6);
+  --k-over: light-dark(#ffffff, #ffffff);
+}

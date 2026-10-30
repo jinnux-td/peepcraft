@@ -62,8 +62,10 @@ export type ScaleName = keyof typeof SCALES;
 // phone ≤ 767, tablet 768–1023, desktop 1024–1439, wide ≥ 1440.
 export const BREAKPOINTS = { tablet: 768, desktop: 1024, wide: 1440 } as const;
 
-// Brand themes: a partial override on top of one mode, and nothing else (a new rule needs a new token first).
-export interface Brand { mode: Mode; colors: Partial<Colors>; scales?: Partial<Record<ScaleName, string>> }
+// Brand themes: a partial override, and nothing else (a new rule needs a new token first). A brand either fixes the mode
+// (`mode` and `colors`: noir is always dark), or follows the page's mode with its own colours for each (`light` and `dark`).
+export type Brand = { scales?: Partial<Record<ScaleName, string>> }
+  & ({ mode: Mode; colors: Partial<Colors> } | { light: Partial<Colors>; dark: Partial<Colors> });
 
 const rounded = 'ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif';
 
@@ -104,10 +106,24 @@ export const BRANDS: Record<string, Brand> = {
     },
     scales: { 'font-sans': rounded, 'font-display': rounded, 'radius-md': '12px', 'radius-lg': '24px', 'radius-xl': '32px', 'shadow-lg': '0 18px 50px #2a1f6a55', blur: '16px' },
   },
+  // @kit/shell's dashboard palette: cool, with a green accent, in both modes. Every colour is solid, so it can follow the mode with light-dark().
+  dashboard: {
+    light: {
+      page: '#e9eff5', 'page-fill': '#e9eff5', surface: '#ffffff', 'surface-2': '#f1f5f9', popover: '#ffffff', text: '#1b2733', muted: '#5a6b7b',
+      line: '#cfd9e3', 'line-strong': '#728498', accent: '#16915a', 'on-accent': '#04120b', focus: '#16915a',
+      danger: '#c62828', 'on-danger': '#ffffff', success: '#16915a', warning: '#8f5a00', overlay: '#1b273373', over: '#ffffff',
+    },
+    dark: {
+      page: '#08121b', 'page-fill': '#08121b', surface: '#0f1d2b', 'surface-2': '#152739', popover: '#0f1d2b', text: '#dbe7f2', muted: '#8aa0b4',
+      line: '#23384d', 'line-strong': '#56718b', accent: '#2fd07f', 'on-accent': '#04120b', focus: '#2fd07f',
+      danger: '#ff5d5d', 'on-danger': '#04120b', success: '#2fd07f', warning: '#f0b429', overlay: '#000000a6', over: '#ffffff',
+    },
+  },
 };
 
-// A brand's full colour set: its mode's colours with the brand's on top.
-export const brandColors = (b: Brand): Colors => ({ ...MODES[b.mode], ...b.colors });
+// A brand's full colour sets, one for each mode it has: that mode's colours with the brand's on top.
+export const brandSets = (b: Brand): [Mode, Colors][] =>
+  'mode' in b ? [[b.mode, { ...MODES[b.mode], ...b.colors }]] : (['light', 'dark'] as const).map((m) => [m, { ...MODES[m], ...b[m] }]);
 
 // Every public name, without the `--k-` prefix. Packages may read only these (docs/ui/tokens.md, "Checks").
 export const TOKEN_NAMES: readonly string[] = [...COLOR_ROLES, ...Object.keys(SCALES)];

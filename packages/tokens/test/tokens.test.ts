@@ -2,14 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BRANDS, COLOR_ROLES, MODES, SCALES, TOKEN_NAMES, brandColors, unknownTokens, type Colors } from '../src/tokens.ts';
+import { BRANDS, COLOR_ROLES, MODES, SCALES, TOKEN_NAMES, brandSets, unknownTokens, type Colors } from '../src/tokens.ts';
 import { OUTPUTS, SHADCN, tokensCss, tailwindCss, toShadcnCss, fromShadcnCss, tokensJson } from '../src/build.ts';
 import { contrast, over, parseHex } from '../src/color.ts';
 
 const sets: [string, Colors][] = [
   ['light', MODES.light], ['dark', MODES.dark],
-  ...Object.entries(BRANDS).map(([n, b]) => [`brand ${n}`, brandColors(b)] as [string, Colors]),
+  ...Object.entries(BRANDS).flatMap(([n, b]) => brandSets(b).map(([m, c], _, all) => [all.length === 1 ? `brand ${n}` : `brand ${n} ${m}`, c] as [string, Colors])),
 ];
+const twoModes = Object.entries(BRANDS).filter(([, b]) => brandSets(b).length === 2).map(([n]) => n);
 
 // docs/ui/tokens.md "Checks" and docs/ui/rules.md 7. A translucent colour is measured over what it sits on.
 // [foreground, background, minimum]; a background other than page sits on page.
@@ -50,6 +51,11 @@ test('every set has every role, and every colour but a gradient page-fill is a h
   }
 });
 
+test('a brand with both modes: two complete sets, every colour solid (light-dark() takes only colours)', () => {
+  assert.ok(twoModes.includes('dashboard'));
+  for (const n of twoModes) for (const [m, c] of brandSets(BRANDS[n])) for (const r of COLOR_ROLES) assert.doesNotThrow(() => parseHex(c[r]), `${n} ${m}: ${r} = ${c[r]}`);
+});
+
 test('a brand with a solid page-fill keeps page and page-fill the same; a gradient includes its page stop', () => {
   for (const [name, c] of sets) {
     if (c['page-fill'].startsWith('#')) assert.equal(c['page-fill'], c.page, name);
@@ -76,16 +82,21 @@ test('tokens.css declares exactly the names on the list, and the bridges read or
   for (const n of declared(fromShadcnCss())) assert.ok(NAMES.has(n), n);
 });
 
-test('tokens.css: each mode and brand block sets every colour role and its color-scheme', () => {
+test('tokens.css: each mode and brand block sets every colour role; each but a brand with both modes sets its color-scheme', () => {
   const css = tokensCss();
   const blocks = [...css.matchAll(/(:where\([^{]+\))\s*\{([^}]*)\}/g)].filter(([, , body]) => body.includes('--k-page:'));
   assert.equal(blocks.length, 3 + Object.keys(BRANDS).length); // light, system dark, explicit dark, brands
   for (const [, sel, body] of blocks) {
-    assert.match(body, /color-scheme: (light|dark);/, sel);
+    const both = twoModes.some((n) => sel.includes(`[data-brand=${n}]`));
+    if (both) assert.doesNotMatch(body, /color-scheme/, sel); else assert.match(body, /color-scheme: (light|dark);/, sel);
     for (const r of COLOR_ROLES) assert.ok(body.includes(`--k-${r}:`), `${sel} ${r}`);
   }
+  // after the mode blocks, and again on a data-theme inside it
+  const [[, light], [, dark]] = brandSets(BRANDS.dashboard);
+  assert.ok(css.includes(`:where([data-brand=dashboard], [data-brand=dashboard] [data-theme]) {\n  --k-page: light-dark(${light.page}, ${dark.page});`));
+  assert.ok(css.indexOf('[data-brand=dashboard]') > css.indexOf(':where([data-theme=dark])'));
   assert.match(css, /@media \(prefers-color-scheme: dark\) \{\n  :where\(:root:not\(\[data-theme=light\]\)\)/);
-  for (const name of Object.keys(BRANDS)) assert.ok(css.includes(`:where([data-brand=${name}])`), name);
+  for (const name of Object.keys(BRANDS)) assert.ok(css.includes(`:where([data-brand=${name}]`), name);
 });
 
 test('the shadcn bridges go both ways over the same names and are redeclared where a theme changes', () => {
@@ -109,7 +120,8 @@ test('tailwind.css: v4 theme blocks, tablet/desktop/wide breakpoints, spacing on
 
 test('tokens.json parses and holds every set', () => {
   const json = JSON.parse(tokensJson());
-  for (const k of ['scale', 'light', 'dark', ...Object.keys(BRANDS).map((b) => `brand/${b}`)]) assert.ok(json[k], k);
+  for (const k of ['scale', 'light', 'dark', ...Object.keys(BRANDS).filter((b) => !twoModes.includes(b)).map((b) => `brand/${b}`), ...twoModes.flatMap((b) => [`brand/${b}/light`, `brand/${b}/dark`])])
+    assert.ok(json[k], k);
   assert.equal(json.light.page.$value, MODES.light.page);
   assert.equal(json.light.page.$type, 'color');
 });

@@ -35,6 +35,22 @@ test('kit tokens and to-shadcn: mode, system mode, nested theme, brand, host ove
   assert.equal(await get(p, '#a', '--k-accent'), '#ff0000', 'host :root override');
 });
 
+test('a brand with both modes (dashboard): its colours follow the nearest data-theme, the system, and a mode nested inside it', async () => {
+  const styles = css('tokens.css') + 'i{display:block;background:var(--k-page);color:var(--k-accent)}';
+  const body = '<div data-brand=dashboard data-theme=dark><i id=a></i><div data-theme=light><i id=b></i></div></div>'
+    + '<div data-theme=dark><div data-brand=dashboard><i id=c></i></div></div><div data-brand=dashboard><i id=d></i></div>';
+  const bg = (p: Page, sel: string) => get(p, sel, 'background-color');
+  let p = await page('light', styles, body);
+  assert.equal(await bg(p, '#a'), 'rgb(8, 18, 27)', 'brand and data-theme=dark on one element');
+  assert.equal(await get(p, '#a', 'color'), 'rgb(47, 208, 127)', 'dark accent');
+  assert.equal(await bg(p, '#b'), 'rgb(233, 239, 245)', 'light nested inside: the brand in light, not the kit light');
+  assert.equal(await bg(p, '#c'), 'rgb(8, 18, 27)', 'data-theme=dark on an ancestor');
+  assert.equal(await bg(p, '#d'), 'rgb(233, 239, 245)', 'no data-theme, system light');
+  p = await page('dark', styles, body);
+  assert.equal(await bg(p, '#d'), 'rgb(8, 18, 27)', 'no data-theme, system dark');
+  assert.equal(await bg(p, '#b'), 'rgb(233, 239, 245)', 'system dark, light nested inside');
+});
+
 test('an existing shadcn app with from-shadcn: kit tokens follow its :root and .dark', async () => {
   const shad = ':root{--background:#fafafa;--card:#fff;--muted:#f4f4f5;--foreground:#09090b;--muted-foreground:#71717a;--border:#e4e4e7;--input:#e4e4e7;--primary:#18181b;--primary-foreground:#fafafa;--ring:#a1a1aa;--destructive:#e7000b;--radius:.625rem}.dark{--background:#09090b;--primary:#fafafa}';
   let p = await page('dark', shad + css('tokens.css') + css('from-shadcn.css'), '<i id=a></i>');

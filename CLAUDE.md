@@ -12,7 +12,7 @@ From `~/services/docs/ui/README.md`, with what it means here.
 2. **Tokens.** Only `--k-*` tokens (`packages/tokens`); a package's own variables use its own prefix and default to a token. A new value is added to `packages/tokens/src/tokens.ts` first (then `npm run build` there). `examples/css-guard.test.ts` fails on a raw colour in a package stylesheet.
 3. **Components.** Controls are `@kit/ui` (`packages/ui`); a new one is added there with every state in `components.md`, and to the gallery (`examples/ui`).
 4. **Responsive.** Packages arrange by their own container, not the window; check 390, 768 and 1280 px.
-5. **Rules.** Contrast in every theme (light, dark, sunny, glass, noir, violet), focus, keyboard, all states; the mode comes from the page (`modeOf`, `watchMode`), never a flag passed down.
+5. **Rules.** Contrast in every theme (light, dark, sunny, glass, noir, violet, dashboard light and dark), focus, keyboard, all states; the mode comes from the page (`modeOf`, `watchMode`), never a flag passed down.
 6. **Performance.** Tool budget for PeepCraft and dashboards: initial JS ≤ 200 KB gzip, CSS ≤ 40 KB, LCP ≤ 2.5 s, CLS ≤ 0.1, TBT ≤ 200 ms. Heavy art loads on demand (atoms, figures).
 7. **Verify.** `npm test`, `npm run typecheck`, `npm run e2e` (one suite at a time if the machine is busy), `scripts/standalone.sh <package>`, and for PeepCraft `npm run perf:peeps`. Screenshot desktop, phone and dark. Report what was not checked.
 

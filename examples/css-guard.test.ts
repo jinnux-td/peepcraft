@@ -12,8 +12,6 @@ const RAW = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\([^)]*\)|(?<
 
 // [file, what may stay, why]
 const EXCEPTIONS: [string, RegExp, string][] = [
-  ['packages/shell/src/css.ts', /\.ks,:root,\.ks \[data-theme=dark\]\{[^}]*\}|\.ks\[data-theme=light\],:root\[data-theme=light\],\.ks \[data-theme=light\]\{[^}]*\}/g,
-    'the dashboard palette, light and dark, as the kit tokens: a brand with both modes, which @kit/tokens cannot hold yet (contrast: shell/test/palette.test.ts)'],
   ['packages/folio/src/css.ts', /rgb\(0 0 0\/[^)]*\)\)?/g, 'the scrim and text shadow over a photo: black behind white text, the same in every theme'],
   ['packages/peeps-creator/src/styles.ts', /repeating-conic-gradient\(#d4d4d4 0 25%,#fff 0 50%\)/g, 'the checkerboard that shows a transparent background, as image editors draw it'],
   ['packages/peeps-creator/src/styles.ts', /\.pc-swatch\.pc-clear\{[^}]*\}/g, 'the "no colour" swatch: a red slash on the checkerboard'],
