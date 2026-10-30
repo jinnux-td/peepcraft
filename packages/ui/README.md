@@ -1,14 +1,14 @@
 # @kit/ui
 
 The kit's shared controls (layer 2 of `~/services/docs/ui`): **CSS on native elements**, plus a few DOM helpers for what the browser
-doesn't do. **No dependencies.** Every value is a kit token (`--k-*`, `@kit/tokens`), so light, dark and every brand theme work
+doesn't do. **Depends only on `@kit/tokens`** (`file:../tokens`, so a host that links kit packages by path never asks the npm registry). Every value is a kit token (`--k-*`, `@kit/tokens`), so light, dark and every brand theme work
 without extra CSS. The same classes work in plain DOM and in React (`className`).
 
 ```ts
 import { TOKENS_CSS } from '@kit/tokens'          // or import "@kit/tokens/tokens.css" in an app
 import { ensureUiStyles, tabs, segmented, menu, dialog, tooltip, toaster, setBusy, setError, bindOutput } from '@kit/ui'
 
-ensureUiStyles()                                    // adds UI_CSS to the document once
+ensureUiStyles()                                    // adds UI_CSS once, and the tokens too if the host doesn't load them
 ```
 
 ```html
@@ -20,13 +20,13 @@ ensureUiStyles()                                    // adds UI_CSS to the docume
 
 | Component | Markup | Variants and states | Helper |
 |---|---|---|---|
-| Button | `button.k-btn` or `a.k-btn` | `data-variant` primary, (secondary), ghost, danger · `data-size` sm, (md), lg · `data-icon` square · `aria-pressed` · `:disabled` / `aria-disabled` · `aria-busy` | `setBusy(button, true)` |
-| Field | `.k-field` > `label.k-label` + `.k-input` + `p.k-hint` / `p.k-error` | `.k-input` on `input`, `textarea`, `select` · `aria-invalid` · `:disabled` | `setError(input, message)` |
+| Button | `button.k-btn` or `a.k-btn` | `data-variant` primary, (secondary), ghost, danger · `data-size` sm, (md), lg · `data-icon` square · `aria-pressed` (and `aria-expanded` while what it opens is open) · `:disabled` / `aria-disabled` · `aria-busy` | `setBusy(button, true)` |
+| Field | `.k-field` > `label.k-label` + `.k-input` + `p.k-hint` / `p.k-error` | `.k-input` on `input`, `textarea`, `select` · `data-size=sm` (32 px tall, for toolbars; the text stays 16 px so phones don't zoom) · `aria-invalid` · `:disabled` | `setError(input, message)` |
 | Checkbox, radio | `label.k-check` > `input` + text | `:checked`, `:disabled` (the whole label is the target) | |
 | Switch | `label.k-check` > `input.k-switch[type=checkbox][role=switch]` + text | `:checked`, `:disabled` | |
 | Slider | `.k-slider` > `input[type=range]` + `output` | `:disabled` | `bindOutput(range, output, format)` |
 | Segmented | `.k-seg[role=radiogroup]` > `button[role=radio]` | `aria-checked` · `:disabled` | `segmented(group, { onSelect })` |
-| Tabs | `.k-tabs[role=tablist]` > `button[role=tab][aria-controls]`, panels `.k-tabpanel[role=tabpanel]` | `aria-selected` · `:disabled` | `tabs(list, { onSelect })` |
+| Tabs | `.k-tabs[role=tablist]` > `button[role=tab][aria-controls]` (a tab may sit in a wrapper, as the shell's closable tabs do), panels `.k-tabpanel[role=tabpanel]` | `data-size=sm` (32 px, for a header) · `aria-selected` · `:disabled` | `tabs(list, { onSelect })` |
 | Card | `.k-card` (`article`, `section`, `div`) | `data-variant=raised` · a whole-card link: one `a.k-card-link` inside | |
 | Chip | `span.k-chip` or `button.k-chip` | `data-status` success, warning, danger (a dot beside the word) · `aria-pressed` | |
 | Dialog | `dialog` with `.k-dialog-title` and `.k-dialog-actions` | a bottom sheet under 768 px | `dialog(el).open(opener)` |

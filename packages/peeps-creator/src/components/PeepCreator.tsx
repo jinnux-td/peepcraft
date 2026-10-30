@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { useCallback, useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import type { Box, PeepType, Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
 import { exportSceneSvg, exportSvg, fileName, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
 import { boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround } from '../scene.ts'
 import { addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History } from '../state.ts'
+import { ensureUiStyles } from '@kit/ui'
 import { creatorCss } from '../styles.ts'
 import { initialState, RATIOS, swatches, type CreatorState, type Ratio, type Tab, type ThemeId, type Upload } from '../types.ts'
 import { deleteUpload, loadUploads, readUpload, saveUpload } from '../uploads.ts'
@@ -48,6 +49,7 @@ function download(file: ExportedFile) {
 
 /** The whole creator. It lays itself out by its own width (container queries), so it fits a page or a dashboard panel alike. */
 export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', className = '', style }: PeepCreatorProps) {
+  useInsertionEffect(() => ensureUiStyles(), []) // the kit tokens (the four themes are its brands) and the @kit/ui controls, before the first paint
   const [hist, setHist] = useState<History>(() => startHistory({ ...initialState, ...defaultState }))
   const [tab, setTab] = useState<Tab>('head')
   const openTab = setTab
@@ -155,7 +157,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
 
   return (
     <div
-      className={`pc ${className}`.trim()} style={style} data-pc-theme={theme}
+      className={`pc ${className}`.trim()} style={style} data-pc-theme={theme} data-brand={theme}
       onKeyDown={(e) => { if (e.key === 'f' && !e.metaKey && !e.ctrlKey && !(e.target as HTMLElement).closest('input, select, textarea')) flipKey() }}
       {...tip.handlers}
     >
@@ -164,10 +166,10 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
       <header className="pc-head">
         {title !== false && <h1 className="pc-title">{title}<small>character creator</small></h1>}
         <div className="pc-toolbar" role="toolbar" aria-label="Actions">
-          <button className="pc-btn" onClick={() => dice('all')} disabled={inScene}><I.shuffle /><span>Shuffle all</span></button>
-          <button className="pc-btn" onClick={() => setHist(undo)} disabled={!hist.past.length}><I.undo /><span>Undo</span></button>
-          <button className="pc-btn" onClick={() => setHist(redo)} disabled={!hist.future.length}><I.redo /><span>Redo</span></button>
-          <button className="pc-btn" onClick={reset} disabled={isStart}><I.reset /><span>Reset</span></button>
+          <button className="k-btn" onClick={() => dice('all')} disabled={inScene}><I.shuffle /><span>Shuffle all</span></button>
+          <button className="k-btn" onClick={() => setHist(undo)} disabled={!hist.past.length}><I.undo /><span>Undo</span></button>
+          <button className="k-btn" onClick={() => setHist(redo)} disabled={!hist.future.length}><I.redo /><span>Redo</span></button>
+          <button className="k-btn" onClick={reset} disabled={isStart}><I.reset /><span>Reset</span></button>
           {showThemeButton && <ThemeMenu theme={theme} onChange={pickTheme} />}
         </div>
       </header>
@@ -210,7 +212,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
         <section ref={side} className={`pc-panel pc-side${inScene ? ' pc-side-scene' : ''}`} aria-label="Look">
           <Swatches label="Background" value={state.bg} options={swatches.bg} transparent used={used} onChange={(bg) => live({ bg })}
             action={!inScene && <Lock what="Background" locked={!!state.locked?.includes('bg')} onToggle={() => live(toggleLock(state, 'bg'))} />} />
-          {!inScene && <button className="pc-btn pc-wide" aria-pressed={!!state.mono} onClick={() => record((s) => ({ ...s, mono: !s.mono }))} title="Black lines on white only, as the pack draws them"><I.contrast /><span>Contrast</span></button>}
+          {!inScene && <button className="k-btn pc-wide" aria-pressed={!!state.mono} onClick={() => record((s) => ({ ...s, mono: !s.mono }))} title="Black lines on white only, as the pack draws them"><I.contrast /><span>Contrast</span></button>}
           {inScene && (
             <SceneMembers
               state={state} selected={selected} onSelect={setPicked} used={used} onLive={(i, patch) => setHist((h) => tweak(h, updateEntry(h.now, i, patch)))}
@@ -224,7 +226,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
           {!inScene && <>
           <Slider label="Scale" value={state.scale} min={0.5} max={1.5} step={0.05} reset={1} onChange={(scale) => live({ scale })} />
           <Slider label="Rotate" value={state.rotate} min={-180} max={180} step={5} unit="°" reset={0} onChange={(rotate) => live({ rotate })} />
-          <button className="pc-btn pc-wide" aria-pressed={state.flip} onClick={() => live({ flip: !state.flip })}><I.flip /><span>Flip</span></button>
+          <button className="k-btn pc-wide" aria-pressed={state.flip} onClick={() => live({ flip: !state.flip })}><I.flip /><span>Flip</span></button>
           </>}
           <div className="pc-export">
             <div className="pc-pill" role="radiogroup" aria-label="PNG size">
@@ -233,8 +235,8 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
             <small aria-label={`PNG ${px.width} by ${px.height} pixels`}>{px.width}×{px.height}</small>
           </div>
           <div className="pc-save">
-            <button className="pc-btn pc-primary" onClick={() => save('svg')}><I.download /><span>Save as SVG</span></button>
-            <button className="pc-btn pc-primary" onClick={() => save('png')}><I.download /><span>Save as PNG</span></button>
+            <button className="k-btn" data-variant="primary" onClick={() => save('svg')}><I.download /><span>Save as SVG</span></button>
+            <button className="k-btn" data-variant="primary" onClick={() => save('png')}><I.download /><span>Save as PNG</span></button>
           </div>
         </section>
       </div>

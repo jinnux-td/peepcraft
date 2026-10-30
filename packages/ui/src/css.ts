@@ -22,7 +22,7 @@ export const UI_CSS = `
 .k-btn[data-size=lg]{min-height:var(--k-space-12);min-width:var(--k-space-12);padding:0 var(--k-space-6);font-size:var(--k-text-lg)}
 .k-btn[data-icon]{padding:0}
 .k-btn svg{width:1.25em;height:1.25em;flex:none}
-.k-btn[aria-pressed=true]{--ku-btn-bg:var(--k-surface-2);--ku-btn-line:var(--k-text)}
+.k-btn[aria-pressed=true],.k-btn[aria-expanded=true]{--ku-btn-bg:var(--k-surface-2);--ku-btn-line:var(--k-text)}
 .k-btn:focus-visible{${ring}}
 .k-btn:disabled,.k-btn[aria-disabled=true]{opacity:.5;cursor:not-allowed}
 .k-btn[aria-busy=true]{color:transparent;cursor:progress}
@@ -41,6 +41,8 @@ textarea.k-input{min-height:var(--k-space-24);padding:var(--k-space-2) var(--k-s
 select.k-input{appearance:none;padding-right:var(--k-space-10);cursor:pointer;background-repeat:no-repeat;background-size:calc(var(--k-space-1) + 1px) calc(var(--k-space-1) + 1px);
   background-image:linear-gradient(45deg,transparent 50%,var(--k-muted) 50%),linear-gradient(135deg,var(--k-muted) 50%,transparent 50%);
   background-position:calc(100% - var(--k-space-5)) 50%,calc(100% - var(--k-space-4) + 1px) 50%}
+.k-input[data-size=sm]{min-height:var(--k-space-8);padding:0 var(--k-space-2)}
+select.k-input[data-size=sm]{padding-right:var(--k-space-8)}
 select.k-input option{background:var(--k-popover);color:var(--k-text)}
 .k-input::placeholder{color:var(--k-muted);opacity:1}
 .k-input:focus-visible{${ring};border-color:var(--k-focus)}
@@ -71,11 +73,12 @@ select.k-input option{background:var(--k-popover);color:var(--k-text)}
 .k-seg>[role=radio]:disabled{opacity:.5;cursor:not-allowed}
 
 .k-tabs{display:flex;gap:var(--k-space-1);overflow-x:auto;border-bottom:1px solid var(--k-line);scrollbar-width:none}
-.k-tabs>[role=tab]{position:relative;flex:none;min-height:var(--k-space-10);padding:0 var(--k-space-4);border:0;background:none;color:var(--k-muted);font-family:inherit;font-size:var(--k-text-sm);font-weight:500;white-space:nowrap;cursor:pointer;${motion}}
-.k-tabs>[aria-selected=true]{color:var(--k-text)}
-.k-tabs>[aria-selected=true]::after{content:"";position:absolute;right:var(--k-space-2);bottom:0;left:var(--k-space-2);height:2px;border-radius:var(--k-radius-full);background:var(--k-text)}
-.k-tabs>[role=tab]:focus-visible{outline:2px solid var(--k-focus);outline-offset:-2px}
-.k-tabs>[role=tab]:disabled{opacity:.5;cursor:not-allowed}
+.k-tabs [role=tab]{position:relative;flex:none;min-height:var(--k-space-10);padding:0 var(--k-space-4);border:0;background:none;color:var(--k-muted);font-family:inherit;font-size:var(--k-text-sm);font-weight:500;white-space:nowrap;cursor:pointer;${motion}}
+.k-tabs [role=tab][aria-selected=true]{color:var(--k-text)}
+.k-tabs [role=tab][aria-selected=true]::after{content:"";position:absolute;right:var(--k-space-2);bottom:0;left:var(--k-space-2);height:2px;border-radius:var(--k-radius-full);background:var(--k-text)}
+.k-tabs[data-size=sm] [role=tab]{min-height:var(--k-space-8);padding:0 var(--k-space-3)}
+.k-tabs [role=tab]:focus-visible{outline:2px solid var(--k-focus);outline-offset:-2px}
+.k-tabs [role=tab]:disabled{opacity:.5;cursor:not-allowed}
 .k-tabpanel:focus-visible{${ring}}
 
 .k-card{position:relative;display:block;padding:var(--k-space-6);border:1px solid var(--k-line);border-radius:var(--k-radius-lg);background:var(--k-surface);color:var(--k-text);backdrop-filter:blur(var(--k-blur));${motion}}
@@ -145,7 +148,7 @@ button.k-chip:disabled{opacity:.5;cursor:not-allowed}
   .k-input:not(:disabled,:focus):hover{border-color:var(--k-text)}
   .k-check:not(:has(input:disabled)):hover .k-switch:not(:checked){border-color:var(--k-text)}
   .k-seg>[role=radio]:not(:disabled,[aria-checked=true]):hover{color:var(--k-text)}
-  .k-tabs>[role=tab]:not(:disabled,[aria-selected=true]):hover{color:var(--k-text)}
+  .k-tabs [role=tab]:not(:disabled,[aria-selected=true]):hover{color:var(--k-text)}
   .k-card:has(.k-card-link):hover{border-color:var(--k-line-strong)}
   button.k-chip:not(:disabled):hover{border-color:var(--k-line-strong)}
   .k-menu [role^=menuitem]:not([aria-disabled=true]):hover{background:var(--k-surface-2)}
@@ -153,7 +156,7 @@ button.k-chip:disabled{opacity:.5;cursor:not-allowed}
 @keyframes k-spin{to{transform:rotate(1turn)}}
 @keyframes k-shimmer{from{background-position:100% 0}to{background-position:0 0}}
 @media (prefers-reduced-motion:reduce){
-  :where(.k-btn,.k-input,.k-switch,.k-seg>*,.k-tabs>*,.k-card,.k-chip),.k-switch::before{transition:none}
+  :where(.k-btn,.k-input,.k-switch,.k-seg>*,.k-tabs [role=tab],.k-card,.k-chip),.k-switch::before{transition:none}
   .k-skeleton{animation:none}
   .k-spinner,.k-btn[aria-busy=true]::after{animation-duration:calc(var(--k-dur-slow) * 8)}
 }

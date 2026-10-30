@@ -21,6 +21,6 @@ export function useTip() {
   const hide = () => setTip(null)
   return {
     handlers: { onPointerOver: (e: PointerEvent) => show(e.target), onPointerLeave: hide, onFocus: (e: FocusEvent) => show(e.target), onBlur: hide, onScrollCapture: hide, onPointerDown: hide },
-    node: tip && createPortal(<div ref={box} className="pc-tip" role="tooltip" style={{ top: tip.y, left: tip.x }}>{tip.text}</div>, document.body),
+    node: tip && createPortal(<div ref={box} className="k-tip pc-tip" role="tooltip" style={{ top: tip.y, left: tip.x }}>{tip.text}</div>, document.body),
   }
 }

@@ -21,7 +21,7 @@ test('hover only inside @media (hover:hover)', () => {
 });
 
 test('every interactive control has a focus-visible ring, and states come from attributes', () => {
-  for (const sel of ['.k-btn:focus-visible', '.k-input:focus-visible', '.k-check input:focus-visible', '.k-switch:focus-visible', 'input[type=range]:focus-visible', '.k-seg>[role=radio]:focus-visible', '.k-tabs>[role=tab]:focus-visible', 'button.k-chip:focus-visible', '[role^=menuitem]:focus-visible', '.k-card:has(.k-card-link:focus-visible)'])
+  for (const sel of ['.k-btn:focus-visible', '.k-input:focus-visible', '.k-check input:focus-visible', '.k-switch:focus-visible', 'input[type=range]:focus-visible', '.k-seg>[role=radio]:focus-visible', '.k-tabs [role=tab]:focus-visible', 'button.k-chip:focus-visible', '[role^=menuitem]:focus-visible', '.k-card:has(.k-card-link:focus-visible)'])
     assert.ok(UI_CSS.includes(sel), sel);
   for (const a of ['[aria-pressed=true]', '[aria-checked=true]', '[aria-selected=true]', '[aria-invalid=true]', '[aria-busy=true]', ':disabled']) assert.ok(UI_CSS.includes(a), a);
   assert.doesNotMatch(UI_CSS, /\.(is-|active\b|selected\b|disabled\b)/, 'no state classes');

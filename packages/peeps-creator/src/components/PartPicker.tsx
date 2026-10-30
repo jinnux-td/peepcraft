@@ -95,7 +95,7 @@ export function PartPicker({ state, tab, onTab, boxes, colors, used, onChoose, o
         )}
         <div className={list ? 'pc-grid pc-list' : 'pc-grid'} role="radiogroup" aria-label={label} ref={grid}>
           {onFigureNow && (
-            <div className="pc-note"><p>A whole figure is on the stage; parts belong to the peep builder.</p><button className="pc-btn" onClick={() => onFigure(null)}>Back to the peep builder</button></div>
+            <div className="pc-note"><p>A whole figure is on the stage; parts belong to the peep builder.</p><button className="k-btn" onClick={() => onFigure(null)}>Back to the peep builder</button></div>
           )}
           {tab === 'figures' && <>
             <button role="radio" aria-checked={state.figure === null} className="pc-tile" onClick={() => onFigure(null)} data-tip="Build a peep from parts"><span className="pc-none"><None /></span><span>Peep</span></button>

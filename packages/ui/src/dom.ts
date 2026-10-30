@@ -1,14 +1,21 @@
 // The few behaviours native elements do not give: roving focus in a tab list or a segmented control, a menu's keyboard and placement,
 // a dialog that hands focus back, a tooltip, a toast region. Each helper takes elements the host already wrote (real buttons, a real
 // <dialog>), adds only ARIA state and listeners, and returns a way to drive it and to remove it. Decisions live in keys.ts and place.ts.
+import { TOKENS_CSS } from '@kit/tokens';
 import { UI_CSS } from './css.ts';
 import { step, typeahead, type Orientation } from './keys.ts';
 import { place, type Align, type Side } from './place.ts';
 
-// The stylesheet, added to the document once. The host also loads the kit tokens (TOKENS_CSS from @kit/tokens, or tokens.css).
+// The stylesheet, added to the document once, at the start of <head> so the host's and the packages' own CSS come after it and win.
+// The controls need the kit tokens: if the host does not load them (tokens.css, or TOKENS_CSS as <style id="k-tokens-css">), they are
+// added first. Tokens are :where() rules, so whatever a host or a package sets on an element (the shell's palette) still wins.
 export function ensureUiStyles(doc: Document = document): void {
   if (doc.getElementById('k-ui-css')) return;
-  const s = doc.createElement('style'); s.id = 'k-ui-css'; s.textContent = UI_CSS; doc.head.append(s);
+  const ui = doc.createElement('style'); ui.id = 'k-ui-css'; ui.textContent = UI_CSS;
+  const hasTokens = doc.getElementById('k-tokens-css') || doc.defaultView?.getComputedStyle(doc.documentElement).getPropertyValue('--k-space-1').trim();
+  if (hasTokens) { doc.head.prepend(ui); return; }
+  const tokens = doc.createElement('style'); tokens.id = 'k-tokens-css'; tokens.textContent = TOKENS_CSS;
+  doc.head.prepend(tokens); tokens.after(ui);
 }
 
 let seq = 0;

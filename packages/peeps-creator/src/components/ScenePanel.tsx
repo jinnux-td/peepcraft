@@ -106,10 +106,10 @@ export function SceneMembers({ state, selected, onSelect, used, onLive, onCommit
           {/* A member keeps one Lines chip; the lines of each part are set in the builder. */}
           {!e.upload && <ColorTargets compact used={used} targets={e.thing ? thingTargets({ ...e, thing: e.thing }, (p) => onLive(selected, p)) : peepTargets(e, (p) => onLive(selected, p), !!e.figure).filter((t) => t.id !== 'line' && !t.id.endsWith('-line'))} />}
           <div className="pc-row">
-            <button className="pc-btn" aria-label="Flip" title="Flip" aria-pressed={e.flip} onClick={() => onCommit(selected, { flip: !e.flip })}><I.flip /><span>Flip</span></button>
-            <button className="pc-btn" aria-label="Back" title="Back" onClick={() => onMove(selected, -1)} disabled={selected === 0}><I.back /><span>Back</span></button>
-            <button className="pc-btn" aria-label="Front" title="Front" onClick={() => onMove(selected, 1)} disabled={selected === state.scene.length - 1}><I.front /><span>Front</span></button>
-            <button className="pc-btn" aria-label="Remove" title="Remove" onClick={() => onRemove(selected)}><I.remove /><span>Remove</span></button>
+            <button className="k-btn" aria-label="Flip" title="Flip" aria-pressed={e.flip} onClick={() => onCommit(selected, { flip: !e.flip })}><I.flip /><span>Flip</span></button>
+            <button className="k-btn" aria-label="Back" title="Back" onClick={() => onMove(selected, -1)} disabled={selected === 0}><I.back /><span>Back</span></button>
+            <button className="k-btn" aria-label="Front" title="Front" onClick={() => onMove(selected, 1)} disabled={selected === state.scene.length - 1}><I.front /><span>Front</span></button>
+            <button className="k-btn" aria-label="Remove" title="Remove" onClick={() => onRemove(selected)}><I.remove /><span>Remove</span></button>
           </div>
         </div>
       ) : state.scene.length > 0 && <p className="pc-note">Pick one here, or drag it on the stage. Drag one here to change the order.</p>}

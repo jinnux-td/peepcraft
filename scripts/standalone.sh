@@ -4,7 +4,8 @@
 set -e
 root=$(cd "$(dirname "$0")/.." && pwd)
 pkgs=${*:-$(ls "$root/packages")}
-needs() { node -e "const p=require('$root/packages/$1/package.json'),d={...p.dependencies,...p.devDependencies};console.log(Object.keys(d).filter(k=>k.startsWith('@kit/')).map(k=>k.slice(5)).join(' '))"; }
+# every @kit package it needs, through the ones it needs (dependencies and devDependencies)
+needs() { node -e "const seen=new Set(),walk=(n)=>{const p=require('$root/packages/'+n+'/package.json');for(const k of Object.keys({...p.dependencies,...p.devDependencies}))if(k.startsWith('@kit/')&&!seen.has(k.slice(5))){seen.add(k.slice(5));walk(k.slice(5))}};walk('$1');seen.delete('$1');console.log([...seen].join(' '))"; }
 for p in $pkgs; do
   tmp=$(mktemp -d); mkdir "$tmp/packages"
   for d in $p $(needs "$p"); do cp -R "$root/packages/$d" "$tmp/packages/$d"; done

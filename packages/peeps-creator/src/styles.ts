@@ -1,16 +1,16 @@
 // The creator's stylesheet, as a string rendered inside the component, so it works wherever the component is placed (no CSS loader, no globals).
-// Four themes, each from one reference: sunny (Opeeps), glass (soft light panels), noir (dark with gold), violet (gradient and pills).
+// Four themes, each from one reference: sunny (Opeeps), glass (soft light panels), noir (dark with gold), violet (gradient and pills). They are
+// the brand themes of @kit/tokens (data-brand on the root): the --pc-* names below read the kit tokens, and the buttons and the theme menu are
+// @kit/ui, shaped here as pills.
 // Layout follows the width of the component itself (container queries), not the window.
 export const creatorCss = `
-.pc,.pc[data-pc-theme=sunny]{color-scheme:light;--pc-page:#fffbf0;--pc-text:#1b1b1b;--pc-muted:#6f6a5c;--pc-surface:#fff;--pc-line:#eee6cf;--pc-tile:#faf5e4;--pc-accent:#f7d56e;--pc-on-accent:#1b1b1b;--pc-glow:#f7d56e66;--pc-shadow:0 12px 40px #0000001a;--pc-r:28px;--pc-blur:0px;--pc-caps:none;--pc-track:0;--pc-menu:#fff}
-.pc[data-pc-theme=glass]{color-scheme:light;--pc-page:linear-gradient(135deg,#b4b9cc,#d9c9cf 60%,#c3c8dc);--pc-text:#1f2433;--pc-muted:#5b6275;--pc-surface:#ffffff55;--pc-line:#ffffff99;--pc-tile:#ffffff66;--pc-accent:#3d6bff;--pc-on-accent:#fff;--pc-glow:#3d6bff44;--pc-shadow:0 20px 60px #1f243326;--pc-r:26px;--pc-blur:22px;--pc-caps:uppercase;--pc-track:.12em;--pc-menu:#fff}
-.pc[data-pc-theme=noir]{color-scheme:dark;--pc-page:radial-gradient(1200px 700px at 70% 10%,#2a2a2e,#101012);--pc-text:#f1efe9;--pc-muted:#9a978e;--pc-surface:#ffffff0d;--pc-line:#ffffff1f;--pc-tile:#ffffff0a;--pc-accent:#f0a431;--pc-on-accent:#1a1204;--pc-glow:#f0a43155;--pc-shadow:0 24px 70px #000000a0;--pc-r:14px;--pc-blur:18px;--pc-caps:none;--pc-track:0;--pc-menu:#1c1c20}
-.pc[data-pc-theme=violet]{color-scheme:dark;--pc-page:linear-gradient(160deg,#7a6bd6,#8f86e0 55%,#6b5fc9);--pc-text:#fff;--pc-muted:#e0dcff;--pc-surface:#ffffff24;--pc-line:#ffffff40;--pc-tile:#ffffff1f;--pc-accent:#ff5c8a;--pc-on-accent:#fff;--pc-glow:#ff5c8a55;--pc-shadow:0 18px 50px #2a1f6a55;--pc-r:24px;--pc-blur:16px;--pc-caps:none;--pc-track:0;--pc-menu:#6f63cc}
-.pc{container-type:inline-size;box-sizing:border-box;padding:16px;border-radius:var(--pc-r);background:var(--pc-page);color:var(--pc-text);font:15px/1.4 ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif}
+.pc{--pc-page:var(--k-page-fill);--pc-text:var(--k-text);--pc-muted:var(--k-muted);--pc-surface:var(--k-surface);--pc-line:var(--k-line);--pc-tile:var(--k-surface-2);--pc-accent:var(--k-accent);--pc-on-accent:var(--k-on-accent);--pc-glow:color-mix(in srgb,var(--k-accent) 35%,transparent);--pc-shadow:var(--k-shadow-lg);--pc-r:var(--k-radius-lg);--pc-blur:var(--k-blur);--pc-caps:none;--pc-track:0;--pc-menu:var(--k-popover)}
+.pc[data-brand=glass]{--pc-caps:uppercase;--pc-track:.12em}
+.pc{container-type:inline-size;box-sizing:border-box;padding:16px;border-radius:var(--pc-r);background:var(--pc-page);color:var(--pc-text);font:15px/1.4 var(--k-font-sans)}
 .pc *,.pc *::before,.pc *::after{box-sizing:border-box}
-.pc button,.pc input{font:inherit;color:inherit}
+.pc button:where(:not(.k-btn)),.pc input{font:inherit;color:inherit}
 .pc button{cursor:pointer}
-.pc :focus-visible{outline:3px solid var(--pc-accent);outline-offset:2px}
+.pc :focus-visible{outline:3px solid var(--k-focus);outline-offset:2px}
 .pc-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
 .pc-title{margin:0;font-size:26px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
 .pc small{font-size:12px;font-weight:500;color:var(--pc-muted);text-transform:var(--pc-caps);letter-spacing:var(--pc-track)}
@@ -22,12 +22,12 @@ export const creatorCss = `
 .pc-options>.pc-picked>.pc-field>.pc-label{position:static;width:auto;height:auto;clip-path:none}
 .pc-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .pc-panel{background:var(--pc-surface);border:1px solid var(--pc-line);border-radius:var(--pc-r);box-shadow:var(--pc-shadow);backdrop-filter:blur(var(--pc-blur));-webkit-backdrop-filter:blur(var(--pc-blur))}
-.pc-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--pc-line);background:var(--pc-surface);backdrop-filter:blur(var(--pc-blur));border-radius:999px;padding:8px 14px;transition:transform .12s,box-shadow .12s}
-.pc-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 18px var(--pc-glow)}
-.pc-btn:disabled{opacity:.4;cursor:default}
-.pc-btn.pc-primary{background:var(--pc-accent);color:var(--pc-on-accent);border-color:transparent;font-weight:600;padding:12px 8px;font-size:13px}
-.pc-btn.pc-wide{width:100%;padding:10px 14px}
-.pc-btn[aria-pressed=true]{background:var(--pc-accent);color:var(--pc-on-accent);border-color:transparent}
+.pc .k-btn{border-radius:var(--k-radius-full);backdrop-filter:blur(var(--k-blur))}
+.pc .k-btn:not([data-variant]){--ku-btn-line:var(--k-line)}
+.pc .k-btn[aria-pressed=true]{--ku-btn-bg:var(--k-accent);--ku-btn-fg:var(--k-on-accent);--ku-btn-line:var(--k-accent)}
+.pc .k-btn[data-variant=primary]{font-weight:600}
+.pc .k-btn.pc-wide{width:100%}
+@media (hover:hover){.pc .k-btn:not(:disabled,[aria-disabled=true]):hover{transform:translateY(-1px);box-shadow:0 6px 18px var(--pc-glow)}}
 .pc-main{display:grid;grid-template-columns:minmax(300px,390px) minmax(0,1fr) minmax(260px,320px);gap:20px;align-items:start}
 .pc-picker{display:grid;grid-template-columns:96px minmax(0,1fr);overflow:hidden}
 .pc-rail{display:flex;flex-direction:column;gap:6px;padding:10px 8px;border-right:1px solid var(--pc-line)}
@@ -44,8 +44,8 @@ export const creatorCss = `
 .pc-none{display:grid;place-items:center;color:var(--pc-muted)}
 .pc-tile span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pc-grid.pc-list{grid-template-columns:1fr;gap:4px}
-.pc-tip{position:fixed;z-index:1000;max-width:220px;padding:6px 9px;border-radius:7px;background:#1f2328;color:#fff;font:600 12px/1.2 system-ui,sans-serif;text-align:center;pointer-events:none;box-shadow:0 4px 12px #0003}
-.pc-tip::before{content:"";position:absolute;top:-6px;left:var(--pc-tip-arrow,50%);margin-left:-6px;border:6px solid transparent;border-top:0;border-bottom-color:#1f2328}
+.pc-tip{z-index:1000;text-align:center}
+.pc-tip::before{content:"";position:absolute;top:-6px;left:var(--pc-tip-arrow,50%);margin-left:-6px;border:6px solid transparent;border-top:0;border-bottom-color:var(--k-text)}
 .pc .pc-list .pc-tile{flex-direction:row;gap:16px;padding:6px 14px 6px 6px;font-size:14px;color:var(--pc-text);text-align:left}
 .pc-list .pc-tile svg,.pc-list .pc-tile .pc-none{width:72px;flex:none}
 .pc-list .pc-tile span:last-child{flex:1}
@@ -128,8 +128,8 @@ export const creatorCss = `
 .pc-side-scene .pc-members{flex:0 1 auto;min-height:56px;max-height:none}
 .pc-side-scene .pc-member{gap:8px}
 .pc-side-scene .pc-row{flex-wrap:nowrap}
-.pc-side-scene .pc-row .pc-btn{flex:1;padding:8px}
-.pc-side-scene .pc-row .pc-btn span{display:none}
+.pc-side-scene .pc-row .k-btn{flex:1;padding:0 var(--k-space-2)}
+.pc-side-scene .pc-row .k-btn span{display:none}
 .pc-side-scene .pc-slider,.pc-frame .pc-slider{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px}
 .pc-side-scene .pc-slider .pc-label,.pc-frame .pc-slider .pc-label{display:contents}
 .pc-side-scene .pc-slider .pc-track,.pc-frame .pc-slider .pc-track{grid-column:2;grid-row:1}
@@ -162,16 +162,12 @@ export const creatorCss = `
 .pc h3{margin:20px 0 10px;font-size:13px;display:flex;align-items:baseline;gap:10px;text-transform:var(--pc-caps);letter-spacing:var(--pc-track)}
 .pc-file{position:relative;cursor:pointer}
 .pc-file input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
-.pc-file:focus-within{outline:3px solid var(--pc-accent);outline-offset:2px}
+.pc-file:focus-within{outline:3px solid var(--k-focus);outline-offset:2px}
 .pc-upload{position:relative;display:flex;min-width:0}
 .pc-upload .pc-tile{flex:1}
 .pc .pc-x{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:28px;height:28px;padding:0;border-radius:50%;border:1px solid var(--pc-line);background:var(--pc-menu)}
 .pc .pc-x svg{width:16px;height:16px}
 .pc-theme{position:relative}
-.pc-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:10;padding:6px;display:flex;flex-direction:column;min-width:160px;background:var(--pc-menu);border:1px solid var(--pc-line);border-radius:16px;box-shadow:var(--pc-shadow)}
-.pc-item{display:flex;align-items:center;gap:10px;border:0;background:transparent;border-radius:10px;padding:8px 10px;text-align:left}
-.pc-item:hover,.pc-item[aria-checked=true]{background:var(--pc-tile)}
-.pc-item[aria-checked=true]{font-weight:600}
 .pc-item i{width:14px;height:14px;border-radius:50%;display:block}
 @container (max-width:1040px){
   .pc-main{grid-template-columns:minmax(0,1fr)}
@@ -184,6 +180,6 @@ export const creatorCss = `
   .pc-side-scene{position:static;max-height:none;overflow:visible}
   .pc-side-scene .pc-members{max-height:272px}
 }
-@container (max-width:520px){.pc-btn span{display:none}.pc-btn.pc-primary span,.pc-btn.pc-wide span{display:inline}.pc-save{grid-template-columns:1fr}}
+@container (max-width:520px){.pc .k-btn span{display:none}.pc .k-btn[data-variant=primary] span,.pc .k-btn.pc-wide span{display:inline}.pc-save{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.pc *{transition:none!important}}
 `
