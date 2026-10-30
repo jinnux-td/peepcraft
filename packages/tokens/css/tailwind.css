@@ -10,6 +10,7 @@
   --color-page: var(--k-page);
   --color-surface: var(--k-surface);
   --color-surface-2: var(--k-surface-2);
+  --color-popover: var(--k-popover);
   --color-text: var(--k-text);
   --color-muted: var(--k-muted);
   --color-line: var(--k-line);
@@ -18,6 +19,7 @@
   --color-on-accent: var(--k-on-accent);
   --color-focus: var(--k-focus);
   --color-danger: var(--k-danger);
+  --color-on-danger: var(--k-on-danger);
   --color-success: var(--k-success);
   --color-warning: var(--k-warning);
   --color-overlay: var(--k-overlay);

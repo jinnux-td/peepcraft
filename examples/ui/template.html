@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>kit: UI gallery</title>
+<style>
+/* The gallery page itself: tokens only, like any app on the kit. */
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--k-page-fill);color:var(--k-text);font:var(--k-text-base)/var(--k-leading-normal) var(--k-font-sans)}
+header{position:sticky;top:0;z-index:var(--k-z-sticky);display:flex;flex-wrap:wrap;align-items:center;gap:var(--k-space-3) var(--k-space-6);padding:var(--k-space-3) var(--k-gutter);border-bottom:1px solid var(--k-line);background:var(--k-popover)}
+h1{margin:0 auto 0 0;font-size:var(--k-text-lg)}
+main{display:grid;gap:var(--k-space-6);max-width:var(--k-content);margin:0 auto;padding:var(--k-space-8) var(--k-gutter) var(--k-space-24)}
+section{display:grid;gap:var(--k-space-4);padding:var(--k-space-6);border:1px solid var(--k-line);border-radius:var(--k-radius-lg);background:var(--k-surface);backdrop-filter:blur(var(--k-blur))}
+h2{margin:0;font-size:var(--k-text-xl);line-height:var(--k-leading-snug)}
+h3{margin:0;color:var(--k-muted);font-size:var(--k-text-sm);font-weight:500}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--k-space-3)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,calc(var(--k-space-32) * 2)),1fr));gap:var(--k-space-4)}
+.stack{display:grid;gap:var(--k-space-3);align-content:start}
+.k-card p{margin:var(--k-space-2) 0 0;color:var(--k-muted);font-size:var(--k-text-sm)}
+.k-card h4{margin:0;font-size:var(--k-text-base)}
+.tabpanel{padding:var(--k-space-4) 0 0;color:var(--k-muted)}
+</style></head><body>
+<header>
+  <h1>UI gallery</h1>
+  <div class="k-seg" role="radiogroup" aria-label="Theme" id="theme">
+    <button type="button" role="radio" aria-checked="true" data-set-theme="light">Light</button>
+    <button type="button" role="radio" aria-checked="false" data-set-theme="dark">Dark</button>
+    <button type="button" role="radio" aria-checked="false" data-set-brand="sunny">Sunny</button>
+    <button type="button" role="radio" aria-checked="false" data-set-brand="glass">Glass</button>
+    <button type="button" role="radio" aria-checked="false" data-set-brand="noir">Noir</button>
+    <button type="button" role="radio" aria-checked="false" data-set-brand="violet">Violet</button>
+  </div>
+</header>
+<main>
+  <section aria-labelledby="h-buttons"><h2 id="h-buttons">Buttons</h2>
+    <h3>Variants</h3>
+    <div class="row">
+      <button type="button" class="k-btn" data-variant="primary">Primary</button>
+      <button type="button" class="k-btn">Secondary</button>
+      <button type="button" class="k-btn" data-variant="ghost">Ghost</button>
+      <button type="button" class="k-btn" data-variant="danger">Delete</button>
+      <a class="k-btn" href="#h-buttons">A link</a>
+    </div>
+    <h3>Sizes and icon buttons</h3>
+    <div class="row">
+      <button type="button" class="k-btn" data-size="sm">Small</button>
+      <button type="button" class="k-btn">Medium</button>
+      <button type="button" class="k-btn" data-size="lg" data-variant="primary">Large</button>
+      <button type="button" class="k-btn" data-icon aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></button>
+      <button type="button" class="k-btn" data-icon data-size="sm" data-variant="ghost" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <h3>States</h3>
+    <div class="row">
+      <button type="button" class="k-btn" aria-pressed="false" id="toggle">Toggle (off)</button>
+      <button type="button" class="k-btn" aria-pressed="true">Toggle (on)</button>
+      <button type="button" class="k-btn" data-variant="primary" disabled>Disabled</button>
+      <button type="button" class="k-btn" disabled>Disabled</button>
+      <button type="button" class="k-btn" data-variant="primary" id="busy">Save changes</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-fields"><h2 id="h-fields">Fields</h2>
+    <div class="grid">
+      <div class="k-field"><label class="k-label" for="f-name">Name</label><input class="k-input" id="f-name" placeholder="Ada Lovelace" aria-describedby="f-name-hint"><p class="k-hint" id="f-name-hint">As it appears on your card.</p></div>
+      <div class="k-field"><label class="k-label" for="f-email">Email</label><input class="k-input" id="f-email" type="email" value="not-an-email"></div>
+      <div class="k-field"><label class="k-label" for="f-off">Account</label><input class="k-input" id="f-off" value="Locked" disabled></div>
+      <div class="k-field"><label class="k-label" for="f-plan">Plan</label><select class="k-input" id="f-plan"><option>Free</option><option>Team</option><option>Business</option></select></div>
+      <div class="k-field"><label class="k-label" for="f-note">Note</label><textarea class="k-input" id="f-note" placeholder="Anything we should know"></textarea></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-choices"><h2 id="h-choices">Checkbox, radio, switch, slider</h2>
+    <div class="grid">
+      <fieldset class="stack" style="border:0;margin:0;padding:0"><legend class="k-label">Notify me</legend>
+        <label class="k-check"><input type="checkbox" checked> By email</label>
+        <label class="k-check"><input type="checkbox"> By SMS</label>
+        <label class="k-check"><input type="checkbox" disabled> By fax</label>
+      </fieldset>
+      <fieldset class="stack" style="border:0;margin:0;padding:0"><legend class="k-label">Billing</legend>
+        <label class="k-check"><input type="radio" name="bill" checked> Monthly</label>
+        <label class="k-check"><input type="radio" name="bill"> Yearly</label>
+        <label class="k-check"><input type="radio" name="bill" disabled> Lifetime</label>
+      </fieldset>
+      <div class="stack">
+        <label class="k-check"><input type="checkbox" role="switch" class="k-switch"> Dark mode</label>
+        <label class="k-check"><input type="checkbox" role="switch" class="k-switch" checked> Auto-save</label>
+        <label class="k-check"><input type="checkbox" role="switch" class="k-switch" disabled> Beta features</label>
+      </div>
+      <div class="stack">
+        <div class="k-field"><label class="k-label" for="vol">Volume</label><div class="k-slider"><input type="range" id="vol" min="0" max="100" value="40"><output for="vol" id="vol-out"></output></div></div>
+        <div class="k-field"><label class="k-label" for="vol2">Balance</label><div class="k-slider"><input type="range" id="vol2" value="50" disabled><output for="vol2">50</output></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-seg"><h2 id="h-seg">Segmented control and tabs</h2>
+    <div class="k-seg" role="radiogroup" aria-label="View" id="view">
+      <button type="button" role="radio" aria-checked="true">Day</button>
+      <button type="button" role="radio" aria-checked="false">Week</button>
+      <button type="button" role="radio" aria-checked="false" disabled>Month</button>
+      <button type="button" role="radio" aria-checked="false">Year</button>
+    </div>
+    <div>
+      <div class="k-tabs" role="tablist" aria-label="Project" id="tabs">
+        <button type="button" role="tab" aria-selected="true" aria-controls="p-overview" id="t-overview">Overview</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="p-activity" id="t-activity">Activity</button>
+        <button type="button" role="tab" aria-selected="false" aria-controls="p-settings" id="t-settings">Settings</button>
+      </div>
+      <div class="tabpanel k-tabpanel" role="tabpanel" id="p-overview" aria-labelledby="t-overview" tabindex="0">The overview panel.</div>
+      <div class="tabpanel k-tabpanel" role="tabpanel" id="p-activity" aria-labelledby="t-activity" tabindex="0" hidden>The activity panel.</div>
+      <div class="tabpanel k-tabpanel" role="tabpanel" id="p-settings" aria-labelledby="t-settings" tabindex="0" hidden>The settings panel.</div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-cards"><h2 id="h-cards">Cards and chips</h2>
+    <div class="grid">
+      <article class="k-card"><h4>Flat card</h4><p>A surface with a line.</p></article>
+      <article class="k-card" data-variant="raised"><h4>Raised card</h4><p>A surface with a shadow.</p></article>
+      <article class="k-card"><h4><a class="k-card-link" href="#h-cards">Whole-card link</a></h4><p>One real link covers the card.</p></article>
+    </div>
+    <div class="row">
+      <span class="k-chip">Neutral</span>
+      <span class="k-chip" data-status="success">Paid</span>
+      <span class="k-chip" data-status="warning">Due soon</span>
+      <span class="k-chip" data-status="danger">Overdue</span>
+      <button type="button" class="k-chip" aria-pressed="true">Open</button>
+      <button type="button" class="k-chip" aria-pressed="false">Closed</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-overlays"><h2 id="h-overlays">Dialog, menu, tooltip, toast</h2>
+    <div class="row">
+      <button type="button" class="k-btn" id="open-dialog">Open dialog</button>
+      <button type="button" class="k-btn" id="menu-button">Actions</button>
+      <div id="menu">
+        <button type="button" role="menuitem">Copy</button>
+        <button type="button" role="menuitem">Cut</button>
+        <button type="button" role="menuitem">Paste</button>
+        <button type="button" role="menuitem" aria-disabled="true">Delete</button>
+        <hr role="separator">
+        <button type="button" role="menuitem">Duplicate</button>
+      </div>
+      <button type="button" class="k-btn" data-icon aria-label="Help" id="help">?</button>
+      <button type="button" class="k-btn" id="toast-info">Show info toast</button>
+      <button type="button" class="k-btn" id="toast-success">Show success toast</button>
+      <button type="button" class="k-btn" id="toast-error">Show error toast</button>
+    </div>
+    <p id="picked" class="k-hint" aria-live="polite"></p>
+  </section>
+
+  <section aria-labelledby="h-states"><h2 id="h-states">States</h2>
+    <div class="grid">
+      <div class="stack" aria-label="Loading"><span class="k-skeleton" style="width:60%"></span><span class="k-skeleton"></span><span class="k-skeleton" style="width:80%"></span></div>
+      <div class="row"><span class="k-spinner" role="status" aria-label="Loading"></span><span>Loading results</span></div>
+      <div class="k-empty"><strong>No invoices yet</strong><span>They appear here after the first payment.</span></div>
+    </div>
+    <div class="k-banner" role="alert" data-kind="error"><p>The last refresh failed. Showing data from 10:42.</p></div>
+    <div class="k-banner" data-kind="warning"><p>Your trial ends in 3 days.</p></div>
+    <div class="k-banner"><p>New: export to CSV.</p></div>
+  </section>
+</main>
+
+<dialog id="dialog">
+  <h2 class="k-dialog-title">Delete project?</h2>
+  <p style="margin:0;color:var(--k-muted)">This removes the project and its history. It cannot be undone.</p>
+  <div class="k-dialog-actions">
+    <button type="button" class="k-btn" id="dialog-cancel">Cancel</button>
+    <button type="button" class="k-btn" data-variant="danger" id="dialog-ok">Delete</button>
+  </div>
+</dialog>
+<script>/*BUNDLE*/</script></body></html>

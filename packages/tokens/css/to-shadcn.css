@@ -5,7 +5,7 @@
   --foreground: var(--k-text);
   --card: var(--k-surface);
   --card-foreground: var(--k-text);
-  --popover: var(--k-surface);
+  --popover: var(--k-popover);
   --popover-foreground: var(--k-text);
   --primary: var(--k-accent);
   --primary-foreground: var(--k-on-accent);

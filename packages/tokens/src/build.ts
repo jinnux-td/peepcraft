@@ -50,7 +50,7 @@ export function tailwindCss(): string {
 // shadcn's variable names, mapped onto kit roles. shadcn's `accent` is a hover fill, not the primary colour: it maps to surface-2.
 export const SHADCN: [shadcn: string, kit: string][] = [
   ['background', 'page'], ['foreground', 'text'],
-  ['card', 'surface'], ['card-foreground', 'text'], ['popover', 'surface'], ['popover-foreground', 'text'],
+  ['card', 'surface'], ['card-foreground', 'text'], ['popover', 'popover'], ['popover-foreground', 'text'],
   ['primary', 'accent'], ['primary-foreground', 'on-accent'],
   ['secondary', 'surface-2'], ['secondary-foreground', 'text'],
   ['muted', 'surface-2'], ['muted-foreground', 'muted'],
@@ -71,7 +71,7 @@ export function toShadcnCss(): string {
 // name for (success, warning, overlay, over) keep the kit values. Radius steps follow shadcn's --radius like its own sm/lg/xl.
 export function fromShadcnCss(): string {
   const back: [string, string][] = ([
-    ['page', 'background'], ['surface', 'card'], ['surface-2', 'muted'], ['text', 'foreground'], ['muted', 'muted-foreground'],
+    ['page', 'background'], ['surface', 'card'], ['surface-2', 'muted'], ['popover', 'popover'], ['text', 'foreground'], ['muted', 'muted-foreground'],
     ['line', 'border'], ['line-strong', 'input'], ['accent', 'primary'], ['on-accent', 'primary-foreground'], ['focus', 'ring'], ['danger', 'destructive'],
   ] as const).map(([k, s]) => [`--k-${k}`, `var(--${s})`]);
   const radius: [string, string][] = [['--k-radius-sm', 'calc(var(--radius) - 4px)'], ['--k-radius-md', 'var(--radius)'], ['--k-radius-lg', 'calc(var(--radius) + 6px)'], ['--k-radius-xl', 'calc(var(--radius) + 14px)']];

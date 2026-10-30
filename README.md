@@ -6,6 +6,7 @@ To reuse one, copy its folder into another project.
 
 | Package | What it is | Dependencies |
 |---|---|---|
+| [`@kit/ui`](packages/ui) | **foundation**: the shared controls as CSS on native elements (button, field, checkbox, switch, slider, segmented, tabs, card, chip, dialog, menu, tooltip, toast, states) plus small DOM helpers for keyboard and focus; a gallery in every theme with browser tests for contrast, focus, target size and keyboard (`examples/ui`) | none (reads `@kit/tokens`) |
 | [`@kit/tokens`](packages/tokens) | **foundation**: the design tokens, one set of `--k-*` CSS variables for light, dark and brand themes (`data-theme`, `data-brand`), with generated Tailwind v4 and shadcn/ui bridges and `tokens.json`; WCAG contrast checked for every theme | none |
 | [`@kit/notes-graph`](packages/notes-graph) | markdown folder to a graph (links, prerequisites, lineage, incremental cache) | none (Node built-ins) |
 | [`@kit/layout`](packages/layout) | deterministic, local layouts: disc, timeline lanes, 3D | none |

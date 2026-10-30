@@ -9,11 +9,12 @@
   "scripts": {
     "test": "npm test --workspaces && node --test examples/*.test.ts",
     "typecheck": "npm run typecheck --workspaces && tsc -p examples",
-    "e2e": "node --test examples/world/e2e.test.ts examples/panel/e2e.test.ts examples/dashboard/e2e.test.ts examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts",
+    "e2e": "node --test examples/world/e2e.test.ts examples/panel/e2e.test.ts examples/dashboard/e2e.test.ts examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts examples/ui/e2e.test.ts",
     "example": "node examples/world/build.mjs && node examples/world/serve.ts",
     "example:panel": "node examples/panel/build.mjs && node examples/panel/serve.ts",
     "example:dashboard": "node examples/dashboard/build.mjs && node examples/dashboard/serve.ts",
-    "example:peeps": "node examples/peeps/build.mjs && node examples/peeps/serve.ts"
+    "example:peeps": "node examples/peeps/build.mjs && node examples/peeps/serve.ts",
+    "example:ui": "node examples/ui/build.mjs && node examples/ui/serve.ts"
   },
   "engines": {
     "node": ">=22.23.4"

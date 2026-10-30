@@ -10,6 +10,7 @@
   --k-page: var(--background);
   --k-surface: var(--card);
   --k-surface-2: var(--muted);
+  --k-popover: var(--popover);
   --k-text: var(--foreground);
   --k-muted: var(--muted-foreground);
   --k-line: var(--border);

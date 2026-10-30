@@ -15,22 +15,33 @@ const sets: [string, Colors][] = [
 // [foreground, background, minimum]; a background other than page sits on page.
 const PAIRS: [string, string, number][] = [
   ['text', 'page', 4.5], ['text', 'surface', 4.5], ['text', 'surface-2', 4.5],
-  ['muted', 'page', 4.5], ['muted', 'surface', 4.5],
-  ['on-accent', 'accent', 4.5],
+  ['muted', 'page', 4.5], ['muted', 'surface', 4.5], ['muted', 'surface-2', 4.5],
+  ['text', 'popover', 4.5], ['muted', 'popover', 4.5], ['focus', 'popover', 3],
+  ['on-accent', 'accent', 4.5], ['on-danger', 'danger', 4.5],
   ['focus', 'page', 3], ['focus', 'surface', 3],
   ['line-strong', 'page', 3], ['line-strong', 'surface', 3],
-  ['danger', 'page', 3], ['success', 'page', 3], ['warning', 'page', 3],
+  ['danger', 'page', 4.5], ['danger', 'surface', 4.5], // error messages are text
+  // translucent surfaces lighten or darken as they nest: a card in a section, a control's track inside a card in a section
+  ['text', 'surface>surface', 4.5], ['muted', 'surface>surface', 4.5],
+  ['text', 'surface>surface>surface', 4.5], ['text', 'surface>surface-2>surface', 4.5], ['muted', 'surface>surface-2', 4.5], ['muted', 'surface>surface>surface-2', 4.5],
+  ['text', 'popover>surface-2>surface', 4.5], ['danger', 'surface>surface', 4.5],
+  ['success', 'page', 3], ['warning', 'page', 3],
 ];
 
 for (const [name, c] of sets) {
   test(`contrast: ${name}`, () => {
-    const bg = (role: string) => (role === 'page' ? [c.page] : [c[role as keyof Colors], c.page]);
+    // `on` is one role, or layers from the outside in ("surface>surface-2": a surface-2 inset inside a surface), all on the page
+    const bg = (on: string) => [...on.split('>').filter((r) => r !== 'page').reverse().map((r) => c[r as keyof Colors]), c.page];
     for (const [fg, on, min] of PAIRS) {
       const back = bg(on), ratio = contrast(over(c[fg as keyof Colors], ...back), over(back[0], ...back.slice(1)));
       assert.ok(ratio >= min, `${name}: ${fg} on ${on} is ${ratio.toFixed(2)}, needs ${min}`);
     }
   });
 }
+
+test('popover is opaque in every set', () => {
+  for (const [name, c] of sets) assert.equal(parseHex(c.popover)[3], 1, name);
+});
 
 test('every set has every role, and every colour but a gradient page-fill is a hex colour', () => {
   for (const [name, c] of sets) for (const r of COLOR_ROLES) {

@@ -13,24 +13,25 @@ export type Mode = 'light' | 'dark';
 
 // Semantic colour roles: what a value is for. `page-fill` is the page's `background` (a gradient in some brands); `page` is
 // the solid colour checked for contrast, so a brand with a gradient sets `page` to the stop with the least contrast to its text.
-// `line` is a divider (no contrast rule); `line-strong` is a boundary that identifies a control (inputs, checkboxes): 3:1.
+// `popover` is the opaque background of what floats in the top layer (dialog, menu, tooltip, toast), where a translucent surface
+// would show whatever is under it. `line` is a divider (no contrast rule); `line-strong` is a boundary that identifies a control (inputs, checkboxes): 3:1.
 export const COLOR_ROLES = [
-  'page', 'page-fill', 'surface', 'surface-2', 'text', 'muted', 'line', 'line-strong',
-  'accent', 'on-accent', 'focus', 'danger', 'success', 'warning', 'overlay', 'over',
+  'page', 'page-fill', 'surface', 'surface-2', 'popover', 'text', 'muted', 'line', 'line-strong',
+  'accent', 'on-accent', 'focus', 'danger', 'on-danger', 'success', 'warning', 'overlay', 'over',
 ] as const;
 export type ColorRole = (typeof COLOR_ROLES)[number];
 export type Colors = Record<ColorRole, string>;
 
 export const MODES: Record<Mode, Colors> = {
   light: {
-    page: P.paper, 'page-fill': P.paper, surface: P.white, 'surface-2': P.sand100, text: P.ink, muted: P.sand600,
+    page: P.paper, 'page-fill': P.paper, surface: P.white, 'surface-2': P.sand100, popover: P.white, text: P.ink, muted: P.sand600,
     line: P.sand300, 'line-strong': P.sand500, accent: P.ink, 'on-accent': P.white, focus: P.blue,
-    danger: P.red, success: P.green, warning: P.amber, overlay: '#1b1b1a73', over: P.white,
+    danger: P.red, 'on-danger': P.white, success: P.green, warning: P.amber, overlay: '#1b1b1a73', over: P.white,
   },
   dark: {
-    page: P.night, 'page-fill': P.night, surface: P.night1, 'surface-2': P.night2, text: P.bone, muted: P.fog,
+    page: P.night, 'page-fill': P.night, surface: P.night1, 'surface-2': P.night2, popover: P.night1, text: P.bone, muted: P.fog,
     line: P.night3, 'line-strong': P.night5, accent: P.bone, 'on-accent': P.night, focus: P.blueSoft,
-    danger: P.redSoft, success: P.greenSoft, warning: P.amberSoft, overlay: '#000000a6', over: P.white,
+    danger: P.redSoft, 'on-danger': P.night, success: P.greenSoft, warning: P.amberSoft, overlay: '#000000a6', over: P.white,
   },
 };
 
@@ -80,7 +81,7 @@ export const BRANDS: Record<string, Brand> = {
   glass: {
     mode: 'light',
     colors: {
-      page: '#b4b9cc', 'page-fill': 'linear-gradient(135deg,#b4b9cc,#d9c9cf 60%,#c3c8dc)', surface: '#ffffff55', 'surface-2': '#ffffff66',
+      page: '#b4b9cc', 'page-fill': 'linear-gradient(135deg,#b4b9cc,#d9c9cf 60%,#c3c8dc)', surface: '#ffffff55', 'surface-2': '#ffffff66', popover: '#ffffff',
       text: '#1f2433', muted: '#3f4659', line: '#ffffff99', 'line-strong': '#575e71', accent: '#2f5cf0', 'on-accent': '#ffffff',
       focus: '#1f2433', danger: '#8a1810', success: '#145a33', warning: '#5f3c00', overlay: '#1f243359',
     },
@@ -89,17 +90,17 @@ export const BRANDS: Record<string, Brand> = {
   noir: {
     mode: 'dark',
     colors: {
-      page: '#2a2a2e', 'page-fill': 'radial-gradient(1200px 700px at 70% 10%,#2a2a2e,#101012)', surface: '#ffffff0d', 'surface-2': '#ffffff0a',
-      text: '#f1efe9', muted: '#aaa79e', line: '#ffffff1f', 'line-strong': '#ffffff61', accent: '#f0a431', 'on-accent': '#1a1204', focus: '#f0a431',
+      page: '#2a2a2e', 'page-fill': 'radial-gradient(1200px 700px at 70% 10%,#2a2a2e,#101012)', surface: '#ffffff0a', 'surface-2': '#ffffff08', popover: '#1c1c20',
+      text: '#f1efe9', muted: '#b5b2a9', line: '#ffffff1f', 'line-strong': '#ffffff61', accent: '#f0a431', 'on-accent': '#1a1204', focus: '#f0a431', danger: '#ff8a82',
     },
     scales: { 'font-sans': rounded, 'font-display': rounded, 'radius-md': '8px', 'radius-lg': '14px', 'radius-xl': '20px', 'shadow-lg': '0 24px 70px #000000a0', blur: '18px' },
   },
   violet: {
     mode: 'dark',
     colors: {
-      page: '#5d50c6', 'page-fill': 'linear-gradient(160deg,#5446bd,#5d50c6 55%,#4a3eae)', surface: '#ffffff14', 'surface-2': '#ffffff0f',
+      page: '#5346bd', 'page-fill': 'linear-gradient(160deg,#4b3fb3,#5346bd 55%,#4235a3)', surface: '#ffffff0f', 'surface-2': '#ffffff0a', popover: '#6457c4',
       text: '#ffffff', muted: '#f4f2ff', line: '#ffffff40', 'line-strong': '#ffffffa6', accent: '#ff5c8a', 'on-accent': '#2b0614', focus: '#ffffff',
-      danger: '#ffc9c9', success: '#b8f2d3', warning: '#ffe08a',
+      danger: '#ffeded', success: '#b8f2d3', warning: '#ffe08a',
     },
     scales: { 'font-sans': rounded, 'font-display': rounded, 'radius-md': '12px', 'radius-lg': '24px', 'radius-xl': '32px', 'shadow-lg': '0 18px 50px #2a1f6a55', blur: '16px' },
   },
