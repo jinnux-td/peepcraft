@@ -21,3 +21,8 @@ export function lookup(category: Category, id: string): Atom {
   if (!found) throw new Error(`no ${category} atom "${id}"; known: ${[...catalogue[category].keys()].join(', ')}`)
   return found
 }
+
+/** Loads the paths of every atom (or of some categories): for tools, tests and exports that render to a string, not for a page. */
+export async function loadAll(categories: readonly Category[] = Object.keys(catalogue) as Category[]): Promise<void> {
+  await Promise.all(categories.flatMap((c) => [...catalogue[c].values()].map((a) => a.load())))
+}

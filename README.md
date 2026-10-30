@@ -58,7 +58,7 @@ Four packages make the peeps family: three leaves that draw, one assembly that e
 - **Generated code:** `packages/peeps/src/atoms` (from the Symbols page of the Open Peeps Figma file, `scripts/build-figma.ts`) and `packages/transhumans/src/figures` (`scripts/build-figures.ts`) are written by scripts. Never edit them by hand, and grep with `--exclude-dir`. The source art lives outside the repo, so each script takes its path as an argument.
 - **Colours:** how pieces get their default colours and how to set one: `docs/peeps-colours.md`.
 - **Try it:** `npm run example:peeps`, then open http://127.0.0.1:4183. Browser tests: `examples/peeps/e2e.test.ts`.
-- **Known gaps:** the faces "Smiling" and "Happy Grin" appear in templates but have no atom. A `Peep`'s viewBox is its canvas, not its drawn bounds, so the creator measures with `getBBox()`. Importing `Peep` pulls in every atom, which makes the example bundle several MB; a host should load lazily.
+- **Known gaps:** the faces "Smiling" and "Happy Grin" appear in templates but have no atom. A `Peep`'s viewBox is its canvas, not its drawn bounds, so the creator measures with `getBBox()`. Each atom's paths load on demand (its own chunk), so a page fetches only the parts it draws; await `peep.load()` or `pending()` before rendering to a string.
 
 ## Candidates not extracted yet
 Graph view (2D/3D engines, needs React), frames and query cache, secret box + SQLite store. Extract when a second app needs one.

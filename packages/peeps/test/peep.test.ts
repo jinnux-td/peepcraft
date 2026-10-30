@@ -3,6 +3,10 @@ import assert from 'node:assert/strict'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import { catalogue, defaults, Peep, lookup, type Category, type PartColors } from '../src/index.ts'
+import { loadAll } from '../src/registry.ts'
+
+// The atoms' paths load on demand; these tests draw them, so load them all first.
+await loadAll()
 
 const counts: Record<Category, number> = { accessories: 9, body: 30, face: 33, facialHair: 17, head: 48, mask: 3, sitting: 11, standing: 26 }
 

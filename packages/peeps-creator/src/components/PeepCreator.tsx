@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import type { Box, PeepType, Slot } from '@kit/peeps'
+import { pending, type Box, type PeepType, type Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
 import { exportSceneSvg, exportSvg, fileName, svgToPng } from '../export.ts'
 import { randomize, type Target } from '../random.ts'
@@ -71,7 +71,14 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   // No saved uploads when the browser keeps no storage (a private window): the library just starts empty.
   useEffect(() => { loadUploads().then(setUploads, () => {}) }, [])
   // The drawings of the figures load after the first paint, so the Figures tab is ready by the time it is opened.
-  useEffect(() => { for (const f of figures) f.load().catch(() => {}) }, [])
+  // The figures (most of the package's weight) are fetched ahead, but only once the stage's own parts are in and the page is idle,
+  // so on a slow line they never compete with what the first screen needs.
+  useEffect(() => {
+    let on = true
+    const later = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 500))
+    pending().then(() => on && later(() => { for (const f of figures) f.load().catch(() => {}) }))
+    return () => { on = false }
+  }, [])
   const theme = themeProp ?? innerTheme
   const state = hist.now
   const inScene = tab === 'scene'
@@ -96,7 +103,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const base = inScene ? frameSize(state) : { width: SIZE, height: SIZE }
   const px = { width: base.width * pngScale, height: base.height * pngScale }
   const save = async (kind: 'svg' | 'png') => {
-    await Promise.all(figures.map((f) => f.load()))
+    await Promise.all([...figures.map((f) => f.load()), pending()])   // what is on the stage has asked for its parts; wait for them
     const svg = inScene ? exportSceneSvg(state) : exportSvg(state, box)
     onExport({ kind, name: fileName(state, inScene, kind), blob: kind === 'svg' ? new Blob([svg], { type: 'image/svg+xml' }) : await svgToPng(svg, px.width, px.height) })
   }

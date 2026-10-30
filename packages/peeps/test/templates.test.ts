@@ -4,6 +4,10 @@ import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { catalogue, onHead, origins, type PeepType } from '../src/index.ts'
+import { loadAll } from '../src/registry.ts'
+
+// The atoms' paths load on demand; these tests draw them, so load them all first.
+await loadAll()
 
 const root = process.env.PEEPS_ASSETS
 // Faces the templates use that the pack ships no separate atom for (56 of 302 templates).

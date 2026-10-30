@@ -1,6 +1,8 @@
 // An atom is one drawn part (a hairstyle, a face, ...) as a React component that draws a <g> in the part's own hi-res canvas: one plain path
-// per piece of the Figma symbol (its skin, top, pants, ink, ...), each in its own colour unless given another.
-import { createElement, type ReactElement, type SVGProps } from 'react'
+// per piece of the Figma symbol (its skin, top, pants, ink, ...), each in its own colour unless given another. The meta and the pieces are
+// here at once (menus, colour targets); the paths load on demand, one module per atom, because they are most of the package's weight. An
+// atom draws an empty <g> until its paths are in, then draws again (the same way as the figures of @kit/transhumans).
+import { createElement, useSyncExternalStore, type ReactElement, type SVGProps } from 'react'
 
 export type Category = 'accessories' | 'body' | 'face' | 'facialHair' | 'head' | 'mask' | 'standing' | 'sitting'
 
@@ -32,9 +34,15 @@ export interface AtomMeta {
 /** One path of an atom: the piece it belongs to, the colour it comes in, and, for a line drawn as a stroke, its width. */
 export interface Shape { piece: Role; fill: string; d: string; stroke?: number }
 
-/** The meta, the shapes, and the pieces that can take their own colour (hair, a top, a hat) with the colour each comes in:
- *  `{ top: '#90a7e0' }`. The skin and the lines are not among them, nor the pieces of a face or accessory, which take its paper. */
-export type Atom = ((props: AtomProps) => ReactElement) & AtomMeta & { pieces: Readonly<Record<Role, string>>; shapes: readonly Shape[] }
+/** The meta, the pieces that can take their own colour (hair, a top, a hat) with the colour each comes in: `{ top: '#90a7e0' }` (the skin and
+ *  the lines are not among them, nor the pieces of a face or accessory, which take its paper), and the shapes once loaded. */
+export type Atom = ((props: AtomProps) => ReactElement) & AtomMeta & {
+  pieces: Readonly<Record<Role, string>>
+  /** The paths: empty until load() has resolved. */
+  readonly shapes: readonly Shape[]
+  /** Fetches the paths once (later calls share it); a drawn atom calls it itself. Await it (or pending()) before rendering to a string. */
+  load: () => Promise<readonly Shape[]>
+}
 
 export const INK = '#000000'
 export const PAPER = '#FFFFFF'
@@ -46,12 +54,34 @@ export function fillOf(s: Shape, { ink = INK, paper = PAPER, colors, mono }: Pic
   return colors?.[s.piece] ?? (s.fill === '#ffffff' ? paper : s.fill)
 }
 
-export function atom(meta: AtomMeta, pieces: Record<Role, string>, shapes: readonly Shape[]): Atom {
+// Every load under way, so a host can wait for what is on screen before exporting it (pending()).
+const inflight = new Set<Promise<unknown>>()
+/** Resolves when every atom asked for so far has its paths (a failed one is skipped; drawing it again retries). */
+export async function pending(): Promise<void> {
+  while (inflight.size) await Promise.allSettled([...inflight])
+}
+
+const NONE: readonly Shape[] = []
+
+export function atom(meta: AtomMeta, pieces: Record<Role, string>, source: () => Promise<{ shapes: readonly Shape[] }>): Atom {
+  let loading: Promise<readonly Shape[]> | undefined
+  const listeners = new Set<() => void>()
+  // A failed fetch is forgotten, so the next draw tries again.
+  const load = () => {
+    if (loading) return loading
+    const p = source().then((m) => { self.shapes = m.shapes; listeners.forEach((l) => l()); return m.shapes }, (e) => { loading = undefined; throw e })
+    const done = p.finally(() => inflight.delete(done)).catch(() => {})
+    inflight.add(done)
+    return (loading = p)
+  }
+  const subscribe = (l: () => void) => { listeners.add(l); load().catch(console.error); return () => { listeners.delete(l) } }
+  const current = () => self.shapes
   const Component = ({ ink, paper, colors, mono, ...rest }: AtomProps) =>
-    createElement('g', rest, ...shapes.map((s, i) => {
+    createElement('g', rest, ...useSyncExternalStore(subscribe, current, current).map((s, i) => {
       const fill = fillOf(s, { ink, paper, colors, mono })
       return createElement('path', s.stroke ? { key: i, d: s.d, fill: 'none', stroke: fill, strokeWidth: s.stroke, 'data-piece': s.piece } : { key: i, d: s.d, fill, fillRule: 'evenodd', 'data-piece': s.piece })
     }))
   Component.displayName = `Peep${meta.category}.${meta.id}`
-  return Object.assign(Component, meta, { pieces, shapes })
+  const self = Object.assign(Component, meta, { pieces, load, shapes: NONE })
+  return self
 }

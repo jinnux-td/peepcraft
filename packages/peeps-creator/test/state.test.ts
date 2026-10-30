@@ -2,6 +2,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { choose, commit, optionsFor, partId, redo, setType, startHistory, tweak, undo } from '../src/state.ts'
 import { initialState } from '../src/types.ts'
+import { loadAll } from '@kit/peeps'
+
+// The atoms' paths load on demand; these tests draw them, so load them all first.
+await loadAll()
 
 test('partId is the choice, else the default of the type', () => {
   assert.equal(partId(initialState, 'face'), 'smile')

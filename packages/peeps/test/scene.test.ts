@@ -2,6 +2,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Background, lookup, Peep, Scene } from '../src/index.ts'
+import { loadAll } from '../src/registry.ts'
+
+// The atoms' paths load on demand; these tests draw them, so load them all first.
+await loadAll()
 
 test('a scene draws its background, then items back to front', () => {
   const scene = new Scene({ width: 4000, height: 3500, background: '#f7d56e' })

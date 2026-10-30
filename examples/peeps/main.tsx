@@ -13,7 +13,11 @@ function App() {
   const [theme, setTheme] = useState<ThemeId>(stored)
   const pick = (t: ThemeId) => { setTheme(t); try { localStorage.setItem(KEY, t) } catch { /* the theme just lasts the visit */ } }
   return (
-    <div id="full"><PeepCreator theme={theme} onThemeChange={pick} /></div>
+    <div id="full" data-brand={theme}>
+      <PeepCreator theme={theme} onThemeChange={pick} />
+      {/* who made it: the creator's portfolio, in the creator's theme */}
+      <footer className="made-by"><a href="https://jinnux.com" rel="author">Made by Dat Nguyen</a> · Open Peeps by Pablo Stanley (CC0)</footer>
+    </div>
   )
 }
 

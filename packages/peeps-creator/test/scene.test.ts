@@ -5,6 +5,10 @@ import { lookup } from '@kit/transhumans'
 import { exportSvg, fileName } from '../src/export.ts'
 import { fallbackBox, sceneTransform, squareAround } from '../src/scene.ts'
 import { initialState } from '../src/types.ts'
+import { loadAll } from '@kit/peeps'
+
+// The atoms' paths load on demand; these tests draw them, so load them all first.
+await loadAll()
 
 const box = fallbackBox('bust')
 

@@ -84,6 +84,9 @@ export class Peep {
     ]
   }
 
+  /** Loads the paths of this peep's parts (they load on demand); await it before measuring the drawing or rendering it to a string. */
+  load(): Promise<void> { return Promise.all(this.layout().map((p) => p.atom.load())).then(() => {}) }
+
   /** Canvas size of this type, the viewBox of the SVG. */
   get size() { return canvas[this.type] }
 
