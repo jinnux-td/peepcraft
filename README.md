@@ -37,6 +37,8 @@ npm test                    # every package's tests + examples
 npm run typecheck          # packages + examples (examples/contract.ts checks the seam between data-layer and worldmap)
 npm run e2e                # the examples and the token CSS in a real browser
 scripts/standalone.sh       # copy each package out of the repo and test it alone
+npm run peeps -- help       # PeepCraft from the terminal (examples/peeps-cli)
+npm run measure:peeps       # measure the window on each PeepCraft look into peeps-engine/src/boxes.ts (Chromium)
 ```
 
 | [`@kit/map-view`](packages/map-view) | **assembly**: a world map with data layers from tables (`lat`/`lon` columns), layers panel and controls included, ready to drop in a div or a panel: `createMapView(el).update(frames)` | `data-layer` + `worldmap` + `ui` |

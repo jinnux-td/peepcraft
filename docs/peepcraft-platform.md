@@ -179,14 +179,15 @@ v2's `customize_character` and `validate_character` are gone. The agent changes 
 ```bash
 npm run peeps -- parts [category] [--type bust] [--query curly]
 npm run peeps -- random [--type sitting] [--seed 7] > doc.json
-npm run peeps -- render doc.json -o peep.svg          # or -o peep.png [--size 1024] [--scale 2]
+npm run peeps -- render doc.json -o peep.svg          # or -o peep.png [--scale 2]; 1024 px on the long side x scale
 npm run peeps -- render - -o peep.svg < doc.json      # document on stdin
 npm run peeps -- share doc.json                       # prints the link
 npm run peeps -- open 'https://peepcraft.jinnux.com/#d=...' > doc.json
 ```
 
 - It runs from the kit repo with all art local, so there is no network, no cache and no download step.
-- PNG uses `@resvg/resvg-js` (MPL-2.0) with `loadSystemFonts: false`. The art has no text, so no font is involved.
+- PNG is drawn in headless Chromium through `playwright-core` (Apache-2.0), already the kit's browser driver, the same way the web app draws it on a canvas. `@resvg/resvg-js` was the first plan, but it is MPL-2.0 and kit rule 4 allows MIT, Apache and BSD only. SVG needs no browser.
+- It also takes a share link wherever it takes a document, and it stops quietly when piped into a reader that closes early (`| head`).
 - Errors are the engine's `DocError`s, one per line: `parts.head: no head atom "afroo"; known: afro, bun, ...`. A bad document exits with 1.
 - It writes no files beyond `-o`.
 
