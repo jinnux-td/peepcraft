@@ -1,0 +1,12 @@
+{
+  "name": "jinnux",
+  "description": "Dat Nguyen's Claude Code plugins: PeepCraft and friends.",
+  "owner": { "name": "Dat Nguyen", "url": "https://jinnux.com" },
+  "plugins": [
+    {
+      "name": "peepcraft",
+      "source": "./plugins/peepcraft",
+      "description": "Draw Open Peeps characters and scenes: the PeepCraft MCP server (render, search, random) and a skill for using it."
+    }
+  ]
+}

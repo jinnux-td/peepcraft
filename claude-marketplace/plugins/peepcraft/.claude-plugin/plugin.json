@@ -1,0 +1,17 @@
+{
+  "name": "peepcraft",
+  "displayName": "PeepCraft",
+  "version": "0.1.0",
+  "description": "Draw Open Peeps characters and scenes from a JSON document: the PeepCraft MCP server (describe, search_parts, render, random) and a skill that knows the workflow.",
+  "author": { "name": "Dat Nguyen", "url": "https://jinnux.com" },
+  "homepage": "https://peepcraft.jinnux.com/",
+  "keywords": ["open-peeps", "illustration", "avatar", "svg", "mcp"],
+  "userConfig": {
+    "mcp_url": {
+      "type": "string",
+      "title": "PeepCraft MCP URL",
+      "description": "The MCP endpoint. Use the workers.dev address when the jinnux.com zone challenges clients (Under Attack Mode).",
+      "default": "https://peepcraft-mcp.jinnux.com/mcp"
+    }
+  }
+}
