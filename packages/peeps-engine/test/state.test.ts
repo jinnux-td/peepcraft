@@ -29,21 +29,6 @@ test('options of a slot come from the category of the type', () => {
   assert.deepEqual(optionsFor('bust', 'mask').map((a) => a.id), ['medical-mask', 'respirator', 'none'])
 })
 
-test('a mask: its own tab and colour, left alone by Shuffle all; the eyes-only faces only come up under one', async () => {
-  const { randomize } = await import('../src/random.ts')
-  const { peepTargets, tabColors } = await import('../src/colors.ts')
-  const masked = choose(initialState, 'mask', 'respirator')
-  assert.deepEqual(tabColors('mask', peepTargets(masked, () => {})).map((t) => t.label), ['Mask', 'Line'])
-  let rng = 0
-  const seq = () => (rng = (rng * 9301 + 49297) % 233280) / 233280
-  for (let i = 0; i < 60; i++) {
-    const bare = randomize(initialState, 'all', seq), worn = randomize(masked, 'all', seq)
-    assert.equal(bare.parts.mask, undefined); assert.equal(worn.parts.mask, 'respirator')
-    assert.ok(!(bare.parts.face ?? '').startsWith('masked-'), bare.parts.face)
-  }
-  assert.ok(Array.from({ length: 60 }, () => randomize(masked, 'face', seq).parts.face).some((f) => f?.startsWith('masked-')), 'under a mask, they do')
-})
-
 test('history: commit is undoable and redoable, a new commit clears redo, a tweak is not a step', () => {
   let h = startHistory(initialState)
   h = commit(h, choose(h.now, 'face', 'calm'))
@@ -140,16 +125,6 @@ test('another item comes in its own colours: the pieces picked for the last one 
   assert.equal(wornColors(s.type, s.parts, s.partColors).body?.top, '#123456', 'a picked colour wins over the item own')
   const back = choose(next, 'body', s.parts.body ?? 'tee-1')
   assert.equal(wornColors(back.type, back.parts, back.partColors).body?.top, itemColors(atomKey(back.type, 'body', 'tee-1')).top, 'chosen again, it comes in its own colours')
-})
-
-test('glasses with a white frame have a Frame colour, white whatever the fill; a grey beard has a hair colour', async () => {
-  const { peepTargets } = await import('../src/colors.ts')
-  const { itemColors } = await import('../src/outfit.ts')
-  const ids = (accessories: string) => peepTargets({ ...initialState, paper: '#fde9d0', parts: { accessories } }, () => {}).map((t) => t.id)
-  assert.ok(ids('glasses-4').includes('frame')); assert.ok(!ids('glasses').includes('frame'), 'other glasses are lines only')
-  const frame = peepTargets({ ...initialState, paper: '#fde9d0', parts: { accessories: 'glasses-4' } }, () => {}).find((t) => t.id === 'frame')!
-  assert.equal(frame.value, '#ffffff')
-  assert.equal(itemColors('facialHair/moustache-9').hair, '#e8e1e1')
 })
 
 test('contrast: black lines on white only, the colours kept for when it is off', async () => {

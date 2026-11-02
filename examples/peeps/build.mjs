@@ -3,7 +3,7 @@
 import { build } from 'esbuild';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { relative } from 'node:path';
-import { initialState } from '../../packages/peeps-creator/src/types.ts';   // the creator's first state (types.ts has no JSX)
+import { initialState } from '../../packages/peeps-engine/src/types.ts';   // the creator's first state (types.ts has no JSX)
 import { Peep } from '@kit/peeps';
 const here = new URL('.', import.meta.url);
 // The generated drawings carry 2 to 3 decimals; 0.1 of a unit on a 500 to 1080 canvas is not visible, and rounding cuts the page by about 30%.

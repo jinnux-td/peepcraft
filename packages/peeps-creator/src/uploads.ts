@@ -1,6 +1,6 @@
 // Pictures the person uploads, kept in this browser only (IndexedDB): nothing leaves the page. Deleting one, or clearing the site's data,
 // removes it. Browser only; IndexedDB can be missing or blocked (a private window), so callers keep an upload for the visit when saving fails.
-import type { Upload } from './types.ts'
+import type { Upload } from '@kit/peeps-engine'
 
 export const ACCEPT = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']
 export const MAX_BYTES = 5 * 1024 * 1024

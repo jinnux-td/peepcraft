@@ -2,8 +2,7 @@
 // fill and named parts.
 import { defaults, type PartColors, type PeepType, type Slot } from '@kit/peeps'
 import { lookup as lookupThing } from '@kit/things'
-import { wornColors } from './outfit.ts'
-import { SKIN, swatches, type Parts } from './types.ts'
+import { wornColors, SKIN, swatches, type Parts } from '@kit/peeps-engine'
 
 /** One thing that can be coloured: a label for its chip, its colour now, the dots offered first, and how to set or clear it. `slot`, for a
  *  piece an item carries (hair, a top, a tie): the slot of that item. */

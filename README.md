@@ -18,11 +18,12 @@ To reuse one, copy its folder into another project.
 | [`@kit/peeps`](packages/peeps) | Open Peeps illustrations as React components (177 atoms): a `Peep` that composes them, with defaults per type (standing, sitting, bust), and a `Scene` that puts peeps and figures on one background | `react` (peer) |
 | [`@kit/transhumans`](packages/transhumans) | Transhumans illustrations (Pablo Stanley, CC0): 38 whole black and white figures as React components that recolour (ink and paper) | `react` (peer) |
 | [`@kit/things`](packages/things) | things for a peeps scene, drawn in code in the same ink and paper style: 22 in five groups (furniture, plants and home, small props, pets, extras a peep wears) | `react` (peer) |
+| [`@kit/peeps-engine`](packages/peeps-engine) | **assembly, headless**: what a PeepCraft picture is (`CreatorState`, a versioned JSON document) and how it becomes an SVG with no DOM: validation with choices, rendering to a string, dice, scenes, catalogue search; used by the creator, the CLI and the MCP server | `peeps` + `transhumans` + `things` |
 | [`@kit/peeps-creator`](packages/peeps-creator) | **assembly**: a character creator for peeps and transhumans figures as one React component (`<PeepCreator />`): a tab per part with a dice each, a Figures tab, a Scene tab (peeps, figures, things and your own uploads on one ground), colours, transparent background, scale / rotate / flip, undo, four themes, SVG and PNG export | `peeps` + `transhumans` + `things` + `ui` |
 | [`@kit/worldmap`](packages/worldmap) | world map, flat or globe (MapLibre), draws resolved layers; Natural Earth basemap bundled, works offline | `maplibre-gl` (BSD-3) |
 
 ## Rules
-1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `folio`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder, except the **foundation** packages (`@kit/tokens`, `@kit/ui`), which a leaf may name in its `package.json` (decision D1, `~/services/docs/ui/migration.md`). A runtime dependency on another kit package is written `"file:../ui"`, so a host that links kit packages by path (the portfolio) never asks the npm registry for `@kit/*`. An **assembly** (`map-view`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host. `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
+1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `folio`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder, except the **foundation** packages (`@kit/tokens`, `@kit/ui`), which a leaf may name in its `package.json` (decision D1, `~/services/docs/ui/migration.md`). A runtime dependency on another kit package is written `"file:../ui"`, so a host that links kit packages by path (the portfolio) never asks the npm registry for `@kit/*`. An **assembly** (`map-view`, `peeps-engine`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host, with one exception: a UI assembly may import the headless assembly it draws (`peeps-creator` imports `peeps-engine`, so the web app, the CLI and the MCP server draw the same picture). `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
 2. **Extract, don't invent.** A package comes from code that already works in an app and has, or is about to have, a
    second user. Keep its tests with it.
 3. **Small public API:** everything exported goes through `src/index.ts`.
@@ -44,13 +45,14 @@ scripts/standalone.sh       # copy each package out of the repo and test it alon
 `npm run example:panel` builds and serves `examples/panel` on http://127.0.0.1:4181: four panels holding different views (two maps with their own options, a table, and a view that throws). `npm run example` builds and serves `examples/world` on http://127.0.0.1:4180: six layers, each pulled from a pretend server, on the world map with the layers panel, time window and 2D/3D. `npm run example:peeps` builds `examples/peeps` (the creator full screen, on http://127.0.0.1:4183). `npm run example:dashboard` builds and serves `examples/dashboard` on http://127.0.0.1:4182: the shell, two heat maps that ask for one window at a time, and the map on a second tab. `npm run e2e` runs the browser tests of all four examples (needs Chromium). Design: `docs/map-and-data-layer.md`, `docs/worldmap.md`.
 
 ## Peeps
-Four packages make the peeps family: three leaves that draw, one assembly that edits.
+Five packages make the peeps family: three leaves that draw, a headless assembly that turns a document into a picture, and one that edits.
 
 | Package | Kind | Role |
 |---|---|---|
 | `@kit/peeps` | leaf | the parts (atoms) of Open Peeps, a `Peep` that puts one together per type (standing, sitting, bust), `Background`, and a `Scene` that lays many items on one ground |
 | `@kit/transhumans` | leaf | 38 whole figures; the source paths are flat, so they cannot be split into parts or mixed with peeps parts |
 | `@kit/things` | leaf | 22 drawings made in code, in the peeps' units, with named parts to colour (`leaves`, `pot`, ...) |
+| `@kit/peeps-engine` | assembly, headless | the document (`PeepcraftDoc`), `validate`, `renderSvg`, the creator's state and its plain functions; no UI, no DOM |
 | `@kit/peeps-creator` | assembly | `<PeepCreator />`: a tab per part with dice and locks, Figures, Scene (peeps, figures, things, uploads), colours, Contrast, undo, themes, SVG / PNG export |
 
 - **One contract:** every atom, figure and thing is a React component with `width`, `height`, `ink` and `paper` (and `colors` for named pieces), so `Scene` takes any of them without importing the others. `examples/contract.ts` stops compiling if the shapes drift.

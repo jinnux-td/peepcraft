@@ -1,6 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
-import { toHex } from '../state.ts'
-import { swatches } from '../types.ts'
+import { toHex, swatches } from '@kit/peeps-engine'
 import { icons } from './icons.tsx'
 
 /** A colour name the browser knows ("blue", "tomato") as #rrggbb; null for anything else, or a see-through colour. */

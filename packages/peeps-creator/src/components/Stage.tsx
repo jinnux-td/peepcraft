@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Box } from '@kit/peeps'
 import { lookup as lookupFigure } from '@kit/transhumans'
-import { boxKey, peepOf, Scene } from '../scene.ts'
-import type { CreatorState } from '../types.ts'
+import { boxKey, peepOf, Scene, type CreatorState } from '@kit/peeps-engine'
 
 /** The figure on its background. The window on the figure is measured once per type and then kept, so a tall hat never zooms the stage. */
 export function Stage({ state, box, measured, onMeasure }: { state: CreatorState; box: Box; measured: boolean; onMeasure: (key: string, outline: Box) => void }) {

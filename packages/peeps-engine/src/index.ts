@@ -1,0 +1,13 @@
+// The creator's state and the plain functions on it (no React components, no DOM).
+export { exportSceneSvg, exportSvg, fileName } from './export.ts'
+export { atomKey, itemColors, plain, wornColors } from './outfit.ts'
+export { randomize, slots, type Rng, type Target } from './random.ts'
+export { drawn, entryBox, entryScale, fallbackBox, frameBox, frameSize, GROUND, LIFT, peepOf, Scene, SCENE, sceneOf, sceneTransform, sceneWidth, SceneView, SIZE, squareAround, withExtra, boxKey, type Look } from './scene.ts'
+export { addToScene, categoryOf, choose, chooseExtra, chooseFigure, commit, designColors, dragEntry, dropUpload, moveEntry, optionsFor, partId, redo, removeEntry, reorderEntry, resizeEntry, setRatio, setType, showPeep, SIZES, startHistory, toggleLock, toHex, tweak, undo, updateEntry, type History } from './state.ts'
+export { initialState, RATIOS, SKIN, swatches, type CreatorState, type Lockable, type Parts, type Ratio, type SceneEntry, type Upload } from './types.ts'
+// The document: one picture as versioned JSON, for the CLI, the MCP server and share links.
+export { DOC_VERSION, feet, fromState, LIMITS, resolve, validate, type DocError, type DocMember, type PeepcraftDoc } from './doc.ts'
+export { DocInvalid, load, nameOf, renderSvg } from './render.ts'
+export { randomDoc } from './random-doc.ts'
+export { seeded } from './random.ts'
+export { catalog, search, type Catalog, type CatalogItem } from './catalog.ts'

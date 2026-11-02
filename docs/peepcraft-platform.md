@@ -93,25 +93,26 @@ flowchart TB
   EN --> TH["@kit/things"]
 ```
 
-**New package `@kit/peeps-engine`, extracted, not invented** (kit rule). It takes the headless files of `peeps-creator` as they are: `types.ts` (minus UI-only types), `scene.ts`, `outfit.ts`, `random.ts`, and the string half of `export.ts`. The creator then imports them back, with no change on screen. `svgToPng` and everything in `components/` stay in the creator.
+**New package `@kit/peeps-engine`, extracted, not invented** (kit rule). It takes the headless files of `peeps-creator` as they are: `types.ts` (minus the tabs and themes), `state.ts`, `scene.ts`, `outfit.ts`, `random.ts`, and the string half of `export.ts`, with their tests. The creator then imports them back, with no change on screen. `svgToPng` and everything in `components/` stay in the creator.
 
 Its API:
 
 ```ts
 validate(input: unknown): { ok: true; doc: PeepcraftDoc } | { ok: false; errors: DocError[] }
-resolve(doc): PeepcraftDoc                  // defaults filled in: what was actually drawn
-load(doc): Promise<void>                    // every atom, figure and thing the doc names
-renderSvg(doc): Promise<string>             // validate + load + renderToStaticMarkup
-fileName(doc, kind: 'svg' | 'png'): string  // "bust-afro-smile-tee-1.svg", as today
-random(opts?: { type?; keep?: Partial<PeepcraftDoc>; seed?: number }): PeepcraftDoc
+resolve(doc): CreatorState                  // defaults filled in: what is actually drawn
+fromState(state): { doc; dropped }          // back to a document, without defaults; uploads dropped and counted
+load(state): Promise<void>                  // every atom and figure the state draws
+renderSvg(input): Promise<{ svg, state, doc }>   // validate (throws DocInvalid) + load + renderToStaticMarkup
+nameOf(state, kind: 'svg' | 'png'): string  // "bust-afro-smile-tee-1.svg", as today
+randomDoc(opts?: { type?; keep?: PeepcraftDoc; seed?: number }): PeepcraftDoc
 encodeShare(doc): Promise<string>           // URL fragment, §6
 decodeShare(fragment: string): Promise<PeepcraftDoc>
-catalog(): Catalog                          // §7, for search and the MCP resource
+catalog(): Catalog; search({ category?, type?, query? }): CatalogItem[]   // §7
 
 interface DocError { path: string; message: string; choices?: string[] }
 ```
 
-`random` takes a seed (mulberry32 into the `rng` that `randomize` already accepts), so a seeded call always returns the same document.
+`randomDoc` takes a seed (`seeded`, mulberry32, into the `rng` that `randomize` already accepts), so a seeded call always returns the same document.
 
 **React stays.** Atoms, figures and things are React components. A second renderer over `.shapes` would be a second drawing path that has to match the first forever. `react` + `react-dom/server` run in Node and in Workers. This drops v2's rule "core must not depend on React".
 
@@ -169,7 +170,7 @@ v2's `customize_character` and `validate_character` are gone. The agent changes 
 **Security:**
 
 - No auth, because it is read-only with no storage.
-- Limits: a document of at most 16 KB, at most 24 scene entries, colours `#rrggbb` only, scale 0.2 to 2.
+- Limits (`LIMITS`): a document of at most 16 KB, at most 24 scene members, colours `#rrggbb` only, numbers inside the creator's slider ranges (scale 0.5 to 1.5, rotate ±180, zoom 0.5 to 2, size 0.2 to 2).
 - No URLs accepted (uploads rejected).
 - A Cloudflare rate-limiting rule on the route.
 

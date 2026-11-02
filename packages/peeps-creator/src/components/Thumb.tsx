@@ -1,8 +1,7 @@
 import { createElement } from 'react'
 import { origins, Peep, type Box, type Slot } from '@kit/peeps'
 import type { Figure } from '@kit/transhumans'
-import { drawn, fallbackBox, peepOf, squareAround, type Look } from '../scene.ts'
-import type { CreatorState } from '../types.ts'
+import { drawn, fallbackBox, peepOf, squareAround, type Look, type CreatorState } from '@kit/peeps-engine'
 
 /** Behind a choice: the picture's background, or a light grey in Contrast, so black and white items read the same on any background. */
 const tileBg = (s: CreatorState) => (s.mono ? { background: '#f2f2f2' } : s.bg === 'transparent' ? undefined : { background: s.bg })

@@ -22,7 +22,8 @@ const EXCEPTIONS: [string, RegExp, string][] = [
 function stylesheets(): { file: string; css: string }[] {
   const out: { file: string; css: string }[] = [];
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
-  for (const pkg of readdirSync(join(root, 'packages'))) {
+  // Folders only: macOS leaves a .DS_Store beside them.
+  for (const pkg of readdirSync(join(root, 'packages'), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)) {
     if (pkg === 'tokens') continue;
     for (const path of walk(join(root, 'packages', pkg, 'src'))) {
       if (!/\.tsx?$/.test(path) || /\/(atoms|figures)\//.test(path)) continue;
