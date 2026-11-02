@@ -38,6 +38,7 @@ npm run typecheck          # packages + examples (examples/contract.ts checks th
 npm run e2e                # the examples and the token CSS in a real browser
 scripts/standalone.sh       # copy each package out of the repo and test it alone
 npm run peep -- help       # PeepCraft from the terminal (examples/peeps-cli)
+npm run deploy:peeps       # PeepCraft to Cloudflare Pages: main is production, any other branch a preview at <branch>.peepcraft.pages.dev
 npm run measure:peeps       # measure the window on each PeepCraft look into peeps-engine/src/boxes.ts (Chromium)
 ```
 

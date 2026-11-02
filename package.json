@@ -21,7 +21,8 @@
     "dev:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 dev -c examples/peeps-mcp/wrangler.jsonc",
     "deploy:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 deploy -c examples/peeps-mcp/wrangler.jsonc",
     "peep": "node examples/peeps-cli/main.ts",
-    "install:peep": "sh examples/peeps-cli/install.sh"
+    "install:peep": "sh examples/peeps-cli/install.sh",
+    "deploy:peeps": "node examples/peeps/build.mjs && npx -y wrangler@4 pages deploy examples/peeps/dist --project-name peepcraft --branch \"$(git branch --show-current)\" --commit-dirty=true"
   },
   "engines": {
     "node": ">=22.23.4"
