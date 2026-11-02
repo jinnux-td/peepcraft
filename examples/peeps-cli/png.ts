@@ -1,9 +1,19 @@
-// SVG to PNG in headless Chromium: the picture drawn as an <img> at the asked size on a transparent page, as the web app draws it on a
-// canvas. playwright-core (Apache-2.0) is already the kit's browser driver; Chromium comes from `npx playwright install chromium`.
-import { chromium } from 'playwright-core'
+// SVG to PNG in a headless browser: the picture drawn as an <img> at the asked size on a transparent page, as the web app draws it on a
+// canvas. playwright-core (Apache-2.0) drives the Chrome or Edge already on the computer, so nothing big is downloaded; Playwright's own
+// Chromium (`npx playwright install chromium`) is the last resort.
+import { chromium, type Browser } from 'playwright-core'
+
+async function launch(): Promise<Browser> {
+  const tried: string[] = []
+  for (const channel of ['chrome', 'msedge', undefined]) {
+    try { return await chromium.launch(channel ? { channel } : {}) }
+    catch (e) { tried.push(`${channel ?? 'Playwright Chromium'}: ${(e as Error).message.split('\n')[0]}`) }
+  }
+  throw new Error(`PNG needs Chrome or Edge (or run: npx playwright install chromium). SVG works without one.\n  ${tried.join('\n  ')}`)
+}
 
 export async function svgToPng(svg: string, width: number, height: number): Promise<Uint8Array> {
-  const browser = await chromium.launch()
+  const browser = await launch()
   try {
     const page = await browser.newPage({ viewport: { width, height } })
     const src = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`

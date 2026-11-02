@@ -1,0 +1,13 @@
+{
+  "name": "peepcraft",
+  "version": "0.1.0",
+  "description": "peep: draw Open Peeps characters and scenes from the terminal. One JSON document per picture, SVG or PNG, the same drawing as PeepCraft (peepcraft.jinnux.com).",
+  "type": "module",
+  "bin": { "peep": "dist/peep.js" },
+  "files": ["dist/peep.js", "README.md"],
+  "engines": { "node": ">=22" },
+  "dependencies": { "playwright-core": "1.64.1" },
+  "keywords": ["open-peeps", "illustration", "avatar", "svg", "cli", "peepcraft"],
+  "homepage": "https://peepcraft.jinnux.com/",
+  "scripts": { "build": "node build.mjs", "prepublishOnly": "node build.mjs" }
+}

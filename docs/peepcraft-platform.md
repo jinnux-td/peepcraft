@@ -177,13 +177,13 @@ v2's `customize_character` and `validate_character` are gone. The agent changes 
 ## 8. CLI
 
 ```bash
-npm run peeps -- parts [category] [--type bust] [--query curly]
-npm run peeps -- random [--type sitting] [--seed 7] > doc.json
-npm run peeps -- render doc.json -o peep.svg          # or -o peep.png [--scale 2]; 1024 px on the long side x scale
-npm run peeps -- render doc.json --save [--png]       # named as PeepCraft's Save names it (also -o FOLDER/)
-npm run peeps -- render - -o peep.svg < doc.json      # document on stdin
-npm run peeps -- share doc.json                       # prints the link
-npm run peeps -- open 'https://peepcraft.jinnux.com/#d=...' > doc.json
+npm run peep -- parts [category] [--type bust] [--query curly]
+npm run peep -- random [--type sitting] [--seed 7] > doc.json
+npm run peep -- render doc.json -o peep.svg          # or -o peep.png [--scale 2]; 1024 px on the long side x scale
+npm run peep -- render doc.json --save [--png]       # named as PeepCraft's Save names it (also -o FOLDER/)
+npm run peep -- render - -o peep.svg < doc.json      # document on stdin
+npm run peep -- share doc.json                       # prints the link
+npm run peep -- open 'https://peepcraft.jinnux.com/#d=...' > doc.json
 ```
 
 - It runs from the kit repo with all art local, so there is no network, no cache and no download step.

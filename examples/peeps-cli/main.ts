@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// npm run peeps -- <command> (from the kit root), or node examples/peeps-cli/main.ts <command>. See `help`.
+// The `peep` command: npm run peep -- <command> in the kit repo, or `peep <command>` once the peepcraft package is installed. See `help`.
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { text } from 'node:stream/consumers'
 import { run } from './cli.ts'

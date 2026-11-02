@@ -37,7 +37,7 @@ npm test                    # every package's tests + examples
 npm run typecheck          # packages + examples (examples/contract.ts checks the seam between data-layer and worldmap)
 npm run e2e                # the examples and the token CSS in a real browser
 scripts/standalone.sh       # copy each package out of the repo and test it alone
-npm run peeps -- help       # PeepCraft from the terminal (examples/peeps-cli)
+npm run peep -- help       # PeepCraft from the terminal (examples/peeps-cli)
 npm run measure:peeps       # measure the window on each PeepCraft look into peeps-engine/src/boxes.ts (Chromium)
 ```
 

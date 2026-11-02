@@ -1,6 +1,7 @@
 // The CLI over an in-memory io: its pictures are the engine's golden SVGs, byte for byte, and its errors and exit codes are as documented.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 import { run, type Io } from './cli.ts'
@@ -42,7 +43,7 @@ test('usage mistakes: exit 2 with the usage', async () => {
   for (const argv of [['draw'], ['render'], ['render', 'x.json', '-o', 'x.jpg'], ['render', 'x.json', '--scale', '9'], ['random', '--type', 'lying'], ['parts', '--nope']]) {
     const { it, err } = io()
     assert.equal(await run(argv, it), 2, argv.join(' '))
-    assert.match(err.join('\n'), /peeps render DOC/)
+    assert.match(err.join("\n"), /peep render DOC/)
   }
   const help = io()
   assert.equal(await run(['help'], help.it), 0)
@@ -100,6 +101,14 @@ test('--save and -o FOLDER name the file as PeepCraft\'s Save button does', asyn
   assert.deepEqual(Object.keys(named.written), ['me.svg'], 'a file name given wins')
   const mixed = io(files)
   assert.equal(await run(['render', 'd.json', '-o', 'me.svg', '--png'], mixed.it), 2)
+})
+
+test('the published bundle (dist/peep.js) draws the golden SVGs and knows its version', async () => {
+  const dir = new URL('./', import.meta.url).pathname
+  execFileSync('node', [dir + 'build.mjs'], { stdio: 'pipe' })
+  const peep = (...a: string[]) => execFileSync(dir + 'dist/peep.js', a, { encoding: 'utf8' })
+  assert.equal(peep('--version').trim(), JSON.parse(readFileSync(dir + 'package.json', 'utf8')).version)
+  for (const name of ['scene', 'mono']) assert.equal(peep('render', new URL(`${name}.json`, golden).pathname), readFileSync(new URL(`${name}.svg`, golden), 'utf8') + '\n', name)
 })
 
 // PNG needs Chromium (npx playwright install chromium); skipped without it.

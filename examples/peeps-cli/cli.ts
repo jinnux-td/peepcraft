@@ -20,18 +20,24 @@ export interface Io {
 export const BASE = 'https://peepcraft.jinnux.com/'
 const TYPES: readonly PeepType[] = ['standing', 'sitting', 'bust']
 
-export const usage = `PeepCraft from the terminal: one JSON document describes a picture (see kit/docs/peepcraft-platform.md).
+/** The package version, set by build.mjs; 'dev' when run from the repo. */
+declare const PEEP_VERSION: string | undefined
+export const version = typeof PEEP_VERSION === 'string' ? PEEP_VERSION : 'dev'
 
-  peeps parts [category] [--type T] [--query WORDS] [--json]
+export const usage = `peep: PeepCraft from the terminal. One JSON document describes a picture; { "v": 1 } is the default bust.
+
+  peep parts [category] [--type T] [--query WORDS] [--json]
       what a document can name: head, face, body, standing, sitting, facialHair, accessories, mask, figure, thing
-  peeps random [--type T] [--seed N] [--keep DOC]       a random document (the same seed, the same document)
-  peeps render DOC [-o FILE.svg|FILE.png] [--scale 1-4] the picture; SVG to stdout without -o; PNG is 1024 px on the long side x scale
-  peeps render DOC --save [--png] [-o DIR]              saved under the name PeepCraft's Save gives it (bust-afro-smile-tee-1.svg),
+  peep random [--type T] [--seed N] [--keep DOC]       a random document (the same seed, the same document)
+  peep render DOC [-o FILE.svg|FILE.png] [--scale 1-4] the picture; SVG to stdout without -o; PNG is 1024 px on the long side x scale
+  peep render DOC --save [--png] [-o DIR]              saved under the name PeepCraft's Save gives it (bust-afro-smile-tee-1.svg),
                                                         in the current folder or DIR; -o DIR alone does the same
-  peeps share DOC [--base URL]                          a link that opens the picture in PeepCraft
-  peeps open LINK                                       the document in a link
+  peep share DOC [--base URL]                          a link that opens the picture in PeepCraft
+  peep open LINK                                       the document in a link
 
-DOC is a JSON file, - for stdin, or a share link. T is standing, sitting or bust.`
+DOC is a JSON file, - for stdin, or a share link. T is standing, sitting or bust.
+PNG uses the Chrome or Edge installed on this computer. Open Peeps and Transhumans art by Pablo Stanley (CC0).
+https://peepcraft.jinnux.com/`
 
 /** A usage mistake (exit 2), as opposed to a document that does not validate (exit 1). */
 class Usage extends Error {}
@@ -47,6 +53,7 @@ export async function run(argv: string[], io: Io): Promise<number> {
       case 'share': return await share(rest, io)
       case 'open': return await open(rest, io)
       case undefined: case 'help': case '--help': case '-h': io.out(usage); return command ? 0 : 2
+      case 'version': case '--version': case '-v': io.out(version); return 0
       default: throw new Usage(`no command "${command}"`)
     }
   } catch (e) {
@@ -75,7 +82,9 @@ const type = (t: unknown): PeepType | undefined => {
 async function read(source: string | undefined, io: Io): Promise<PeepCraftDoc> {
   if (!source) throw new Usage('which document? a file, - for stdin, or a share link')
   if (/^https?:\/\/|^#/.test(source)) return decodeShare(source)
-  const text = source === '-' ? await io.stdin() : await io.readFile(source)
+  let text: string
+  try { text = source === '-' ? await io.stdin() : await io.readFile(source) }
+  catch (e) { throw new Error((e as NodeJS.ErrnoException).code === 'ENOENT' ? `no file ${source}` : (e as Error).message) }
   if (new TextEncoder().encode(text).length > LIMITS.bytes) throw new Error(`a document is at most ${LIMITS.bytes} bytes`)
   let json: unknown
   try { json = JSON.parse(text) } catch (e) { throw new Error(`${source === '-' ? 'stdin' : source} is not JSON: ${(e as Error).message}`) }
