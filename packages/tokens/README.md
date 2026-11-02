@@ -93,7 +93,7 @@ nested themes, brands, a host override and both shadcn bridges resolve as descri
 
 ## Brand themes
 
-The four Peepcraft themes come from `packages/peeps-creator/src/styles.ts`, where they are still the creator's own `--pc-*` values (phase 6 moves the creator onto these tokens). Glass, noir and violet were changed where the creator's values missed the contrast checks:
+The four PeepCraft themes come from `packages/peeps-creator/src/styles.ts`, where they are still the creator's own `--pc-*` values (phase 6 moves the creator onto these tokens). Glass, noir and violet were changed where the creator's values missed the contrast checks:
 
 | Brand | Changed | Why |
 |---|---|---|

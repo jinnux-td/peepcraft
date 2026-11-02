@@ -34,7 +34,7 @@ export interface DocMember {
   lift?: number
 }
 
-export interface PeepcraftDoc {
+export interface PeepCraftDoc {
   v: typeof DOC_VERSION
   type?: PeepType
   parts?: Parts
@@ -76,7 +76,7 @@ const MEMBER_KEYS = ['type', 'parts', 'figure', 'thing', 'extra', 'ink', 'paper'
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
 
 /** Checks a document and lists every problem, each with its path and, where there is a list to pick from, the choices. */
-export function validate(input: unknown): { ok: true; doc: PeepcraftDoc } | { ok: false; errors: DocError[] } {
+export function validate(input: unknown): { ok: true; doc: PeepCraftDoc } | { ok: false; errors: DocError[] } {
   const errors: DocError[] = []
   const fail = (path: string, message: string, choices?: readonly string[]) => errors.push(choices ? { path, message, choices: [...choices] } : { path, message })
   if (!isObject(input)) return { ok: false, errors: [{ path: '', message: 'a document is a JSON object' }] }
@@ -100,7 +100,7 @@ export function validate(input: unknown): { ok: true; doc: PeepcraftDoc } | { ok
       input.scene.forEach((m: unknown, i: number) => member(m, `scene[${i}]`, fail))
     }
   }
-  return errors.length ? { ok: false, errors } : { ok: true, doc: input as unknown as PeepcraftDoc }
+  return errors.length ? { ok: false, errors } : { ok: true, doc: input as unknown as PeepCraftDoc }
 }
 
 type Fail = (path: string, message: string, choices?: readonly string[]) => void
@@ -192,7 +192,7 @@ function member(m: unknown, base: string, fail: Fail) {
 const SPREAD = [0.5, 0.2, 0.8, 0.35, 0.65]
 
 /** The state a valid document draws: what is left out is PeepCraft's start (initialState) and, for a scene member, the document's own look. */
-export function resolve(doc: PeepcraftDoc): CreatorState {
+export function resolve(doc: PeepCraftDoc): CreatorState {
   const s: CreatorState = {
     ...initialState,
     type: doc.type ?? initialState.type,
@@ -242,8 +242,8 @@ function entry(s: CreatorState, m: DocMember, i: number): SceneEntry {
 
 /** The document of a state, without what equals PeepCraft's start, so a share link stays short. Uploads cannot travel: their members are
  *  left out, and counted. */
-export function fromState(s: CreatorState): { doc: PeepcraftDoc; dropped: number } {
-  const doc: PeepcraftDoc = { v: DOC_VERSION }
+export function fromState(s: CreatorState): { doc: PeepCraftDoc; dropped: number } {
+  const doc: PeepCraftDoc = { v: DOC_VERSION }
   if (s.type !== initialState.type) doc.type = s.type
   if (Object.keys(s.parts).some((k) => s.parts[k as Slot] !== undefined)) doc.parts = clean(s.parts)
   if (s.figure) doc.figure = s.figure

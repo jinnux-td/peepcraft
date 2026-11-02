@@ -1,10 +1,10 @@
 // A random document, as Shuffle all rolls one: what `keep` names stays, the rest is rolled. No mask and no extra unless kept, as in the creator.
 import type { PeepType, Slot } from '@kit/peeps'
-import { DOC_VERSION, fromState, resolve, type PeepcraftDoc } from './doc.ts'
+import { DOC_VERSION, fromState, resolve, type PeepCraftDoc } from './doc.ts'
 import { randomize, seeded } from './random.ts'
 import type { Lockable } from './types.ts'
 
-export function randomDoc({ type, keep = { v: DOC_VERSION }, seed }: { type?: PeepType; keep?: PeepcraftDoc; seed?: number } = {}): PeepcraftDoc {
+export function randomDoc({ type, keep = { v: DOC_VERSION }, seed }: { type?: PeepType; keep?: PeepCraftDoc; seed?: number } = {}): PeepCraftDoc {
   const { figure, ...rest } = keep
   const base = resolve({ ...rest, v: DOC_VERSION, ...(type ? { type } : {}) })
   const locked: Lockable[] = ['mask', 'extra', ...(Object.keys(rest.parts ?? {}) as Slot[])]

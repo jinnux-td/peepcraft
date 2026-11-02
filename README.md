@@ -54,7 +54,7 @@ Five packages make the peeps family: three leaves that draw, a headless assembly
 | `@kit/peeps` | leaf | the parts (atoms) of Open Peeps, a `Peep` that puts one together per type (standing, sitting, bust), `Background`, and a `Scene` that lays many items on one ground |
 | `@kit/transhumans` | leaf | 38 whole figures; the source paths are flat, so they cannot be split into parts or mixed with peeps parts |
 | `@kit/things` | leaf | 22 drawings made in code, in the peeps' units, with named parts to colour (`leaves`, `pot`, ...) |
-| `@kit/peeps-engine` | assembly, headless | the document (`PeepcraftDoc`), `validate`, `renderSvg`, the creator's state and its plain functions; no UI, no DOM |
+| `@kit/peeps-engine` | assembly, headless | the document (`PeepCraftDoc`), `validate`, `renderSvg`, the creator's state and its plain functions; no UI, no DOM |
 | `@kit/peeps-creator` | assembly | `<PeepCreator />`: a tab per part with dice and locks, Figures, Scene (peeps, figures, things, uploads), colours, Contrast, undo, themes, SVG / PNG export |
 
 - **One contract:** every atom, figure and thing is a React component with `width`, `height`, `ink` and `paper` (and `colors` for named pieces), so `Scene` takes any of them without importing the others. `examples/contract.ts` stops compiling if the shapes drift.

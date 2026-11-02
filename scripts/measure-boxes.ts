@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 import { loadAll } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
-import { boxKey, boxKeys, exportSvg, fallbackBox, resolve, type PeepcraftDoc } from '@kit/peeps-engine'
+import { boxKey, boxKeys, exportSvg, fallbackBox, resolve, type PeepCraftDoc } from '@kit/peeps-engine'
 
 await loadAll()
 await Promise.all(figures.map((f) => f.load()))
@@ -13,7 +13,7 @@ await Promise.all(figures.map((f) => f.load()))
 const looks = boxKeys()
 // Each look drawn with the type's default parts, as the stage first shows it; the group the stage measured is the one inside the transform.
 const svgs = looks.map((l) => {
-  const doc: PeepcraftDoc = { v: 1, type: l.type, ...(l.figure ? { figure: l.figure } : {}), ...(l.extra ? { extra: { id: l.extra.id } } : {}) }
+  const doc: PeepCraftDoc = { v: 1, type: l.type, ...(l.figure ? { figure: l.figure } : {}), ...(l.extra ? { extra: { id: l.extra.id } } : {}) }
   const s = resolve(doc)
   return `<div data-key="${boxKey(l)}">${exportSvg(s, fallbackBox(s))}</div>`
 })

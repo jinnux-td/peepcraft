@@ -6,7 +6,7 @@ export { drawn, entryBox, entryScale, fallbackBox, frameBox, frameSize, GROUND, 
 export { addToScene, categoryOf, choose, chooseExtra, chooseFigure, commit, designColors, dragEntry, dropUpload, moveEntry, optionsFor, partId, redo, removeEntry, reorderEntry, resizeEntry, setRatio, setType, showPeep, SIZES, startHistory, toggleLock, toHex, tweak, undo, updateEntry, type History } from './state.ts'
 export { initialState, RATIOS, SKIN, swatches, type CreatorState, type Lockable, type Parts, type Ratio, type SceneEntry, type Upload } from './types.ts'
 // The document: one picture as versioned JSON, for the CLI, the MCP server and share links.
-export { DOC_VERSION, fromState, LIMITS, resolve, validate, type DocError, type DocMember, type PeepcraftDoc } from './doc.ts'
+export { DOC_VERSION, fromState, LIMITS, resolve, validate, type DocError, type DocMember, type PeepCraftDoc } from './doc.ts'
 export { DocInvalid, load, nameOf, renderSvg } from './render.ts'
 export { randomDoc } from './random-doc.ts'
 export { seeded } from './random.ts'

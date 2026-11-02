@@ -1,5 +1,5 @@
 // The four tools and the two resources, the same for every protocol version. All read-only: nothing is stored, nothing is fetched.
-import { catalog, DocInvalid, nameOf, randomDoc, renderSvg, search, shareUrl, validate, type DocError, type PeepcraftDoc } from '@kit/peeps-engine'
+import { catalog, DocInvalid, nameOf, randomDoc, renderSvg, search, shareUrl, validate, type DocError, type PeepCraftDoc } from '@kit/peeps-engine'
 import type { PeepType } from '@kit/peeps'
 import { docSchema, typeSchema } from './schema.ts'
 
@@ -112,7 +112,7 @@ export async function callTool(name: string, args: Record<string, unknown>, base
         const checked = validate(args.keep)
         if (!checked.ok) return errors(checked.errors.map((e) => ({ ...e, path: `keep${e.path ? `.${e.path}` : ''}` })))
       }
-      return json({ doc: randomDoc({ type: args.type as PeepType | undefined, keep: args.keep as PeepcraftDoc | undefined, seed }) })
+      return json({ doc: randomDoc({ type: args.type as PeepType | undefined, keep: args.keep as PeepCraftDoc | undefined, seed }) })
     }
     default: return undefined
   }

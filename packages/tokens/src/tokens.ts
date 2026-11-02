@@ -69,7 +69,7 @@ export type Brand = { scales?: Partial<Record<ScaleName, string>> }
 
 const rounded = 'ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",sans-serif';
 
-// Peepcraft's four themes, from packages/peeps-creator/src/styles.ts. Glass, noir and violet are darkened where
+// PeepCraft's four themes, from packages/peeps-creator/src/styles.ts. Glass, noir and violet are darkened where
 // the creator's values miss the contrast pairs (README: "Brand themes").
 export const BRANDS: Record<string, Brand> = {
   sunny: {

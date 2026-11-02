@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // npm run peeps -- <command> (from the kit root), or node examples/peeps-cli/main.ts <command>. See `help`.
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, stat, writeFile } from 'node:fs/promises'
 import { text } from 'node:stream/consumers'
 import { run } from './cli.ts'
 
@@ -13,6 +13,7 @@ process.exitCode = await run(process.argv.slice(2), {
   stdin: () => text(process.stdin),
   readFile: (p) => readFile(p, 'utf8'),
   writeFile: (p, d) => writeFile(p, d),
+  isDir: (p) => stat(p).then((s) => s.isDirectory(), () => false),
   // Chromium only loads when a PNG is asked for.
   png: async (svg, w, h) => (await import('./png.ts')).svgToPng(svg, w, h),
 })

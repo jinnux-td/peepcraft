@@ -2,7 +2,7 @@
 // network. `run` takes the arguments and an io object, so the tests drive it without spawning a process.
 import { parseArgs } from 'node:util'
 import type { PeepType } from '@kit/peeps'
-import { decodeShare, DocInvalid, frameSize, LIMITS, nameOf, randomDoc, renderSvg, search, shareUrl, SIZE, validate, type PeepcraftDoc } from '@kit/peeps-engine'
+import { decodeShare, DocInvalid, frameSize, LIMITS, nameOf, randomDoc, renderSvg, search, shareUrl, SIZE, validate, type PeepCraftDoc } from '@kit/peeps-engine'
 
 export interface Io {
   out: (text: string) => void
@@ -11,6 +11,8 @@ export interface Io {
   stdin: () => Promise<string>
   readFile: (path: string) => Promise<string>
   writeFile: (path: string, data: string | Uint8Array) => Promise<void>
+  /** True for an existing folder: -o into it takes the name PeepCraft's Save gives. */
+  isDir: (path: string) => Promise<boolean>
   /** SVG to PNG at a pixel size; Chromium in main.ts. */
   png: (svg: string, width: number, height: number) => Promise<Uint8Array>
 }
@@ -24,6 +26,8 @@ export const usage = `PeepCraft from the terminal: one JSON document describes a
       what a document can name: head, face, body, standing, sitting, facialHair, accessories, mask, figure, thing
   peeps random [--type T] [--seed N] [--keep DOC]       a random document (the same seed, the same document)
   peeps render DOC [-o FILE.svg|FILE.png] [--scale 1-4] the picture; SVG to stdout without -o; PNG is 1024 px on the long side x scale
+  peeps render DOC --save [--png] [-o DIR]              saved under the name PeepCraft's Save gives it (bust-afro-smile-tee-1.svg),
+                                                        in the current folder or DIR; -o DIR alone does the same
   peeps share DOC [--base URL]                          a link that opens the picture in PeepCraft
   peeps open LINK                                       the document in a link
 
@@ -68,7 +72,7 @@ const type = (t: unknown): PeepType | undefined => {
 }
 
 /** A document from a file, stdin (-) or a share link, checked. */
-async function read(source: string | undefined, io: Io): Promise<PeepcraftDoc> {
+async function read(source: string | undefined, io: Io): Promise<PeepCraftDoc> {
   if (!source) throw new Usage('which document? a file, - for stdin, or a share link')
   if (/^https?:\/\/|^#/.test(source)) return decodeShare(source)
   const text = source === '-' ? await io.stdin() : await io.readFile(source)
@@ -103,17 +107,24 @@ async function random(rest: string[], io: Io): Promise<number> {
 }
 
 async function render(rest: string[], io: Io): Promise<number> {
-  const { values, positionals } = args(rest, { output: { type: 'string', short: 'o' }, scale: { type: 'string' } })
+  const { values, positionals } = args(rest, { output: { type: 'string', short: 'o' }, scale: { type: 'string' }, save: { type: 'boolean' }, png: { type: 'boolean' } })
   const out = values.output as string | undefined, scale = Number(values.scale ?? 1)
   if (![1, 2, 3, 4].includes(scale)) throw new Usage('--scale is 1, 2, 3 or 4')
-  if (out && !/\.(svg|png)$/i.test(out)) throw new Usage('-o ends in .svg or .png')
+  // A file named by -o, or a folder (-o DIR, --save) where the file takes the name PeepCraft's Save button gives it.
+  const folder = out === undefined ? (values.save ? '.' : undefined) : /[\\/]$/.test(out) || (await io.isDir(out)) ? out : undefined
+  if (out !== undefined && folder === undefined) {
+    if (!/\.(svg|png)$/i.test(out)) throw new Usage('-o is a folder, or a file ending in .svg or .png')
+    if (values.png && !/\.png$/i.test(out)) throw new Usage('--png with -o FILE.svg: name the file .png, or give a folder')
+  }
   const { svg, state } = await renderSvg(await read(positionals[0], io))
-  if (!out) { io.out(svg); return 0 }
-  if (/\.svg$/i.test(out)) { await io.writeFile(out, svg); io.err(`${out}  ${Math.round(svg.length / 1024)} KB  (PeepCraft would name it ${nameOf(state, 'svg')})`); return 0 }
+  if (out === undefined && folder === undefined) { io.out(svg); return 0 }
+  const kind = folder !== undefined ? (values.png ? 'png' : 'svg') : /\.png$/i.test(out!) ? 'png' : 'svg'
+  const file = folder !== undefined ? `${folder.replace(/[\\/]+$/, '') || '.'}/${nameOf(state, kind)}`.replace(/^\.\//, '') : out!
+  if (kind === 'svg') { await io.writeFile(file, svg); io.err(`${file}  ${Math.round(svg.length / 1024)} KB`); return 0 }
   const base = state.scene.length ? frameSize(state) : { width: SIZE, height: SIZE }
   const png = await io.png(svg, base.width * scale, base.height * scale)
-  await io.writeFile(out, png)
-  io.err(`${out}  ${base.width * scale}x${base.height * scale}  ${Math.round(png.length / 1024)} KB`)
+  await io.writeFile(file, png)
+  io.err(`${file}  ${base.width * scale}x${base.height * scale}  ${Math.round(png.length / 1024)} KB`)
   return 0
 }
 

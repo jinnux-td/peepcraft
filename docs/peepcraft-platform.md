@@ -49,7 +49,7 @@ The document is the drawable part of `CreatorState`, plus a version. It is not a
 
 ```ts
 /** One PeepCraft picture: a peep (or a figure) alone, or a scene. JSON, versioned. */
-interface PeepcraftDoc {
+interface PeepCraftDoc {
   v: 1
   type: 'standing' | 'sitting' | 'bust'
   /** Only what was chosen; the rest is the default of the type (`defaults` in @kit/peeps). */
@@ -98,15 +98,15 @@ flowchart TB
 Its API:
 
 ```ts
-validate(input: unknown): { ok: true; doc: PeepcraftDoc } | { ok: false; errors: DocError[] }
+validate(input: unknown): { ok: true; doc: PeepCraftDoc } | { ok: false; errors: DocError[] }
 resolve(doc): CreatorState                  // defaults filled in: what is actually drawn
 fromState(state): { doc; dropped }          // back to a document, without defaults; uploads dropped and counted
 load(state): Promise<void>                  // every atom and figure the state draws
 renderSvg(input): Promise<{ svg, state, doc }>   // validate (throws DocInvalid) + load + renderToStaticMarkup
 nameOf(state, kind: 'svg' | 'png'): string  // "bust-afro-smile-tee-1.svg", as today
-randomDoc(opts?: { type?; keep?: PeepcraftDoc; seed?: number }): PeepcraftDoc
+randomDoc(opts?: { type?; keep?: PeepCraftDoc; seed?: number }): PeepCraftDoc
 encodeShare(doc): Promise<string>           // URL fragment, §6
-decodeShare(fragment: string): Promise<PeepcraftDoc>
+decodeShare(fragment: string): Promise<PeepCraftDoc>
 catalog(): Catalog; search({ category?, type?, query? }): CatalogItem[]   // §7
 
 interface DocError { path: string; message: string; choices?: string[] }
@@ -145,7 +145,7 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 
 **How:** Streamable HTTP, stateless, written against `fetch` with no SDK (`examples/peeps-mcp/server.ts`, about 200 lines). It speaks the current revision, 2026-07-28 (no handshake: the version travels in each request's `_meta` and in headers the server checks; `server/discover`), and answers the legacy `initialize` handshake of 2025-03-26 to 2025-11-25 without a session, so today's clients connect too. Each call is self-contained, the agent holds the document, and there are no Durable Objects or sessions.
 
-**Tools:** four, each with a JSON Schema input derived from `PeepcraftDoc` (`schema.ts`). The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
+**Tools:** four, each with a JSON Schema input derived from `PeepCraftDoc` (`schema.ts`). The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
 
 | Tool | Input | Returns |
 |---|---|---|
@@ -180,6 +180,7 @@ v2's `customize_character` and `validate_character` are gone. The agent changes 
 npm run peeps -- parts [category] [--type bust] [--query curly]
 npm run peeps -- random [--type sitting] [--seed 7] > doc.json
 npm run peeps -- render doc.json -o peep.svg          # or -o peep.png [--scale 2]; 1024 px on the long side x scale
+npm run peeps -- render doc.json --save [--png]       # named as PeepCraft's Save names it (also -o FOLDER/)
 npm run peeps -- render - -o peep.svg < doc.json      # document on stdin
 npm run peeps -- share doc.json                       # prints the link
 npm run peeps -- open 'https://peepcraft.jinnux.com/#d=...' > doc.json

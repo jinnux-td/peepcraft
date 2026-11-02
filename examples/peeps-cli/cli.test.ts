@@ -7,12 +7,13 @@ import { run, type Io } from './cli.ts'
 
 const golden = new URL('../../packages/peeps-engine/test/golden/', import.meta.url)
 
-function io(files: Record<string, string> = {}, stdin = '') {
+function io(files: Record<string, string> = {}, stdin = '', dirs: string[] = ['.', 'out']) {
   const out: string[] = [], err: string[] = [], written: Record<string, string | Uint8Array> = {}
   const it: Io = {
     out: (t) => out.push(t), err: (t) => err.push(t), stdin: async () => stdin,
     readFile: async (p) => { if (!(p in files)) throw new Error(`ENOENT: ${p}`); return files[p] },
     writeFile: async (p, d) => { written[p] = d },
+    isDir: async (p) => dirs.includes(p),
     png: async (svg, w, h) => (await import('./png.ts')).svgToPng(svg, w, h),
   }
   return { it, out, err, written }
@@ -82,14 +83,35 @@ test('parts: by category and words, with the pieces to colour', async () => {
   assert.equal(await run(['parts', 'head', '-q', 'zzz'], none.it), 1)
 })
 
+test('--save and -o FOLDER name the file as PeepCraft\'s Save button does', async () => {
+  const files = { 'd.json': readFileSync(new URL('sitting.json', golden), 'utf8'), 's.json': readFileSync(new URL('scene.json', golden), 'utf8') }
+  const saved = io(files)
+  assert.equal(await run(['render', 'd.json', '--save'], saved.it), 0)
+  assert.deepEqual(Object.keys(saved.written), ['sitting-long-curly-smile-full-crossed-legs.svg'], 'type, then head to toe, parts at none left out')
+  assert.equal(saved.written['sitting-long-curly-smile-full-crossed-legs.svg'], readFileSync(new URL('sitting.svg', golden), 'utf8'))
+  const folder = io(files)
+  await run(['render', 's.json', '-o', 'out'], folder.it)
+  assert.deepEqual(Object.keys(folder.written), ['out/scene_standing-afro-smile-crossed-arms-1_figure-runner_potted-plant.svg'], 'a scene: each member in drawing order')
+  const slash = io(files, '', [])
+  await run(['render', 'd.json', '-o', 'new/'], slash.it)
+  assert.deepEqual(Object.keys(slash.written), ['new/sitting-long-curly-smile-full-crossed-legs.svg'], 'a trailing slash is a folder')
+  const named = io(files)
+  await run(['render', 'd.json', '-o', 'me.svg', '--save'], named.it)
+  assert.deepEqual(Object.keys(named.written), ['me.svg'], 'a file name given wins')
+  const mixed = io(files)
+  assert.equal(await run(['render', 'd.json', '-o', 'me.svg', '--png'], mixed.it), 2)
+})
+
 // PNG needs Chromium (npx playwright install chromium); skipped without it.
 const hasChromium = existsSync(chromium.executablePath())
 test('render -o x.png: a PNG at 1024 x scale, transparent where the picture is', { skip: !hasChromium && 'no Chromium' }, async () => {
   const { it, written, err } = io({ 's.json': readFileSync(new URL('scene.json', golden), 'utf8') })
-  assert.equal(await run(['render', 's.json', '-o', 'out.png', '--scale', '2'], it), 0, err.join('\n'))
-  const png = written['out.png'] as Uint8Array, view = new DataView(png.buffer, png.byteOffset)
+  assert.equal(await run(['render', 's.json', '--save', '--png', '--scale', '2'], it), 0, err.join('\n'))
+  const name = 'scene_standing-afro-smile-crossed-arms-1_figure-runner_potted-plant.png'
+  assert.deepEqual(Object.keys(written), [name], 'named as PeepCraft names the PNG')
+  const png = written[name] as Uint8Array, view = new DataView(png.buffer, png.byteOffset)
   assert.deepEqual([...png.subarray(1, 4)].map((c) => String.fromCharCode(c)).join(''), 'PNG')
   assert.deepEqual([view.getUint32(16), view.getUint32(20)], [2048, 1152], 'the 16:9 scene, twice 1024 wide')
   assert.equal(png[25], 6, 'RGBA: the transparent background stays transparent')
-  assert.match(err[0], /out\.png {2}2048x1152/)
+  assert.match(err[0], /potted-plant\.png {2}2048x1152/)
 })

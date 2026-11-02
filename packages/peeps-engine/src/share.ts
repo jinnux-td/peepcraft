@@ -1,7 +1,7 @@
 // Share links: the document in the URL fragment (`#d=...`), deflated and base64url-encoded. The fragment never reaches a server, so a link
 // needs no storage and no backend. CompressionStream('deflate-raw') exists in browsers, Node and Workers, so one encoder serves all three.
 import { DocInvalid } from './render.ts'
-import { LIMITS, validate, type PeepcraftDoc } from './doc.ts'
+import { LIMITS, validate, type PeepCraftDoc } from './doc.ts'
 
 /** The key of the fragment: `#d=<payload>`. */
 export const SHARE_KEY = 'd'
@@ -39,18 +39,18 @@ const fromBase64Url = (text: string): Uint8Array => {
 }
 
 /** The payload of a share link for a document (what follows `#d=`). */
-export async function encodeShare(doc: PeepcraftDoc): Promise<string> {
+export async function encodeShare(doc: PeepCraftDoc): Promise<string> {
   return toBase64Url(await pipe(new TextEncoder().encode(JSON.stringify(doc)), new CompressionStream('deflate-raw')))
 }
 
 /** A whole share link: `base` (the page that opens it) with the document in its fragment; null when the document is too big for a link. */
-export async function shareUrl(doc: PeepcraftDoc, base: string): Promise<string | null> {
+export async function shareUrl(doc: PeepCraftDoc, base: string): Promise<string | null> {
   const payload = await encodeShare(doc)
   return payload.length > MAX_SHARE ? null : `${base.replace(/#.*$/, '')}#${SHARE_KEY}=${payload}`
 }
 
 /** The document in a share link: a whole URL, a fragment (`#d=...`) or the payload alone. Throws DocInvalid when it does not validate. */
-export async function decodeShare(link: string): Promise<PeepcraftDoc> {
+export async function decodeShare(link: string): Promise<PeepCraftDoc> {
   const hash = link.includes('#') ? link.slice(link.indexOf('#') + 1) : link
   const payload = hash.includes('=') ? new URLSearchParams(hash).get(SHARE_KEY) : hash
   if (!payload) throw new Error(`no document in the link (expected #${SHARE_KEY}=...)`)

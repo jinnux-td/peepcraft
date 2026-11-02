@@ -3,7 +3,7 @@ import { lookup as lookupFigure } from '@kit/transhumans'
 import { exportSceneSvg, exportSvg, fileName } from './export.ts'
 import { pictureBox } from './frame.ts'
 import { peepOf } from './scene.ts'
-import { resolve, validate, type DocError, type PeepcraftDoc } from './doc.ts'
+import { resolve, validate, type DocError, type PeepCraftDoc } from './doc.ts'
 import type { CreatorState, SceneEntry } from './types.ts'
 
 /** Thrown by renderSvg for a document that does not validate; `errors` says what and where. */
@@ -24,7 +24,7 @@ export async function load(s: CreatorState): Promise<void> {
 }
 
 /** The picture as an SVG document (1024 on the long side): the scene when it has members, else the peep or figure on its background. */
-export async function renderSvg(input: unknown): Promise<{ svg: string; state: CreatorState; doc: PeepcraftDoc }> {
+export async function renderSvg(input: unknown): Promise<{ svg: string; state: CreatorState; doc: PeepCraftDoc }> {
   const checked = validate(input)
   if (!checked.ok) throw new DocInvalid(checked.errors)
   const state = resolve(checked.doc)

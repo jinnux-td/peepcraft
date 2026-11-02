@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { loadAll } from '@kit/peeps'
-import { exportSvg, pictureBox, fromState, initialState, randomDoc, renderSvg, resolve, search, validate, DocInvalid, nameOf, type PeepcraftDoc } from '../src/index.ts'
+import { exportSvg, pictureBox, fromState, initialState, randomDoc, renderSvg, resolve, search, validate, DocInvalid, nameOf, type PeepCraftDoc } from '../src/index.ts'
 
 // No loadAll() before the first test: renderSvg must load what it draws by itself.
 test('renderSvg loads its own parts: the same SVG as the creator exports once everything is loaded', async () => {
@@ -54,7 +54,7 @@ test('renderSvg throws DocInvalid with the errors', async () => {
 })
 
 test('a scene: members spread across the ground, things in their own colours, named after its members', async () => {
-  const doc: PeepcraftDoc = { v: 1, bg: 'transparent', frame: { ratio: '16:9' }, scene: [{ type: 'standing', parts: { head: 'afro' } }, { figure: 'runner' }, { thing: 'potted-plant' }] }
+  const doc: PeepCraftDoc = { v: 1, bg: 'transparent', frame: { ratio: '16:9' }, scene: [{ type: 'standing', parts: { head: 'afro' } }, { figure: 'runner' }, { thing: 'potted-plant' }] }
   const { svg, state } = await renderSvg(doc)
   assert.equal(state.scene.length, 3)
   assert.deepEqual(state.scene.map((e) => Math.round(e.x / 4800 / (16 / 9) * 100)), [50, 20, 80])
