@@ -8,6 +8,7 @@ import { run } from './cli.ts'
 process.stdout.on('error', (e: NodeJS.ErrnoException) => { if (e.code === 'EPIPE') process.exit(0); throw e })
 
 process.exitCode = await run(process.argv.slice(2), {
+  color: !!process.stdout.isTTY && !process.env.NO_COLOR,
   out: (t) => process.stdout.write(t + '\n'),
   err: (t) => process.stderr.write(t + '\n'),
   stdin: () => text(process.stdin),

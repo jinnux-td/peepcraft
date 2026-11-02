@@ -3,7 +3,7 @@
 Draw [Open Peeps](https://www.openpeeps.com/) characters and scenes from the terminal. One small JSON document describes a picture; `peep` checks it, draws it as SVG or PNG, and gives a link that opens it in [PeepCraft](https://peepcraft.jinnux.com/) to keep editing. It draws exactly what PeepCraft draws, and names files the way its Save button does.
 
 ```bash
-npm install -g peepcraft      # Node 22 or later
+cd ~/services/kit && npm run install:peep   # this computer only; Node 22 or later
 
 peep random --seed 7 > me.json             # a random peep (the same seed, the same peep)
 peep render me.json --save                 # ./standing-shaved-1-hectic-goatee-2-glasses-4-doctor-nurse-1.svg
@@ -22,6 +22,17 @@ peep share me.json                         # a link that opens it in PeepCraft
 - Colours: `ink` (lines), `paper` (what comes in white), `skin`, `bg` (or `"transparent"`), and `partColors` for single pieces: `{ "body": { "top": "#e63946" } }`.
 - More: `extra` (a speech bubble or an aura), `figure` (a whole Transhumans illustration), `mono`, `scale`, `rotate`, `flip`.
 - A **scene**: `"scene": [{ "type": "standing", "parts": { "head": "afro" } }, { "figure": "runner" }, { "thing": "potted-plant" }]`, with `"frame": { "ratio": "16:9" }`.
+
+## Install (this computer only)
+`npm run install:peep` (kit root) bundles the command, installs it globally from a local tarball, and sets up zsh tab completion: into oh-my-zsh's `cache/completions` when there is one, else `~/.zfunc` (add it to `fpath`). The package is `private`, so `npm publish` refuses it. Run it again after a change to update; `npm uninstall -g peepcraft` removes it. Under nvm the command belongs to the Node version that was active when it was installed.
+
+Bash: `eval "$(peep completion bash)"` in `~/.bashrc`.
+
+## Like any command
+- `peep --help`, `peep <command> --help` (or `peep help <command>`): usage, options, examples. `peep -v` prints the version.
+- A typo gets a guess: `peep rendr` → `Did you mean render?`; `--sav` → `--save`; a part id `afroo` → `afro`, before the list of known ids.
+- Tab completes commands, options, option values (`--type`, `--scale`), categories, part ids after `parts CATEGORY -q`, and files for documents and `-o`.
+- Exit codes: 0 done, 1 a document or file problem, 2 a usage mistake.
 
 ## Commands
 | Command | Does |
@@ -42,4 +53,4 @@ PNG is drawn by the Chrome or Edge on your computer (through `playwright-core`),
 Art: [Open Peeps](https://www.openpeeps.com/) and Transhumans by Pablo Stanley, both CC0.
 
 ## In the kit repo
-`npm run peep -- <command>` runs it from source. `cli.ts` is the command (`run(argv, io)`, tested in memory by `cli.test.ts`), `main.ts` wires it to the process, `png.ts` drives the browser, `build.mjs` bundles everything but `playwright-core` into `dist/peep.js`; `npm run pack:peep` makes the tarball.
+`npm run peep -- <command>` runs it from source. `cli.ts` is the command: one table (`COMMANDS`) drives the help, the guesses and the completion, and `run(argv, io)` is tested in memory by `cli.test.ts`. `main.ts` wires it to the process, `png.ts` drives the browser, `build.mjs` bundles everything but `playwright-core` into `dist/peep.js`, `install.sh` installs it.

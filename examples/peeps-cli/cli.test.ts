@@ -32,21 +32,70 @@ test('a bad document: one line per problem, with the choices, exit 1', async () 
   const { it, err } = io({}, '{"v":1,"parts":{"head":"afroo"},"ink":"red"}')
   assert.equal(await run(['render', '-'], it), 1)
   assert.deepEqual(err.map((l) => l.split(':')[0]), ['ink', 'parts.head'])
-  assert.match(err[1], /no head "afroo"; known: afro, .*\(48\)$/)
+  assert.match(err[1], /no head "afroo"\. Did you mean afro\? Known: afro, .*\(48\)$/)
   const notJson = io({ 'a.json': '{' })
   assert.equal(await run(['render', 'a.json'], notJson.it), 1); assert.match(notJson.err[0], /a\.json is not JSON/)
   const big = io({ 'b.json': JSON.stringify({ v: 1, pad: ' '.repeat(17_000) }) })
   assert.equal(await run(['render', 'b.json'], big.it), 1); assert.match(big.err[0], /at most 16384 bytes/)
 })
 
-test('usage mistakes: exit 2 with the usage', async () => {
-  for (const argv of [['draw'], ['render'], ['render', 'x.json', '-o', 'x.jpg'], ['render', 'x.json', '--scale', '9'], ['random', '--type', 'lying'], ['parts', '--nope']]) {
+test('usage mistakes: exit 2, what went wrong, a guess, and where the help is', async () => {
+  const cases: [string[], RegExp][] = [
+    [['rendr'], /^peep: no command "rendr"\. Did you mean render\?\nRun peep --help for usage\.$/],
+    [['render', 'x.json', '--sav'], /no option --sav\. Did you mean --save\?\nRun peep render --help/],
+    [['render'], /which document\?/],
+    [['render', 'x.json', '-o', 'x.jpg'], /-o is a folder, or a file ending in \.svg or \.png/],
+    [['render', 'x.json', '--scale', '9'], /--scale is 1, 2, 3 or 4/],
+    [['random', '--type', 'stading'], /not "stading"\. Did you mean standing\?/],
+    [['parts', 'hed'], /no category "hed"\. Did you mean head\?/],
+    [['completion', 'zhs'], /Did you mean zsh\?/],
+    [['help', 'rander'], /Did you mean render\?/],
+  ]
+  for (const [argv, expected] of cases) {
     const { it, err } = io()
     assert.equal(await run(argv, it), 2, argv.join(' '))
-    assert.match(err.join("\n"), /peep render DOC/)
+    assert.match(err.join('\n'), expected, argv.join(' '))
   }
-  const help = io()
-  assert.equal(await run(['help'], help.it), 0)
+})
+
+test('help: the overview, each command, and --help anywhere; --version', async () => {
+  const all = io()
+  assert.equal(await run(['--help'], all.it), 0)
+  for (const c of ['render', 'random', 'parts', 'share', 'open', 'completion']) assert.match(all.out[0], new RegExp(`\\n  ${c} `), c)
+  const one = io()
+  assert.equal(await run(['render', 'x.json', '--help'], one.it), 0, 'help wins over a missing file')
+  assert.match(one.out[0], /^peep render: draw a document/); assert.match(one.out[0], /-o, --output PATH/); assert.match(one.out[0], /Examples\n {2}peep render me\.json --save/)
+  assert.ok(one.out[0].split('\n').every((l) => l.length <= 80), 'wrapped for a terminal')
+  const via = io()
+  await run(['help', 'parts'], via.it)
+  assert.match(via.out[0], /-q, --query WORDS/)
+  const none = io()
+  assert.equal(await run([], none.it), 2, 'no command: the overview, exit 2')
+  const v = io()
+  await run(['-v'], v.it); assert.equal(v.out[0], 'dev')
+})
+
+test('a mistyped id gets a guess before the list', async () => {
+  const { it, err } = io({}, '{"v":1,"parts":{"head":"afroo","face":"calmm"}}')
+  assert.equal(await run(['render', '-'], it), 1)
+  assert.match(err[0], /^parts\.head: no head "afroo"\. Did you mean afro\? Known: afro, /)
+  assert.match(err[1], /Did you mean calm\?/)
+})
+
+test('tab completion: commands, options, values, categories, part ids, files', async () => {
+  const c = async (...words: string[]) => { const { it, out } = io(); await run(['__complete', ...words], it); return out.join('\n').split('\n').filter(Boolean) }
+  assert.deepEqual(await c(''), ['render', 'random', 'parts', 'share', 'open', 'completion', 'help'])
+  assert.ok((await c('render', '--')).includes('--save'))
+  assert.deepEqual(await c('render', ''), ['__files__'])
+  assert.deepEqual(await c('render', 'x.json', '--scale', ''), ['1', '2', '3', '4'])
+  assert.deepEqual(await c('random', '--type', ''), ['standing', 'sitting', 'bust'])
+  assert.ok((await c('parts', '')).includes('facialHair'))
+  assert.ok((await c('parts', 'head', '-q', '')).includes('long-curly'), 'ids of the category')
+  assert.deepEqual(await c('completion', ''), ['zsh', 'bash'])
+  const zsh = io(); await run(['completion', 'zsh'], zsh.it)
+  assert.match(zsh.out[0], /^#compdef peep/); assert.match(zsh.out[0], /peep __complete/)
+  const bash = io(); await run(['completion', 'bash'], bash.it)
+  assert.match(bash.out[0], /complete -o default -F _peep peep/)
 })
 
 test('random: the same seed prints the same document; --keep keeps what it names', async () => {

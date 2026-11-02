@@ -21,7 +21,7 @@
     "dev:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 dev -c examples/peeps-mcp/wrangler.jsonc",
     "deploy:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 deploy -c examples/peeps-mcp/wrangler.jsonc",
     "peep": "node examples/peeps-cli/main.ts",
-    "pack:peep": "cd examples/peeps-cli && node build.mjs && npm pack"
+    "install:peep": "sh examples/peeps-cli/install.sh"
   },
   "engines": {
     "node": ">=22.23.4"
