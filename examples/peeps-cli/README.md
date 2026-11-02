@@ -38,10 +38,21 @@ Bash: `eval "$(peep completion bash)"` in `~/.bashrc`.
 | Command | Does |
 |---|---|
 | `peep parts [category] [-q words] [--type T]` | the ids a document can name, with the pieces each can colour (`peep parts head -q curly`, `peep parts thing`) |
-| `peep random [--type T] [--seed N] [--keep DOC]` | a random document; `--keep` holds the parts and colours it names |
+| `peep random [--type T] [--head ID] [--color SLOT.PIECE=C] ... [--seed N] [--keep DOC]` | a random document with what you choose fixed (below) |
 | `peep render DOC` | the SVG on stdout |
 | `peep render DOC --save [--png] [--scale 1-4]` | saved in this folder under PeepCraft's name; `-o FOLDER/` for another folder, `-o name.svg` for a name of your own |
 | `peep share DOC` / `peep open LINK` | a document to a PeepCraft link, and back |
+
+## Random, with what you choose fixed
+```bash
+peep random --type sitting --head afro --ink navy --color body.top=crimson --bg transparent
+```
+- Only the open parts roll: body, head, face, facial hair, glasses. The rest is PeepCraft's start (a bust, no mask, no extra, its colours) unless a flag sets it.
+- Parts: `--body --head --face --facial-hair --mask --accessories ID`, `--extra ID`. Colours: `--ink --paper --skin --bg COLOUR`, `--color SLOT.PIECE=COLOUR` (repeat it), `--mono`.
+- A colour is a name (`navy`, `crimson`, `auburn`, ...; Tab lists them with their hex) or hex with or without `#` (`1d3557`). In a shell where `#` starts a comment, leave it out.
+- `--color head.bandana=crimson` with no `--head` rolls among the heads that have a bandana.
+- Tab knows what you typed: `--body` offers the poses of `--type`, `--color` the pieces of the item you chose (or of any item the slot may roll), and then colours.
+- Contradictions are errors, named by their flag: a piece the chosen item lacks, a body of another type, the same piece given two colours, a flag that says otherwise than `--keep`.
 
 `DOC` is a file, `-` for stdin, or a PeepCraft link. A mistake in a document is reported one line per problem with the valid choices, and exits with 1:
 ```

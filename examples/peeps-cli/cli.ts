@@ -1,8 +1,9 @@
 // PeepCraft in a terminal: the same document, checks and drawing as the web app (@kit/peeps-engine), with no browser for SVG and no
 // network. `run` takes the arguments and an io object, so the tests drive it without spawning a process.
 import { parseArgs } from 'node:util'
-import type { PeepType } from '@kit/peeps'
-import { decodeShare, DocInvalid, frameSize, LIMITS, nameOf, randomDoc, renderSvg, search, shareUrl, SIZE, validate, type PeepCraftDoc } from '@kit/peeps-engine'
+import type { PeepType, Slot } from '@kit/peeps'
+import { NAMES, suggestColours, toColour, type ColourUse } from './colours.ts'
+import { categoryOf, decodeShare, DocInvalid, frameSize, LIMITS, nameOf, randomDoc, renderSvg, search, shareUrl, SIZE, validate, type PeepCraftDoc } from '@kit/peeps-engine'
 
 export interface Io {
   out: (text: string) => void
@@ -27,8 +28,37 @@ declare const PEEP_VERSION: string | undefined
 export const version = typeof PEEP_VERSION === 'string' ? PEEP_VERSION : 'dev'
 
 // Every command, its options and examples, in one table: the help, the "did you mean" and the shell completion all read it.
-interface Option { long: string; short?: string; value?: string; help: string; complete?: () => readonly string[] | 'files' }
-interface Command { name: string; args: string; summary: string; about?: string; options: Option[]; examples: string[]; complete?: (positionals: string[]) => readonly string[] | 'files' }
+/** A Tab candidate, with what the shell shows beside it. */
+export type Candidate = string | { value: string; about?: string }
+type Completer = (ctx: { words: string[]; current: string }) => readonly Candidate[] | 'files'
+interface Option { long: string; short?: string; value?: string; help: string; multiple?: boolean; complete?: Completer }
+interface Command { name: string; args: string; summary: string; about?: string; options: Option[]; examples: string[]; complete?: (positionals: string[]) => readonly Candidate[] | 'files' }
+
+/** The flag of each slot on `peep random`. */
+const SLOT_FLAGS: Record<Slot, string> = { body: 'body', head: 'head', face: 'face', facialHair: 'facial-hair', mask: 'mask', accessories: 'accessories' }
+const SLOTS = Object.keys(SLOT_FLAGS) as Slot[]
+const PART_HELP: Record<Slot, string> = { body: 'a pose for standing and sitting, a torso for a bust', head: 'the hair (or a hat)', face: 'the face', facialHair: 'a beard or moustache, or none', mask: 'a face mask, or none', accessories: 'glasses, or none' }
+
+/** The value after `--flag` among the words typed so far. */
+const valueOf = (words: string[], flag: string) => { const i = words.lastIndexOf(flag); return i >= 0 ? words[i + 1] : undefined }
+const typeIn = (words: string[]): PeepType => (TYPES.includes(valueOf(words, '--type') as PeepType) ? valueOf(words, '--type') as PeepType : 'bust')
+const idsFor = (type: PeepType, slot: Slot): Candidate[] => search({ category: categoryOf(type, slot) }).map((i) => ({ value: i.id, about: `${i.label}${Object.keys(i.pieces).length ? ` (${Object.keys(i.pieces).join(', ')})` : ''}` }))
+const colours = (use: ColourUse, prefix = ''): Candidate[] => suggestColours(use).map((c) => ({ value: prefix + c.value, about: c.hex }))
+/** The pieces --color can set: those of the item given for a slot, or of any item the slot may roll. */
+function pieceCandidates(words: string[]): Candidate[] {
+  const t = typeIn(words)
+  return SLOTS.flatMap((slot) => {
+    const chosen = valueOf(words, `--${SLOT_FLAGS[slot]}`)
+    const items = search({ category: categoryOf(t, slot) }).filter((i) => !chosen || i.id === chosen)
+    const counts = new Map<string, number>()
+    for (const i of items) for (const p of Object.keys(i.pieces)) counts.set(p, (counts.get(p) ?? 0) + 1)
+    return [
+      { value: `${slot}.ink=`, about: `lines of the ${slot}` }, { value: `${slot}.paper=`, about: `what comes in white on the ${slot}` },
+      ...[...counts].map(([p, n]) => ({ value: `${slot}.${p}=`, about: chosen ? `${p} of ${chosen}` : `${p}: ${n} of ${items.length} items have it (rolls among them)` })),
+    ]
+  })
+}
+const useOf = (piece: string): ColourUse => (piece === 'ink' ? 'ink' : piece === 'paper' ? 'paper' : piece === 'hair' ? 'hair' : 'clothes')
 
 const CATEGORIES = ['head', 'face', 'facialHair', 'mask', 'accessories', 'body', 'standing', 'sitting', 'figure', 'thing']
 const typeOption: Option = { long: 'type', value: 'T', help: 'standing, sitting or bust', complete: () => TYPES }
@@ -49,10 +79,26 @@ export const COMMANDS: readonly Command[] = [
     complete: () => 'files',
   },
   {
-    name: 'random', args: '', summary: 'print a random document',
-    about: 'As PeepCraft\'s Shuffle all makes one: no mask and no extra unless kept. The same seed gives the same document.',
-    options: [typeOption, { long: 'seed', value: 'N', help: 'a whole number, to get the same document again' }, { long: 'keep', value: 'DOC', help: 'a document whose parts and colours stay', complete: () => 'files' }, help],
-    examples: ['peep random --seed 7 > me.json', 'peep random --type sitting --keep me.json'],
+    name: 'random', args: '', summary: 'print a random document, with what you choose fixed',
+    about: 'Rolls the parts you leave open: body, head, face, facial hair and glasses. Everything else is what PeepCraft starts with: a bust, no mask, no extra, its colours. A flag fixes what it names. A --color for a part you leave open rolls among the items that have that piece. A flag that contradicts another, or --keep, is an error. Colours are names (Tab lists them) or hex such as 1d3557.',
+    options: [
+      typeOption,
+      ...SLOTS.map((slot): Option => ({ long: SLOT_FLAGS[slot], value: 'ID', help: PART_HELP[slot], complete: ({ words }) => idsFor(typeIn(words), slot) })),
+      { long: 'extra', value: 'ID', help: 'something worn beside the peep: bubble, round-bubble, thought-bubble, aura', complete: () => search({ category: 'thing' }).filter((i) => i.extra).map((i) => ({ value: i.id, about: i.label })) },
+      { long: 'ink', value: 'COLOUR', help: 'the lines', complete: () => colours('ink') },
+      { long: 'paper', value: 'COLOUR', help: 'what comes in white (shoes, eyes, lenses)', complete: () => colours('paper') },
+      { long: 'skin', value: 'COLOUR', help: 'one skin colour', complete: () => colours('skin') },
+      { long: 'bg', value: 'COLOUR', help: 'the background, or transparent', complete: () => colours('bg') },
+      { long: 'color', value: 'SLOT.PIECE=COLOUR', multiple: true, help: 'one piece of a part, such as body.top=crimson (repeat it)', complete: ({ words, current }) => {
+        const m = current.match(/^([A-Za-z-]+)\.([A-Za-z-]+)=/)
+        return m ? colours(useOf(m[2]), m[0]) : pieceCandidates(words)
+      } },
+      { long: 'mono', help: 'black lines on white only' },
+      { long: 'seed', value: 'N', help: 'a whole number, to get the same document again' },
+      { long: 'keep', value: 'DOC', help: 'a document whose parts and colours stay', complete: () => 'files' },
+      help,
+    ],
+    examples: ['peep random --seed 7 > me.json', 'peep random --type sitting --head afro --ink navy', 'peep random --head bun --color head.bandana=crimson --bg transparent', 'peep random --keep me.json --face calm | peep render - --save'],
   },
   {
     name: 'parts', args: '[CATEGORY]', summary: 'list the ids a document can name',
@@ -152,7 +198,7 @@ export async function run(argv: string[], io: Io): Promise<number> {
   try {
     if (name === undefined || name === '--help' || name === '-h') { io.out(overview()); return name ? 0 : 2 }
     if (name === '--version' || name === '-v' || name === 'version') { io.out(version); return 0 }
-    if (name === '__complete') { const c = complete(rest); if (c === 'files') io.out('__files__'); else if (c.length) io.out(c.join('\n')); return 0 }
+    if (name === '__complete') { const c = complete(rest); if (c === 'files') io.out('__files__'); else if (c.length) io.out(candidateLines(c).join('\n')); return 0 }
     const command = commandNamed(name)
     if (!command) throw new Usage(`no command "${name}".${didYouMean(name, COMMANDS.map((c) => c.name))}`)
     if (command.name === 'help') {
@@ -185,10 +231,10 @@ const line = ({ path, message, choices }: { path: string; message: string; choic
 }
 
 /** Parses a command's options from its table entry; an unknown option gets a guess. */
-function args(command: string, rest: string[]): { values: Record<string, string | boolean | undefined>; positionals: string[] } {
+function args(command: string, rest: string[]): { values: Record<string, string | boolean | string[] | undefined>; positionals: string[] } {
   const spec = commandNamed(command)!
-  const options = Object.fromEntries(spec.options.map((o) => [o.long, { type: o.value ? 'string' as const : 'boolean' as const, ...(o.short ? { short: o.short } : {}) }]))
-  try { return parseArgs({ args: rest, options, allowPositionals: true, strict: true }) as { values: Record<string, string | boolean | undefined>; positionals: string[] } }
+  const options = Object.fromEntries(spec.options.map((o) => [o.long, { type: o.value ? 'string' as const : 'boolean' as const, ...(o.short ? { short: o.short } : {}), ...(o.multiple ? { multiple: true } : {}) }]))
+  try { return parseArgs({ args: rest, options, allowPositionals: true, strict: true }) as { values: Record<string, string | boolean | string[] | undefined>; positionals: string[] } }
   catch (e) {
     const bad = (e as Error).message.match(/Unknown option '(-{1,2}[^']+)'/)?.[1]
     const names = spec.options.flatMap((o) => [`--${o.long}`, ...(o.short ? [`-${o.short}`] : [])])
@@ -197,34 +243,44 @@ function args(command: string, rest: string[]): { values: Record<string, string 
 }
 
 /** What Tab offers after `peep <words>`: the last word is the one being typed. 'files' leaves it to the shell. */
-export function complete(words: string[]): readonly string[] | 'files' {
+export function complete(words: string[]): readonly Candidate[] | 'files' {
   const current = words.at(-1) ?? '', before = words.slice(0, -1)
-  if (before.length === 0) return current.startsWith('-') ? ['--help', '--version'] : COMMANDS.map((c) => c.name)
+  if (before.length === 0) return current.startsWith('-') ? ['--help', '--version'] : COMMANDS.map((c) => ({ value: c.name, about: c.summary }))
   const command = commandNamed(before[0])
   if (!command) return []
-  const flags = command.options.flatMap((o) => [`--${o.long}`, ...(o.short ? [`-${o.short}`] : [])])
   const optionOf = (w: string) => command.options.find((o) => w === `--${o.long}` || w === `-${o.short}`)
   const prev = optionOf(before.at(-1) ?? '')
   if (prev?.value) {
     // The ids of the category being listed, for parts CATEGORY -q.
-    if (command.name === 'parts' && prev.long === 'query') { const cat = before.slice(1).find((w) => CATEGORIES.includes(w)); return cat ? search({ category: cat }).map((i) => i.id) : [] }
-    return prev.complete?.() ?? []
+    if (command.name === 'parts' && prev.long === 'query') { const cat = before.slice(1).find((w) => CATEGORIES.includes(w)); return cat ? search({ category: cat }).map((i) => ({ value: i.id, about: i.label })) : [] }
+    return prev.complete?.({ words: before, current }) ?? []
   }
-  if (current.startsWith('-')) return flags
+  if (current.startsWith('-')) return command.options.filter((o) => o.multiple || !before.includes(`--${o.long}`)).map((o) => ({ value: `--${o.long}`, about: o.help }))
   const positionals = before.slice(1).filter((w, i, all) => !w.startsWith('-') && !optionOf(all[i - 1] ?? '')?.value)
   return command.complete?.(positionals) ?? []
 }
+
+/** Candidates as the completion scripts read them: one a line, `value<TAB>about`. */
+export const candidateLines = (c: readonly Candidate[]) => c.map((x) => (typeof x === 'string' ? x : x.about ? `${x.value}\t${x.about}` : x.value))
 
 function completion(rest: string[], io: Io): number {
   const shell = rest[0]
   if (shell === 'zsh') {
     io.out(`#compdef peep
-# Tab completion for peep (peepcraft ${version}). Asks peep itself, so part ids complete too.
+# Tab completion for peep (peepcraft ${version}). Asks peep itself, so part ids, pieces and colours complete, each with a note.
 _peep() {
-  local -a out
-  out=("\${(@f)$(peep __complete "\${(@)words[2,CURRENT]}" 2>/dev/null)}")
-  if [[ "\${out[1]}" == "__files__" ]]; then _files; return; fi
-  (( \${#out} )) && [[ -n "\${out[1]}" ]] && compadd -- "\${out[@]}"
+  local -a lines vals descs open odescs
+  local l v
+  lines=("\${(@f)$(peep __complete "\${(@)words[2,CURRENT]}" 2>/dev/null)}")
+  if [[ "\${lines[1]}" == "__files__" ]]; then _files; return; fi
+  for l in "\${lines[@]}"; do
+    [[ -z "$l" ]] && continue
+    v="\${l%%$'\\t'*}"
+    # An entry ending in = (body.top=) waits for its value: no space after it.
+    if [[ "$v" == *= ]]; then open+=("$v"); odescs+=("\${l/$'\\t'/  -- }"); else vals+=("$v"); descs+=("\${l/$'\\t'/  -- }"); fi
+  done
+  (( \${#vals} )) && compadd -l -d descs -- "\${vals[@]}"
+  (( \${#open} )) && compadd -S '' -l -d odescs -- "\${open[@]}"
 }
 compdef _peep peep`)
     return 0
@@ -232,9 +288,18 @@ compdef _peep peep`)
   if (shell === 'bash') {
     io.out(`# Tab completion for peep (peepcraft ${version}): eval "$(peep completion bash)" in ~/.bashrc.
 _peep() {
-  local IFS=$'\n' cur="\${COMP_WORDS[COMP_CWORD]}" out
-  out=($(peep __complete "\${COMP_WORDS[@]:1:COMP_CWORD}" 2>/dev/null))
-  if [[ "\${out[0]}" == "__files__" ]]; then COMPREPLY=($(compgen -f -- "$cur")); else COMPREPLY=($(compgen -W "\${out[*]}" -- "$cur")); fi
+  local IFS=$'\\n' line="\${COMP_LINE:0:COMP_POINT}" cur l p
+  local -a words out vals
+  IFS=' ' read -ra words <<< "$line"
+  [[ "$line" == *" " ]] && words+=("")
+  cur="\${words[\${#words[@]}-1]}"
+  out=($(peep __complete "\${words[@]:1}" 2>/dev/null))
+  if [[ "\${out[0]}" == "__files__" ]]; then COMPREPLY=($(compgen -f -- "$cur")); return; fi
+  for l in "\${out[@]}"; do vals+=("\${l%%$'\\t'*}"); done
+  COMPREPLY=($(compgen -W "\${vals[*]}" -- "$cur"))
+  # bash splits words at =; give back only what follows it.
+  if [[ "$cur" == *=* ]]; then p="\${cur%=*}="; COMPREPLY=("\${COMPREPLY[@]#"$p"}"); fi
+  if [[ \${#COMPREPLY[@]} -eq 1 && "\${COMPREPLY[0]}" == *= ]] && type compopt &>/dev/null; then compopt -o nospace; fi
 }
 complete -o default -F _peep peep`)
     return 0
@@ -246,6 +311,15 @@ const type = (t: unknown): PeepType | undefined => {
   if (t === undefined) return undefined
   if (!TYPES.includes(t as PeepType)) throw new Usage(`--type is standing, sitting or bust, not "${String(t)}".${didYouMean(String(t), TYPES)}`)
   return t as PeepType
+}
+
+/** A document from a file, stdin (-) or a share link, as JSON, not yet checked (random checks it with the flags over it). */
+async function readJson(source: string, io: Io): Promise<PeepCraftDoc> {
+  if (/^https?:\/\/|^#/.test(source)) return decodeShare(source)
+  let text: string
+  try { text = source === '-' ? await io.stdin() : await io.readFile(source) }
+  catch (e) { throw new Error((e as NodeJS.ErrnoException).code === 'ENOENT' ? `no file ${source}` : (e as Error).message) }
+  try { return JSON.parse(text) as PeepCraftDoc } catch (e) { throw new Error(`${source === '-' ? 'stdin' : source} is not JSON: ${(e as Error).message}`) }
 }
 
 /** A document from a file, stdin (-) or a share link, checked. */
@@ -277,12 +351,75 @@ function parts(rest: string[], io: Io): number {
   return 0
 }
 
+/** A colour flag's value as '#rrggbb': a name or hex; anything else is a usage mistake with a guess. */
+function colourFlag(flag: string, value: string, transparent = false): string {
+  const hex = toColour(value, transparent)
+  if (hex) return hex
+  throw new Usage(`random: ${flag} "${value}" is not a colour.${didYouMean(value, Object.keys(NAMES))} Use a name (Tab lists them) or hex such as 1d3557.`, 'random')
+}
+
+/** The document a set of flags asks for, and which document paths each flag set (to name the flag in an error). */
+function fromFlags(values: Record<string, string | boolean | string[] | undefined>): { doc: PeepCraftDoc; flags: Map<string, string> } {
+  const doc: PeepCraftDoc = { v: 1 }, flags = new Map<string, string>()
+  const parts: Partial<Record<Slot, string>> = {}
+  for (const slot of SLOTS) { const id = values[SLOT_FLAGS[slot]]; if (typeof id === 'string') { parts[slot] = id; flags.set(`parts.${slot}`, `--${SLOT_FLAGS[slot]}`) } }
+  if (Object.keys(parts).length) doc.parts = parts
+  if (typeof values.extra === 'string') { doc.extra = { id: values.extra }; flags.set('extra', '--extra') }
+  for (const c of ['ink', 'paper', 'skin', 'bg'] as const) {
+    const v = values[c]
+    if (typeof v === 'string') { doc[c] = colourFlag(`--${c}`, v, c === 'bg'); flags.set(c, `--${c}`) }
+  }
+  if (values.mono) { doc.mono = true; flags.set('mono', '--mono') }
+  const partColors: Record<string, Record<string, string>> = {}
+  for (const entry of (values.color as string[] | undefined) ?? []) {
+    const m = entry.match(/^([A-Za-z-]+)\.([A-Za-z-]+)=(.+)$/)
+    if (!m) throw new Usage(`random: --color is SLOT.PIECE=COLOUR, such as body.top=crimson, not "${entry}"`, 'random')
+    const slot = (Object.entries(SLOT_FLAGS).find(([k, f]) => m[1] === k || m[1] === f)?.[0]) as Slot | undefined
+    if (!slot) throw new Usage(`random: --color ${entry}: no slot "${m[1]}".${didYouMean(m[1], SLOTS)} Slots: ${SLOTS.join(', ')}`, 'random')
+    const hex = colourFlag(`--color ${slot}.${m[2]}`, m[3])
+    const had = partColors[slot]?.[m[2]]
+    if (had && had !== hex) throw new Usage(`random: --color ${slot}.${m[2]} is given twice, as ${had} and ${hex}`, 'random')
+    ;(partColors[slot] ??= {})[m[2]] = hex
+    flags.set(`partColors.${slot}.${m[2]}`, `--color ${slot}.${m[2]}`)
+  }
+  if (Object.keys(partColors).length) doc.partColors = partColors
+  return { doc, flags }
+}
+
+/** The kept document with the flags over it; a flag that says otherwise than --keep is a conflict, all of them listed. */
+function mergeKeep(keep: PeepCraftDoc, flagged: PeepCraftDoc, flags: Map<string, string>, file: string): PeepCraftDoc {
+  const at = (doc: PeepCraftDoc, path: string): unknown => path.split('.').reduce<unknown>((o, k) => (o && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), doc)
+  const conflicts = [...flags].flatMap(([path, flag]) => {
+    const was = at(keep, path), now = at(flagged, path)
+    const same = JSON.stringify(path === 'extra' ? (was as { id?: string } | undefined)?.id : was) === JSON.stringify(path === 'extra' ? (now as { id: string }).id : now)
+    return was !== undefined && !same ? [`${flag} ${JSON.stringify(path === 'extra' ? (now as { id: string }).id : now)} but ${file} has ${path} ${JSON.stringify(path === 'extra' ? (was as { id?: string }).id : was)}`] : []
+  })
+  if (conflicts.length) throw new Usage(`random: these contradict --keep:\n  ${conflicts.join('\n  ')}`, 'random')
+  const partColors: Record<string, Record<string, string | undefined>> = { ...keep.partColors }
+  for (const [slot, c] of Object.entries(flagged.partColors ?? {})) partColors[slot] = { ...partColors[slot], ...c }
+  return { ...keep, ...flagged, parts: { ...keep.parts, ...flagged.parts }, ...(Object.keys(partColors).length ? { partColors: partColors as PeepCraftDoc['partColors'] } : {}) }
+}
+
 async function random(rest: string[], io: Io): Promise<number> {
-  const { values } = args('random', rest)
+  const { values, positionals } = args('random', rest)
+  if (positionals.length) throw new Usage(`random: takes no ${positionals.length > 1 ? 'words' : 'word'} "${positionals.join(' ')}"; parts are flags, such as --head ${positionals[0]}`, 'random')
   const seed = values.seed === undefined ? undefined : Number(values.seed)
   if (seed !== undefined && !Number.isInteger(seed)) throw new Usage('random: --seed is a whole number', 'random')
-  const keep = values.keep ? await read(values.keep as string, io) : undefined
-  io.out(JSON.stringify(randomDoc({ type: type(values.type), keep, seed }), null, 2))
+  const t = type(values.type)
+  const { doc: flagged, flags } = fromFlags(values)
+  let keep = flagged
+  if (typeof values.keep === 'string') {
+    const kept = await readJson(values.keep, io)
+    if (t && kept.type && kept.type !== t) throw new Usage(`random: these contradict --keep:\n  --type "${t}" but ${values.keep} has type "${kept.type}"`, 'random')
+    keep = mergeKeep(kept, flagged, flags, values.keep)
+  }
+  if (t) flags.set('type', '--type')
+  try { io.out(JSON.stringify(randomDoc({ type: t, keep, seed }), null, 2)) }
+  catch (e) {
+    // Name the flag that set a wrong value, not the document path it became.
+    if (e instanceof DocInvalid) throw new DocInvalid(e.errors.map((x) => { const f = [...flags].find(([path]) => x.path === path || x.path.startsWith(`${path}.`)); return f ? { ...x, path: f[1] } : x }))
+    throw e
+  }
   return 0
 }
 

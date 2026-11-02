@@ -8,7 +8,7 @@ import { renderSvg, validate, randomDoc, search } from '@kit/peeps-engine'
 const { svg, state } = await renderSvg({ v: 1, type: 'sitting', parts: { head: 'afro' }, ink: '#1d3557' })
 validate({ v: 1, parts: { head: 'afroo' } })
 // { ok: false, errors: [{ path: 'parts.head', message: 'no head "afroo"', choices: ['afro', 'bangs', ...] }] }
-randomDoc({ type: 'bust', seed: 7 })          // the same seed, the same document
+randomDoc({ type: 'bust', seed: 7 })          // the same seed, the same document; only open parts roll
 search({ category: 'head', query: 'curly' })  // [{ category, id, label, pieces }]
 ```
 
@@ -17,6 +17,7 @@ search({ category: 'head', query: 'curly' })  // [{ category, id, label, pieces 
 - **State** (`types.ts`, `state.ts`, `scene.ts`, `outfit.ts`, `random.ts`, `export.ts`): the creator's state and the plain functions on it: choosing, history, dice, scenes, the picture, the SVG exports. `seeded(n)` is a random number generator that repeats.
 - **Share links** (`share.ts`): `shareUrl(doc, base)` puts the document in the fragment (`#d=`, deflate-raw then base64url; null past `MAX_SHARE`, 8 KB); `decodeShare(link)` takes a URL, a fragment or the payload, stops inflating past 16 KB, and validates.
 - **Framing** (`frame.ts`, `boxes.ts`): the window on each look and where a member's feet are, from outlines measured once in Chromium (`npm run measure:peeps` at the kit root).
+- **Random** (`random-doc.ts`): `randomDoc({ type, keep, seed })` rolls the parts left open (body, head, face, facial hair, accessories). Type, mask and extra stay as the creator locks them at first (bust, none, none), and colours are never rolled, only kept. A piece colour in `keep.partColors` for a part left open rolls among the items with that piece. A contradiction (a piece the chosen item lacks, a type that differs) throws `DocInvalid`.
 - **Catalog** (`catalog.ts`): every atom, figure and thing a document can name, with the pieces each can colour; `search` filters by category, type and words.
 
 React stays: atoms, figures and things are React components, and `react-dom/server` renders them to a string in Node, Workers and browsers.

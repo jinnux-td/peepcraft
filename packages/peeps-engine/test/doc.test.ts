@@ -64,14 +64,34 @@ test('a scene: members spread across the ground, things in their own colours, na
   assert.equal(nameOf(state, 'svg'), 'scene_standing-afro-smile-crossed-arms-1_figure-runner_potted-plant.svg')
 })
 
-test('the same seed gives the same random document, and it is valid', () => {
+test('random: the same seed, the same document; only the open parts roll, the rest stays as PeepCraft starts', () => {
   const a = randomDoc({ seed: 7 }), b = randomDoc({ seed: 7 })
   assert.deepEqual(a, b)
   assert.ok(validate(a).ok, JSON.stringify(a))
   assert.notDeepEqual(randomDoc({ seed: 8 }), a)
-  const kept = randomDoc({ type: 'sitting', keep: { v: 1, parts: { head: 'afro' }, bg: '#ffffff' }, seed: 3 })
-  assert.equal(kept.type, 'sitting'); assert.equal(kept.parts?.head, 'afro'); assert.equal(kept.bg, '#ffffff')
-  assert.equal(kept.parts?.mask, undefined, 'no mask unless kept'); assert.equal(kept.extra, undefined, 'no extra unless kept')
+  for (let seed = 0; seed < 40; seed++) {
+    const d = randomDoc({ seed })
+    assert.deepEqual(Object.keys(d).filter((k) => k !== 'parts').sort(), ['v'], `seed ${seed}: no type, colour or extra rolled (${JSON.stringify(d)})`)
+    assert.equal(d.parts?.mask, undefined, 'no mask')
+  }
+  const kept = randomDoc({ type: 'sitting', keep: { v: 1, parts: { head: 'afro' }, bg: '#ffffff', ink: '#1d3557' }, seed: 3 })
+  assert.equal(kept.type, 'sitting'); assert.equal(kept.parts?.head, 'afro'); assert.equal(kept.bg, '#ffffff'); assert.equal(kept.ink, '#1d3557')
+  assert.equal(kept.extra, undefined)
+})
+
+test('random: a piece colour for an open part rolls among the items that have it; a contradiction is an error', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const d = randomDoc({ keep: { v: 1, partColors: { head: { bandana: '#e63946' } } }, seed })
+    assert.ok(Object.keys(search({ category: 'head', query: d.parts!.head }).find((i) => i.id === d.parts!.head)!.pieces).includes('bandana'), d.parts!.head)
+    assert.equal(d.partColors?.head?.bandana, '#e63946')
+  }
+  const wrong = (keep: object, type?: 'sitting') => { try { randomDoc({ keep: { v: 1, ...keep }, type, seed: 1 }); return [] } catch (e) { assert.ok(e instanceof DocInvalid); return e.errors } }
+  const [noBandana] = wrong({ parts: { head: 'afro' }, partColors: { head: { bandana: '#e63946' } } })
+  assert.equal(noBandana.path, 'partColors.head.bandana'); assert.match(noBandana.message, /afro has no piece "bandana"/); assert.ok(noBandana.choices?.includes('ink'))
+  const [nothing] = wrong({ partColors: { head: { cape: '#e63946' } } })
+  assert.match(nothing.message, /no head item has all of cape/); assert.ok(nothing.choices?.includes('bandana'))
+  assert.equal(wrong({ type: 'bust' }, 'sitting')[0].path, 'type')
+  assert.equal(wrong({ parts: { head: 'zzz' } })[0].path, 'parts.head')
 })
 
 test('a state to a document and back draws the same', () => {

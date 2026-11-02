@@ -83,7 +83,7 @@ test('a mistyped id gets a guess before the list', async () => {
 })
 
 test('tab completion: commands, options, values, categories, part ids, files', async () => {
-  const c = async (...words: string[]) => { const { it, out } = io(); await run(['__complete', ...words], it); return out.join('\n').split('\n').filter(Boolean) }
+  const c = async (...words: string[]) => { const { it, out } = io(); await run(['__complete', ...words], it); return out.join('\n').split('\n').filter(Boolean).map((l) => l.split('\t')[0]) }
   assert.deepEqual(await c(''), ['render', 'random', 'parts', 'share', 'open', 'completion', 'help'])
   assert.ok((await c('render', '--')).includes('--save'))
   assert.deepEqual(await c('render', ''), ['__files__'])
@@ -158,6 +158,65 @@ test('the published bundle (dist/peep.js) draws the golden SVGs and knows its ve
   const peep = (...a: string[]) => execFileSync(dir + 'dist/peep.js', a, { encoding: 'utf8' })
   assert.equal(peep('--version').trim(), JSON.parse(readFileSync(dir + 'package.json', 'utf8')).version)
   for (const name of ['scene', 'mono']) assert.equal(peep('render', new URL(`${name}.json`, golden).pathname), readFileSync(new URL(`${name}.svg`, golden), 'utf8') + '\n', name)
+})
+
+test('random with flags: what they name is fixed, the rest rolls, colours stay unless given', async () => {
+  const doc = async (...argv: string[]) => { const { it, out, err } = io(); const code = await run(['random', ...argv], it); assert.equal(code, 0, err.join('\n')); return JSON.parse(out.join('')) }
+  const d = await doc('--type', 'sitting', '--head', 'afro', '--body', 'crossed-legs', '--ink', 'navy', '--skin', '8d5524', '--bg', 'transparent', '--color', 'body.top=crimson', '--seed', '3')
+  assert.equal(d.type, 'sitting'); assert.equal(d.parts.head, 'afro'); assert.equal(d.parts.body, 'crossed-legs')
+  assert.equal(d.ink, '#1d3557'); assert.equal(d.skin, '#8d5524'); assert.equal(d.bg, 'transparent'); assert.deepEqual(d.partColors, { body: { top: '#e63946' } })
+  const plain = await doc('--seed', '5')
+  assert.deepEqual(Object.keys(plain).sort(), ['parts', 'v'], 'nothing but parts rolled: bust, PeepCraft colours, no mask, no extra')
+  const bandana = await doc('--color', 'head.bandana=crimson', '--seed', '2')
+  assert.ok(['bun', 'bun-2'].includes(bandana.parts.head) || bandana.parts.head, 'a head with a bandana was rolled')
+  const facial = await doc('--facial-hair', 'full', '--color', 'facial-hair.ink=brown')
+  assert.equal(facial.parts.facialHair, 'full'); assert.equal(facial.partColors.facialHair.ink, '#6b2d1a')
+})
+
+test('random: contradictions are errors, named by their flags', async () => {
+  const fails = async (argv: string[], files: Record<string, string> = {}) => { const { it, err } = io(files); const code = await run(['random', ...argv], it); return { code, text: err.join('\n') } }
+  let r = await fails(['--head', 'afro', '--color', 'head.bandana=red'])
+  assert.equal(r.code, 1); assert.match(r.text, /^--color head\.bandana: afro has no piece "bandana"/)
+  r = await fails(['--type', 'bust', '--body', 'crossed-legs'])
+  assert.equal(r.code, 1); assert.match(r.text, /^--body: no body "crossed-legs" for the type bust/)
+  r = await fails(['--color', 'head.hair=red', '--color', 'head.hair=blue'])
+  assert.equal(r.code, 2); assert.match(r.text, /given twice/)
+  r = await fails(['--keep', 'k.json', '--head', 'afro', '--ink', 'navy', '--type', 'bust'], { 'k.json': '{"v":1,"type":"bust","parts":{"head":"bun"},"ink":"#111111"}' })
+  assert.equal(r.code, 2); assert.match(r.text, /--head "afro" but k\.json has parts\.head "bun"/); assert.match(r.text, /--ink "#1d3557" but k\.json has ink "#111111"/)
+  r = await fails(['--keep', 'k.json', '--type', 'sitting'], { 'k.json': '{"v":1,"type":"bust"}' })
+  assert.equal(r.code, 2); assert.match(r.text, /--type "sitting" but k\.json has type "bust"/)
+  r = await fails(['--ink', 'navvy'])
+  assert.equal(r.code, 2); assert.match(r.text, /Did you mean navy\?/)
+  r = await fails(['--color', 'hed.hair=red'])
+  assert.equal(r.code, 2); assert.match(r.text, /no slot "hed"\. Did you mean head\?/)
+  r = await fails(['afro'])
+  assert.equal(r.code, 2); assert.match(r.text, /parts are flags, such as --head afro/)
+  r = await fails(['--keep', 'k.json', '--head', 'bun'], { 'k.json': '{"v":1,"parts":{"head":"bun"}}' })
+  assert.equal(r.code, 0, 'the same value twice is no contradiction')
+})
+
+test('tab completion for random: ids of the type, the pieces of the chosen item, colours by name', async () => {
+  const c = async (...words: string[]) => { const { it, out } = io(); await run(['__complete', ...words], it); return out.join('\n').split('\n').filter(Boolean).map((l) => l.split('\t')) }
+  const sitting = await c('random', '--type', 'sitting', '--body', '')
+  assert.ok(sitting.some(([v]) => v === 'crossed-legs')); assert.ok(!sitting.some(([v]) => v === 'tee-1'), 'poses of the type, not bust torsos')
+  assert.ok((await c('random', '--body', '')).some(([v]) => v === 'tee-1'), 'a bust when no type is given')
+  const afro = await c('random', '--head', 'afro', '--color', '')
+  assert.deepEqual(afro.filter(([v]) => v.startsWith('head.')).map(([v]) => v), ['head.ink=', 'head.paper='], 'afro has only its lines and fill')
+  const open = await c('random', '--color', '')
+  assert.ok(open.some(([v, about]) => v === 'head.bandana=' && /rolls among them/.test(about)))
+  const hair = await c('random', '--color', 'head.hair=')
+  assert.deepEqual(hair[0], ['head.hair=jet', '#111111']); assert.ok(hair.some(([v]) => v === 'head.hair=auburn'))
+  assert.deepEqual((await c('random', '--ink', ''))[1], ['navy', '#1d3557'])
+  assert.deepEqual((await c('random', '--bg', ''))[0], ['transparent', 'no background'])
+  assert.ok((await c('random', '--')).some(([v]) => v === '--facial-hair'))
+  assert.ok(!(await c('random', '--head', 'afro', '--')).some(([v]) => v === '--head'), 'a flag given is not offered again')
+})
+
+test('colour names: every PeepCraft swatch has one, one name a colour', async () => {
+  const { NAMES, nameOf } = await import('./colours.ts')
+  const { swatches } = await import('@kit/peeps-engine')
+  for (const hex of Object.values(swatches).flat()) assert.ok(nameOf(hex), `${hex} has a name`)
+  assert.equal(new Set(Object.values(NAMES)).size, Object.keys(NAMES).length)
 })
 
 // PNG needs Chromium (npx playwright install chromium); skipped without it.

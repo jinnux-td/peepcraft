@@ -1,5 +1,5 @@
 // The four tools and the two resources, the same for every protocol version. All read-only: nothing is stored, nothing is fetched.
-import { catalog, DocInvalid, nameOf, randomDoc, renderSvg, search, shareUrl, validate, type DocError, type PeepCraftDoc } from '@kit/peeps-engine'
+import { catalog, DocInvalid, nameOf, randomDoc, renderSvg, search, shareUrl, type DocError, type PeepCraftDoc } from '@kit/peeps-engine'
 import type { PeepType } from '@kit/peeps'
 import { docSchema, typeSchema } from './schema.ts'
 
@@ -39,7 +39,7 @@ export const tools = [
   {
     name: 'random',
     title: 'A random PeepCraft document',
-    description: 'A random document, as PeepCraft\'s Shuffle all makes one; render it to see it. What keep names stays. The same seed gives the same document.',
+    description: 'A random document; render it to see it. Only the parts left open roll (body, head, face, facial hair, glasses); the rest is PeepCraft\'s start (a bust, no mask, no extra, its colours) unless keep sets it. A piece colour in keep.partColors for a part left open rolls among the items that have that piece. A keep that contradicts itself is an error. The same seed gives the same document.',
     inputSchema: {
       type: 'object', additionalProperties: false,
       properties: { type: typeSchema, seed: { type: 'integer' }, keep: { ...docSchema, description: 'Parts and colours to keep.' } },
@@ -108,11 +108,11 @@ export async function callTool(name: string, args: Record<string, unknown>, base
     case 'random': {
       const seed = typeof args.seed === 'number' && Number.isInteger(args.seed) ? args.seed : undefined
       if (args.type !== undefined && !['standing', 'sitting', 'bust'].includes(args.type as string)) return errors([{ path: 'type', message: 'not a type', choices: ['standing', 'sitting', 'bust'] }])
-      if (args.keep !== undefined) {
-        const checked = validate(args.keep)
-        if (!checked.ok) return errors(checked.errors.map((e) => ({ ...e, path: `keep${e.path ? `.${e.path}` : ''}` })))
+      try { return json({ doc: randomDoc({ type: args.type as PeepType | undefined, keep: args.keep as PeepCraftDoc | undefined, seed }) }) }
+      catch (e) {
+        if (e instanceof DocInvalid) return errors(e.errors.map((x) => (x.path === 'type' ? x : { ...x, path: `keep${x.path ? `.${x.path}` : ''}` })))
+        throw e
       }
-      return json({ doc: randomDoc({ type: args.type as PeepType | undefined, keep: args.keep as PeepCraftDoc | undefined, seed }) })
     }
     default: return undefined
   }
