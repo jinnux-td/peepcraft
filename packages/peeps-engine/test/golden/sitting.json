@@ -1,0 +1,1 @@
+{ "v": 1, "type": "sitting", "parts": { "head": "long-curly", "facialHair": "full" }, "ink": "#1d3557", "skin": "#8d5524", "partColors": { "body": { "top": "#52b788" } }, "rotate": 10, "flip": true }

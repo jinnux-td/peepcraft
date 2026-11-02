@@ -33,8 +33,9 @@ import { PeepCreator } from '@kit/peeps-creator'
 - **Size:** the layout follows the width of the component (container queries), not the window: three columns when wide, stacked in a narrow panel or on a phone.
 
 ## Folders
+The state and the picture (choosing, history, dice, scenes, the SVG exports, the window on each look) are in [`@kit/peeps-engine`](../peeps-engine), so the CLI and the MCP server draw what the creator draws. The stage no longer measures the outline in the DOM: the window on each type, figure and extra comes from the engine's table, measured once in Chromium (`npm run measure:peeps`).
 ```
-src/state.ts, random.ts, scene.ts, export.ts, types.ts   plain TypeScript: choosing, history, dice, the picture, the exports (tested with node --test)
+src/colors.ts, png.ts, uploads.ts, types.ts             plain TypeScript: the colour chips, PNG in the browser, uploads in IndexedDB, tabs and themes
 src/styles.ts                                            the stylesheet and the four themes
 src/components/                                          PeepCreator (the whole), PartPicker, SceneSources and SceneMembers, Thumb, Stage, Swatches, Slider, ThemeMenu, icons
 ```

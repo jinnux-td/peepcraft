@@ -1,0 +1,1 @@
+{ "v": 1, "bg": "transparent", "frame": { "ratio": "16:9", "zoom": 1.2 }, "scene": [ { "type": "standing", "parts": { "head": "afro" } }, { "figure": "runner", "flip": true }, { "thing": "potted-plant", "colors": { "leaves": "#2d6a4f" }, "size": 0.8 } ] }

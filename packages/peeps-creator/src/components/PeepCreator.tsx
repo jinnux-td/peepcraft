@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { pending, type Box, type PeepType, type Slot } from '@kit/peeps'
+import { useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { pending, type PeepType, type Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
-import { exportSceneSvg, exportSvg, fileName, randomize, type Target, boxKey, fallbackBox, frameBox, frameSize, SceneView, SIZE, squareAround, addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History, initialState, RATIOS, swatches, type CreatorState, type Ratio, type Upload } from '@kit/peeps-engine'
+import { boxes, pictureBox, exportSceneSvg, exportSvg, fileName, randomize, type Target, boxKey, frameBox, frameSize, SceneView, SIZE, addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History, initialState, RATIOS, swatches, type CreatorState, type Ratio, type Upload } from '@kit/peeps-engine'
 import { svgToPng } from '../png.ts'
 import { ensureUiStyles } from '@kit/ui'
 import { creatorCss } from '../styles.ts'
@@ -17,7 +17,6 @@ import { Slider } from './Slider.tsx'
 import { Stage } from './Stage.tsx'
 import { Swatches } from './Swatches.tsx'
 import { ThemeMenu } from './ThemeMenu.tsx'
-import type { Boxes } from './Thumb.tsx'
 
 export interface ExportedFile { kind: 'svg' | 'png'; name: string; blob: Blob }
 
@@ -58,7 +57,6 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     if (slot) openTab(slot as Tab)
     else if (el) openTab('figures')
   }
-  const [boxes, setBoxes] = useState<Boxes>({})
   const tip = useTip()
   const [innerTheme, setInnerTheme] = useState<ThemeId>(defaultTheme)
   const [picked, setPicked] = useState<number | null>(null)
@@ -93,9 +91,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   const withLock = (t: ColorTarget): ColorTarget => (t.id === 'skin'
     ? { ...t, lock: { locked: !!state.locked?.includes('skin'), toggle: () => live(toggleLock(state, 'skin')) } } : t)
   const dice = (target: Target) => record((s) => randomize(s, target))
-  const onMeasure = useCallback((key: string, outline: Box) => setBoxes((b) => ({ ...b, [key]: outline })), [])
-  const key = boxKey(state)
-  const box = boxes[key] ? squareAround(boxes[key]!) : fallbackBox(state)
+  const box = pictureBox(state)
   const pickTheme = (t: ThemeId) => { setInnerTheme(t); onThemeChange?.(t) }
 
   const base = inScene ? frameSize(state) : { width: SIZE, height: SIZE }
@@ -205,7 +201,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
             <p className="pc-hint">{state.scene.length ? <>Drag someone to move them, or a corner of the picked one to resize it. Press <kbd>F</kbd> to flip them.</> : 'Build a peep or pick a figure, then press "Add".'}</p>
           </> : <>
           <div style={{ display: 'contents' }} onClick={(e) => pickPart(e.target)}>
-            <Stage state={state} box={box} measured={!!boxes[key]} onMeasure={onMeasure} />
+            <Stage state={state} box={box} />
           </div>
           <div className="pc-pill" role="group" aria-label="Type">
             {types.map((t) => <button key={t} aria-pressed={state.figure === null && state.type === t} onClick={() => record((s) => showPeep(s, t))}>{t}</button>)}

@@ -1,13 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { loadAll } from '@kit/peeps'
-import { exportSvg, fallbackBox, fromState, initialState, randomDoc, renderSvg, resolve, search, validate, DocInvalid, nameOf, type PeepcraftDoc } from '../src/index.ts'
+import { exportSvg, pictureBox, fromState, initialState, randomDoc, renderSvg, resolve, search, validate, DocInvalid, nameOf, type PeepcraftDoc } from '../src/index.ts'
 
 // No loadAll() before the first test: renderSvg must load what it draws by itself.
 test('renderSvg loads its own parts: the same SVG as the creator exports once everything is loaded', async () => {
   const { svg, state } = await renderSvg({ v: 1, type: 'standing', parts: { head: 'afro', face: 'calm' } })
   await loadAll()
-  assert.equal(svg, exportSvg(state, fallbackBox(state)))
+  assert.equal(svg, exportSvg(state, pictureBox(state)))
   assert.ok(svg.length > 20_000, `a whole peep, not empty groups (${svg.length} bytes)`)
 })
 
@@ -15,7 +15,7 @@ test('an empty document is what PeepCraft opens with', async () => {
   const { locked: _, ...start } = initialState
   assert.deepEqual(resolve({ v: 1 }), start)
   const { svg } = await renderSvg({ v: 1 })
-  assert.equal(svg, exportSvg(start, fallbackBox(start)))
+  assert.equal(svg, exportSvg(start, pictureBox(start)))
 })
 
 const errors = (doc: unknown) => { const r = validate(doc); assert.equal(r.ok, false, 'should not validate'); return r.ok ? [] : r.errors }

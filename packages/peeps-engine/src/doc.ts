@@ -4,7 +4,8 @@
 import { catalogue, defaults, lookup, slotOrder, type PartColors, type PeepType, type Slot } from '@kit/peeps'
 import { catalogue as things, extras, lookup as lookupThing } from '@kit/things'
 import { catalogue as figures } from '@kit/transhumans'
-import { drawn, LIFT, SCENE, sceneWidth } from './scene.ts'
+import { feet } from './frame.ts'
+import { LIFT, SCENE, sceneWidth } from './scene.ts'
 import { categoryOf, SIZES } from './state.ts'
 import { initialState, RATIOS, type CreatorState, type Parts, type Ratio, type SceneEntry } from './types.ts'
 
@@ -238,9 +239,6 @@ function entry(s: CreatorState, m: DocMember, i: number): SceneEntry {
   e.bottom = feet(e)
   return e
 }
-
-/** Where a member's feet are in its own canvas: the bottom of the canvas. */
-export const feet = (e: SceneEntry): number => drawn(e).height
 
 /** The document of a state, without what equals PeepCraft's start, so a share link stays short. Uploads cannot travel: their members are
  *  left out, and counted. */

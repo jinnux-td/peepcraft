@@ -122,8 +122,8 @@ Apps go in `examples/*`, next to the web app, since they are hosts and not build
 
 The creator frames a picture by measuring the drawn outline (`getBBox`). Node and Workers cannot. The fix is to measure once, at build time, and use the same numbers everywhere:
 
-1. `scripts/measure-boxes.ts` renders each `boxKey` in headless Chromium (playwright-core is already a dev dependency): 3 types, 38 figures, and each type with each extra. It writes `packages/peeps-engine/src/boxes.json`.
-2. The engine frames with `squareAround(boxes[boxKey(doc)])`. A scene entry's `bottom` (feet on the ground line) comes from the same table.
+1. `scripts/measure-boxes.ts` (`npm run measure:peeps`) renders each `boxKey` in headless Chromium (playwright-core is already a dev dependency): 3 types, 38 figures, and each type with each of the 4 extras, 53 in all. It writes `packages/peeps-engine/src/boxes.ts`.
+2. The engine frames with `pictureBox(state)`, which is `squareAround(boxes[boxKey(state)])`. A scene entry's `bottom` (feet on the ground line) comes from the same table.
 3. The creator uses the table too and stops measuring at run time. This removes the "measure once everything has loaded" dance in `Stage.tsx`, and the web output matches the CLI and MCP.
 
 A test fails when an atom, figure or extra has no box, so a new symbol cannot ship unmeasured.

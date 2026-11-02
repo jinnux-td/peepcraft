@@ -1,7 +1,8 @@
 // A document to an SVG string, in Node, a Worker or a browser: check it, load the paths it needs, draw it as the creator's export does.
 import { lookup as lookupFigure } from '@kit/transhumans'
 import { exportSceneSvg, exportSvg, fileName } from './export.ts'
-import { fallbackBox, peepOf } from './scene.ts'
+import { pictureBox } from './frame.ts'
+import { peepOf } from './scene.ts'
 import { resolve, validate, type DocError, type PeepcraftDoc } from './doc.ts'
 import type { CreatorState, SceneEntry } from './types.ts'
 
@@ -28,7 +29,7 @@ export async function renderSvg(input: unknown): Promise<{ svg: string; state: C
   if (!checked.ok) throw new DocInvalid(checked.errors)
   const state = resolve(checked.doc)
   await load(state)
-  const svg = state.scene.length ? exportSceneSvg(state) : exportSvg(state, fallbackBox(state))
+  const svg = state.scene.length ? exportSceneSvg(state) : exportSvg(state, pictureBox(state))
   return { svg, state, doc: checked.doc }
 }
 
