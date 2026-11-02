@@ -1,6 +1,6 @@
 # PeepCraft beyond the browser: engine, CLI, MCP
 
-**Status:** proposed · **Version:** 3 · **Date:** 2026-11-02
+**Status:** built, phases 1–5 (MCP not deployed) · **Version:** 3 · **Date:** 2026-11-02
 **Replaces:** the v2.0 draft of 2026-10-31 (`packages/peeps/PeepCraft MCP.md`, deleted 2026-11-02). That draft planned a PNG-layer engine; the kit already has a vector one, so this version builds on the code that exists.
 
 ## 1. Goal
@@ -143,9 +143,9 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 
 **Where:** a Worker at `https://peepcraft-mcp.jinnux.com/mcp`. Not `mcp.peepcraft.jinnux.com`: Cloudflare's Universal SSL covers only one level under the apex, so a second-level name would need an Advanced certificate.
 
-**How:** the MCP TypeScript SDK over Streamable HTTP, stateless. Each call is self-contained, the agent holds the document, and there are no Durable Objects or sessions.
+**How:** Streamable HTTP, stateless, written against `fetch` with no SDK (`examples/peeps-mcp/server.ts`, about 200 lines). It speaks the current revision, 2026-07-28 (no handshake: the version travels in each request's `_meta` and in headers the server checks; `server/discover`), and answers the legacy `initialize` handshake of 2025-03-26 to 2025-11-25 without a session, so today's clients connect too. Each call is self-contained, the agent holds the document, and there are no Durable Objects or sessions.
 
-**Tools:** four, each with a JSON Schema input derived from `PeepcraftDoc`. The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
+**Tools:** four, each with a JSON Schema input derived from `PeepcraftDoc` (`schema.ts`). The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
 
 | Tool | Input | Returns |
 |---|---|---|
@@ -156,7 +156,7 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 
 v2's `customize_character` and `validate_character` are gone. The agent changes the document it holds and calls `render`, which validates.
 
-**Resource:** `peepcraft://catalog`, the same data as `search_parts` without filters, for clients that read resources.
+**Resources:** `peepcraft://catalog`, the same data as `search_parts` without filters, and `peepcraft://doc-schema`, the document as JSON Schema.
 
 **Workflow:** "a bearded peep with a coffee, sitting, navy lines":
 
@@ -165,14 +165,14 @@ v2's `customize_character` and `validate_character` are gone. The agent changes 
 3. `render { doc }`. On a bad id, take the `choices` from the error and render again.
 4. Give the user the share link (they open it in PeepCraft and edit), and the SVG.
 
-**Bundle:** all art is bundled into the Worker. That is 2.53 MB gzipped today. Workers Free allows 3 MB compressed and Paid 10 MB, so there is 0.4 MB of headroom on Free. A budget check in the build fails above 2.8 MB; past it, either move to Paid or leave figures out of MCP. Also check startup time after the first deploy.
+**Bundle:** all art is bundled into the Worker. The built Worker is 2.44 MB gzipped (measured 2026-11-02; the art paths are not rounded as on the web, so the output stays the golden SVGs). Workers Free allows 3 MB compressed and Paid 10 MB, so there is 0.4 MB of headroom on Free. A budget check in the build fails above 2.8 MB; past it, either move to Paid or leave figures out of MCP. Also check startup time after the first deploy.
 
 **Security:**
 
-- No auth, because it is read-only with no storage.
+- No auth, because it is read-only with no storage. Browser origins are open (`ALLOWED_ORIGINS`, default `*`): DNS rebinding threatens local servers, and this one is public and holds nothing.
 - Limits (`LIMITS`): a document of at most 16 KB, at most 24 scene members, colours `#rrggbb` only, numbers inside the creator's slider ranges (scale 0.5 to 1.5, rotate ±180, zoom 0.5 to 2, size 0.2 to 2).
 - No URLs accepted (uploads rejected).
-- A Cloudflare rate-limiting rule on the route.
+- The Workers rate-limiting binding: 60 requests a minute per address, then `429`.
 
 ## 8. CLI
 

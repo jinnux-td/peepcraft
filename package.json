@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "npm test --workspaces && node --test examples/*.test.ts examples/peeps-cli/*.test.ts",
+    "test": "npm test --workspaces && node --test examples/*.test.ts examples/peeps-cli/*.test.ts examples/peeps-mcp/*.test.ts",
     "typecheck": "npm run typecheck --workspaces && tsc -p examples",
     "e2e": "node --test examples/world/e2e.test.ts examples/panel/e2e.test.ts examples/dashboard/e2e.test.ts examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts examples/ui/e2e.test.ts",
     "example": "node examples/world/build.mjs && node examples/world/serve.ts",
@@ -17,7 +17,10 @@
     "example:ui": "node examples/ui/build.mjs && node examples/ui/serve.ts",
     "perf:peeps": "node examples/peeps/build.mjs && node scripts/budget.ts --dist examples/peeps/dist --kind tool --tap \".pc-rail [role=tab]:nth-child(2)\"",
     "measure:peeps": "node scripts/measure-boxes.ts",
-    "peeps": "node examples/peeps-cli/main.ts"
+    "peeps": "node examples/peeps-cli/main.ts",
+    "build:mcp": "node examples/peeps-mcp/build.mjs",
+    "dev:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 dev -c examples/peeps-mcp/wrangler.jsonc",
+    "deploy:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 deploy -c examples/peeps-mcp/wrangler.jsonc"
   },
   "engines": {
     "node": ">=22.23.4"
