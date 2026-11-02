@@ -565,3 +565,33 @@ test('a tooltip floats over the page: the list of items does not grow under it',
   assert.equal(await tip.count(), 0, 'gone when the pointer leaves');
   await page.close();
 });
+
+test('share links: a link opens its picture, Copy link copies one that opens the same, a broken link opens the start', async () => {
+  const { encodeShare } = await import('@kit/peeps-engine');
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text())); page.on('pageerror', (e) => errors.push(String(e)));
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: url.replace(/\/$/, '') });
+  await page.goto(`${url}#d=${await encodeShare({ v: 1, type: 'standing', parts: { head: 'afro', face: 'calm' }, bg: '#a8dadc' })}`);
+  const full = page.locator('#full');
+  await full.locator('[data-testid=pc-stage] svg').waitFor();
+  const opened = await selection(full);
+  assert.equal(opened.Hair, 'Afro'); assert.equal(opened.Face, 'Calm'); assert.equal(opened.Type, 'standing');
+  // Change something, copy the link, open it elsewhere: the same picture.
+  await full.getByRole('tab', { name: 'Hair', exact: true }).click();
+  await full.getByRole('radio', { name: /^Long Curly$/ }).first().click();
+  await full.getByRole('button', { name: 'Copy link' }).click();
+  await assert.doesNotReject(full.getByRole('status').filter({ hasText: 'Link copied.' }).waitFor({ state: 'attached' }));
+  assert.ok(await full.getByRole('button', { name: 'Copy link' }).getByText('Link copied').isVisible(), 'the button says so');
+  const link = await page.evaluate(() => navigator.clipboard.readText());
+  assert.match(link, /^http:\/\/127\.0\.0\.1:\d+\/#d=[\w-]+$/);
+  const other = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await other.goto(link);
+  await other.locator('#full [data-testid=pc-stage] svg').waitFor();
+  const copied = await selection(other.locator('#full'));
+  assert.equal(copied.Hair, 'Long Curly'); assert.equal(copied.Face, 'Calm');
+  // A broken link: the usual start, the fragment gone, no error.
+  await other.goto(`${url}#d=AAAA`); await other.reload();
+  await other.locator('#full [data-testid=pc-stage] svg').waitFor();
+  assert.equal(await other.evaluate(() => location.hash), '');
+  await page.close(); await other.close();
+});

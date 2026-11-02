@@ -136,7 +136,7 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 
 - The document goes in the fragment, so it never reaches a server log. No storage, no backend.
 - `CompressionStream('deflate-raw')` exists in browsers, Node and Workers, so there is one encoder.
-- The web app reads `#d=` on load into `defaultState` and gets a **Copy link** button. This is new UI, so it follows `~/services/docs/ui/` (a `@kit/ui` button, tokens, every state).
+- The web app reads `#d=` on load into `defaultState` (a broken link opens the usual start and drops its fragment). The creator gets a `shareBase` prop and a **Copy link** button: a full-width row under Save in the builder, an icon beside the PNG size in the scene (that panel has no room for another row). Feedback is a hidden status for screen readers, a check on the button, and a visible note only for a warning (uploads left out, too big) or when the clipboard refuses (the link is shown to copy by hand).
 - Limit: 8 KB encoded. Past that, the CLI writes a file and MCP returns the document instead of a link.
 
 ## 7. MCP server

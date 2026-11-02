@@ -21,6 +21,8 @@ export const icons = {
   undo: draw(<><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></>),
   redo: draw(<><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></>),
   reset: draw(<><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></>),
+  link: draw(<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />),
+  check: draw(<path d="m5 12.5 4.5 4.5L19 7.5" />),
   download: draw(<path d="M12 3v12M7 10l5 5 5-5M4 21h16" />),
   flip: draw(<path d="M12 3v18M8 7 3 12l5 5V7zM16 7l5 5-5 5V7z" />),
   theme: draw(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5" /></>),

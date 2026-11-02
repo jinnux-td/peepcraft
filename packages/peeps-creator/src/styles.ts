@@ -106,6 +106,8 @@ export const creatorCss = `
 .pc-track input[type=range]{display:block;margin:0;position:relative;z-index:1;background:transparent}
 .pc-tick{position:absolute;top:50%;width:2px;height:14px;margin:-7px 0 0 -1px;border-radius:1px;background:var(--pc-muted);pointer-events:none}
 .pc-save{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc-save .pc-share{grid-column:1/-1}.pc-share-note{margin:0;font-size:12px;color:var(--pc-muted)}.pc-share-link{width:100%}
+.pc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .pc-member{display:flex;flex-direction:column;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--pc-line)}
 .pc-row{display:flex;flex-wrap:wrap;gap:8px}
 .pc-add span:last-child{display:inline-flex;align-items:center;gap:4px;color:var(--pc-text);font-weight:600}

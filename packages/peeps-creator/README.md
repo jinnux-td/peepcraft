@@ -13,6 +13,7 @@ import { PeepCreator } from '@kit/peeps-creator'
   onExport={({ kind, name, blob }) => upload(name, blob)} // without it, Save downloads the file; name comes from the parts ("bust-afro-smile-tee-1.png")
   theme={theme} onThemeChange={setTheme}                  // or defaultTheme="noir" and let it keep the theme
   showThemeButton title="Avatar" className="my-panel"
+  shareBase="https://peepcraft.jinnux.com/"              // optional: a Copy link button; the host opens #d=... links
 />
 ```
 
@@ -28,6 +29,7 @@ import { PeepCreator } from '@kit/peeps-creator'
 - **Sliders:** a dot on the track marks the default (Scale 1, Rotate 0°, Zoom 1×, ...), and a drag that comes within 5 % of it (a step and a half at least) lands on it, so it is easy to go back to and takes a little more pull to leave.
 - **Look:** background (a colour, or **transparent**); a click on a part of the peep on the stage opens its tab; scale, rotate, flip (also the `F` key), undo / redo / reset.
 - **Numbers:** every slider has its value as a box to type in (kept in range) and a reset icon back to the default (scale 1, rotate 0°, position 50 %, size 1, lift 0 %, zoom 1×).
+- **Share:** with `shareBase`, **Copy link** puts a link to the picture on the clipboard: the document of [`@kit/peeps-engine`](../peeps-engine) in the fragment (`#d=...`, deflated, so it never reaches a server). Under Save in the builder; an icon beside the PNG size in the scene, where the panel has no room for a row. A screen reader hears "Link copied" (a hidden status); a note shows only when uploads were left out (they stay in this browser) or the picture is too big for a link, and the link itself shows to copy by hand when the clipboard refuses. The host reads the link back: `resolve(await decodeShare(location.hash))` as `defaultState` (see `examples/peeps/main.tsx`).
 - **Export:** SVG, and PNG at 1×, 2×, 3× or 4× (1024 px on the long side at 1×; the size is shown before saving). Transparent stays transparent in both (no rectangle in the SVG, alpha in the PNG).
 - **Themes:** `sunny`, `glass`, `noir`, `violet` are the brand themes of `@kit/tokens`, set as `data-brand` on the component's root, so a host page is never restyled (noir and violet are dark). `data-pc-theme` is still set as an alias for one release. The stylesheet ships inside the component; the buttons and the theme menu are `@kit/ui`.
 - **Size:** the layout follows the width of the component (container queries), not the window: three columns when wide, stacked in a narrow panel or on a phone.

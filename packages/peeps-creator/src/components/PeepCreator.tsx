@@ -1,7 +1,7 @@
 import { useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { pending, type PeepType, type Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
-import { boxes, pictureBox, exportSceneSvg, exportSvg, fileName, randomize, type Target, boxKey, frameBox, frameSize, SceneView, SIZE, addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History, initialState, RATIOS, swatches, type CreatorState, type Ratio, type Upload } from '@kit/peeps-engine'
+import { boxes, pictureBox, fromState, shareUrl, exportSceneSvg, exportSvg, fileName, randomize, type Target, boxKey, frameBox, frameSize, SceneView, SIZE, addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History, initialState, RATIOS, swatches, type CreatorState, type Ratio, type Upload } from '@kit/peeps-engine'
 import { svgToPng } from '../png.ts'
 import { ensureUiStyles } from '@kit/ui'
 import { creatorCss } from '../styles.ts'
@@ -34,6 +34,8 @@ export interface PeepCreatorProps {
   showThemeButton?: boolean
   /** The heading; false for none. */
   title?: string | false
+  /** The page a share link opens (PeepCraft reads the document from its fragment, `#d=...`). With it, a Copy link button sits under Save. */
+  shareBase?: string
   className?: string
   style?: CSSProperties
 }
@@ -45,7 +47,7 @@ function download(file: ExportedFile) {
 }
 
 /** The whole creator. It lays itself out by its own width (container queries), so it fits a page or a dashboard panel alike. */
-export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', className = '', style }: PeepCreatorProps) {
+export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', shareBase, className = '', style }: PeepCreatorProps) {
   useInsertionEffect(() => ensureUiStyles(), []) // the kit tokens (the four themes are its brands) and the @kit/ui controls, before the first paint
   const [hist, setHist] = useState<History>(() => startHistory({ ...initialState, ...defaultState }))
   const [tab, setTab] = useState<Tab>('head')
@@ -100,6 +102,19 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
     await Promise.all([...figures.map((f) => f.load()), pending()])   // what is on the stage has asked for its parts; wait for them
     const svg = inScene ? exportSceneSvg(state) : exportSvg(state, box)
     onExport({ kind, name: fileName(state, inScene, kind), blob: kind === 'svg' ? new Blob([svg], { type: 'image/svg+xml' }) : await svgToPng(svg, px.width, px.height) })
+  }
+
+  /** What Copy link said (read out by the status region; shown only when it warns), and the link when the clipboard refused it. */
+  const [shareNote, setShareNote] = useState<{ text: string; copied?: boolean; warn?: boolean; link?: string } | null>(null)
+  useEffect(() => setShareNote(null), [state])
+  const shareTitle = shareNote?.copied ? 'Link copied' : 'Copy a link to this picture'
+  const share = async () => {
+    const { doc, dropped } = fromState(state)
+    const link = await shareUrl(doc, shareBase!)
+    if (!link) return setShareNote({ text: 'Too big for a link: save it as SVG instead.', warn: true })
+    const left = dropped ? ` Uploads stay in this browser, so ${dropped === 1 ? 'one member is' : `${dropped} members are`} not in it.` : ''
+    try { await navigator.clipboard.writeText(link); setShareNote({ text: `Link copied.${left}`, copied: true, warn: !!dropped }) }
+    catch { setShareNote({ text: `Copy this link.${left}`, link, warn: true }) }
   }
 
   const types: PeepType[] = ['standing', 'sitting', 'bust']
@@ -234,11 +249,17 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
               {[1, 2, 3, 4].map((k) => <button key={k} role="radio" aria-checked={pngScale === k} onClick={() => setPngScale(k)}>{k}×</button>)}
             </div>
             <small aria-label={`PNG ${px.width} by ${px.height} pixels`}>{px.width}×{px.height}</small>
+            {/* In the scene the panel has no room for a row of its own: the button goes here, as an icon. */}
+            {shareBase && inScene && <button className="k-btn pc-share" data-icon data-size="sm" aria-label="Copy link" title={shareTitle} onClick={share}>{shareNote?.copied ? <I.check /> : <I.link />}</button>}
           </div>
           <div className="pc-save">
             <button className="k-btn" data-variant="primary" onClick={() => save('svg')}><I.download /><span>Save as SVG</span></button>
             <button className="k-btn" data-variant="primary" onClick={() => save('png')}><I.download /><span>Save as PNG</span></button>
+            {shareBase && !inScene && <button className="k-btn pc-wide pc-share" aria-label="Copy link" title={shareTitle} onClick={share}>{shareNote?.copied ? <I.check /> : <I.link />}<span>{shareNote?.copied ? 'Link copied' : 'Copy link'}</span></button>}
+            {shareBase && <span className="pc-sr" role="status">{shareNote?.text}</span>}
           </div>
+          {shareNote?.link && <input className="k-input pc-share-link" data-size="sm" readOnly value={shareNote.link} aria-label="Share link" autoFocus onFocus={(e) => e.currentTarget.select()} />}
+          {shareNote?.warn && <p className="pc-share-note">{shareNote.text}</p>}
         </section>
       </div>
     </div>
