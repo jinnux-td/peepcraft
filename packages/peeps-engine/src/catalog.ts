@@ -1,5 +1,5 @@
 // What a document can name, as plain data: for search in the CLI and the MCP server, and for the MCP catalog resource.
-import { catalogue, defaults, slotOrder, type Category, type PeepType, type Slot } from '@kit/peeps'
+import { catalogue, defaults, slotOrder, traitsOf, type Category, type PeepType, type Slot, type Traits } from '@kit/peeps'
 import { things } from '@kit/things'
 import { figures } from '@kit/transhumans'
 import { LIMITS } from './doc.ts'
@@ -16,6 +16,8 @@ export interface CatalogItem {
   /** A thing: its group, and whether a peep can wear it as an extra. */
   group?: string
   extra?: boolean
+  /** An atom: what it shows (hair length, a beard, glasses, a mood, a garment), for matching a part to a description or a photo. */
+  traits?: Traits
 }
 
 export interface Catalog {
@@ -39,7 +41,7 @@ export function catalog(): Catalog {
     ratios: Object.keys(RATIOS),
     limits: LIMITS,
     items: [
-      ...(Object.keys(catalogue) as Category[]).flatMap((category) => [...catalogue[category].values()].map((a) => ({ category, id: a.id, label: a.label, pieces: { ...a.pieces } }))),
+      ...(Object.keys(catalogue) as Category[]).flatMap((category) => [...catalogue[category].values()].map((a) => ({ category, id: a.id, label: a.label, pieces: { ...a.pieces }, traits: traitsOf(category, a.id) }))),
       ...figures.map((f) => ({ category: 'figure' as const, id: f.id, label: f.label, pieces: {} })),
       ...things.map((t) => ({ category: 'thing' as const, id: t.id, label: t.label, pieces: { ...t.pieces }, group: t.group, extra: !!t.place })),
     ],

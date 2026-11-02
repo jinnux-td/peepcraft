@@ -4,3 +4,4 @@ export { bodyCategory, canvas, onHead, origins, slotOrder, type PeepType, type P
 export { defaults, Peep, type PartColors, type Placed, type PeepOptions, type PeepParts, type PeepTypeName } from './peep.ts'
 export { catalogue, loadAll, lookup } from './registry.ts'
 export { Scene, type Art, type Drawable, type Placement, type SceneItem, type SceneOptions } from './scene.ts'
+export * from './traits.ts'
