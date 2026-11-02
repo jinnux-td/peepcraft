@@ -27,6 +27,8 @@ npm run deploy:mcp     # build, then wrangler deploy (needs a Cloudflare login; 
 ```
 `wrangler.jsonc` sets the custom domain `peepcraft-mcp.jinnux.com` (one level under the zone, so Universal SSL covers it), `PEEPCRAFT_URL` (the page share links open), and a rate limit of 60 requests a minute per address (the `LIMITER` binding; over it, `429`).
 
+**Bot protection:** the `jinnux.com` zone challenges unknown clients (`403`, `cf-mitigated: challenge`), which MCP clients cannot pass, so they report `auth_required`. Either exempt `peepcraft-mcp.jinnux.com` (a WAF Skip rule; Bot Fight Mode on the Free plan applies to the whole zone) or use the `workers.dev` address, which `workers_dev: true` keeps on and which the zone's settings do not reach.
+
 Connect Claude Code once deployed:
 ```bash
 claude mcp add --transport http peepcraft https://peepcraft-mcp.jinnux.com/mcp
