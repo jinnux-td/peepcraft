@@ -84,7 +84,7 @@ test('a mistyped id gets a guess before the list', async () => {
 
 test('tab completion: commands, options, values, categories, part ids, files', async () => {
   const c = async (...words: string[]) => { const { it, out } = io(); await run(['__complete', ...words], it); return out.join('\n').split('\n').filter(Boolean).map((l) => l.split('\t')[0]) }
-  assert.deepEqual(await c(''), ['render', 'random', 'parts', 'share', 'open', 'completion', 'help'])
+  assert.deepEqual(await c(''), ['render', 'random', 'parts', 'share', 'open', 'from-image', 'completion', 'help'])
   assert.ok((await c('render', '--')).includes('--save'))
   assert.deepEqual(await c('render', ''), ['__files__'])
   assert.deepEqual(await c('render', 'x.json', '--scale', ''), ['1', '2', '3', '4'])
@@ -231,4 +231,69 @@ test('render -o x.png: a PNG at 1024 x scale, transparent where the picture is',
   assert.deepEqual([view.getUint32(16), view.getUint32(20)], [2048, 1152], 'the 16:9 scene, twice 1024 wide')
   assert.equal(png[25], 6, 'RGBA: the transparent background stays transparent')
   assert.match(err[0], /potted-plant\.png {2}2048x1152/)
+})
+
+// from-image over a fake model: nothing is sent anywhere.
+const described = (over: Record<string, unknown> = {}) => ({
+  stop_reason: 'end_turn',
+  content: [{ type: 'text', text: JSON.stringify({
+    person: 'one', type: 'bust',
+    hair: { length: 'none', texture: 'none', style: 'bald', bangs: false, cover: 'none' },
+    face: { mood: 'happy', eyes: 'closed', mouth: 'grin', wrinkles: false },
+    facialHair: { kind: 'beard', size: 'large', moustache: true, styled: 'none' },
+    eyewear: { kind: 'none', frame: 'none', thick: false, light: false },
+    mask: 'none',
+    outfit: { top: 'hoodie', sleeves: 'long', pattern: 'plain', bottom: 'none', pose: 'relaxed', holds: 'none' },
+    colours: { skin: '#c68642', hair: null, top: '#38b6ff', bottom: null },
+    ...over,
+  }) }],
+})
+
+function photoIo(reply: () => Promise<any>) {
+  const t = io(), sent: any[] = []
+  t.it.readBytes = async (p) => { if (p !== 'me.jpg' && p !== 'me.PNG') throw new Error(`ENOENT: ${p}`); return new Uint8Array([0xff, 0xd8, 0xff]) }
+  t.it.perceive = async (req) => { sent.push(req); return reply() }
+  return { ...t, sent }
+}
+
+test('from-image: a file to a document on stdout, why on stderr; the document renders', async () => {
+  const t = photoIo(async () => described())
+  assert.equal(await run(['from-image', 'me.jpg', '--seed', '1'], t.it), 0, t.err.join('\n'))
+  const doc = JSON.parse(t.out.join(''))
+  assert.equal(doc.parts.facialHair, 'full-3')
+  assert.equal(doc.skin, '#c68642')
+  assert.match(t.err.join('\n'), /^facialHair: full-3 \(kind, size, moustache/m)
+  assert.deepEqual(t.sent[0].messages[0].content[0].source, { type: 'base64', media_type: 'image/jpeg', data: '/9j/' })
+  assert.equal(t.sent[0].model, 'claude-opus-5-5')
+  const r = io({ 'me.json': t.out.join('') })
+  assert.equal(await run(['render', 'me.json'], r.it), 0)
+})
+
+test('from-image: a URL and --model go into the request', async () => {
+  const t = photoIo(async () => described())
+  assert.equal(await run(['from-image', 'https://example.com/me.webp', '--model', 'claude-haiku-5-5'], t.it), 0)
+  assert.deepEqual(t.sent[0].messages[0].content[0].source, { type: 'url', url: 'https://example.com/me.webp' })
+  assert.equal(t.sent[0].model, 'claude-haiku-5-5')
+})
+
+test('from-image: usage mistakes exit 2; a photo it cannot read exits 1 with the reason', async () => {
+  const code = async (argv: string[], reply = async () => described()) => { const t = photoIo(reply); return [await run(argv, t.it), t.err.join('\n')] as const }
+  assert.equal((await code(['from-image']))[0], 2)
+  assert.equal((await code(['from-image', 'me.bmp']))[0], 2)
+  assert.equal((await code(['from-image', 'me.jpg', '--seed', 'x']))[0], 2)
+  const [noPerson, msg] = await code(['from-image', 'me.jpg'], async () => described({ person: 'none' }))
+  assert.equal(noPerson, 1); assert.match(msg, /no person/)
+  const [http, why] = await code(['from-image', 'http://example.com/a.jpg'])
+  assert.equal(http, 1); assert.match(why, /https/)
+  const [refused, r] = await code(['from-image', 'me.jpg'], async () => ({ ...described(), stop_reason: 'refusal' }))
+  assert.equal(refused, 1); assert.match(r, /declined/)
+})
+
+test('from-image is in the help and completes files', async () => {
+  const t = io()
+  assert.equal(await run(['help', 'from-image'], t.it), 0)
+  assert.match(t.out.join(''), /ANTHROPIC_API_KEY/)
+  const c = io()
+  await run(['__complete', 'from-image', ''], c.it)
+  assert.equal(c.out.join(''), '__files__')
 })

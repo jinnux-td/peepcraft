@@ -1,9 +1,10 @@
 // PeepCraft in a terminal: the same document, checks and drawing as the web app (@kit/peeps-engine), with no browser for SVG and no
-// network. `run` takes the arguments and an io object, so the tests drive it without spawning a process.
+// network, except from-image, which sends the photo to Claude (io.perceive). `run` takes the arguments and an io object, so the tests
+// drive it without spawning a process.
 import { parseArgs } from 'node:util'
 import type { PeepType, Slot } from '@kit/peeps'
 import { NAMES, suggestColours, toColour, type ColourUse } from './colours.ts'
-import { categoryOf, decodeShare, DocInvalid, frameSize, LIMITS, nameOf, randomDoc, renderSvg, search, shareUrl, SIZE, validate, type PeepCraftDoc } from '@kit/peeps-engine'
+import { categoryOf, checkImage, decodeShare, DocInvalid, frameSize, LIMITS, match, nameOf, perceiveRequest, PerceiveError, PERCEIVE_MODEL, randomDoc, readPerception, renderSvg, search, shareUrl, SIZE, validate, type ImageInput, type PeepCraftDoc } from '@kit/peeps-engine'
 
 export interface Io {
   out: (text: string) => void
@@ -18,6 +19,10 @@ export interface Io {
   color?: boolean
   /** SVG to PNG at a pixel size; Chromium in main.ts. */
   png: (svg: string, width: number, height: number) => Promise<Uint8Array>
+  /** A file's bytes, for a photo. */
+  readBytes?: (path: string) => Promise<Uint8Array>
+  /** Sends a perceive request to Claude (main.ts, with the Anthropic SDK and this computer's credentials). */
+  perceive?: (request: ReturnType<typeof perceiveRequest>) => Promise<{ stop_reason?: string | null; content: readonly { type: string; text?: string }[] }>
 }
 
 export const BASE = 'https://peepcraft.jinnux.com/'
@@ -114,6 +119,17 @@ export const COMMANDS: readonly Command[] = [
     complete: () => 'files',
   },
   { name: 'open', args: 'LINK', summary: 'print the document in a PeepCraft link', options: [help], examples: ["peep open 'https://peepcraft.jinnux.com/#d=...' > me.json"] },
+  {
+    name: 'from-image', args: 'PHOTO', summary: 'print a document that looks like the person in a photo',
+    about: `Sends the photo (a JPEG, PNG, WebP or GIF file, or an https URL) to Claude, which describes what it sees: hair, facial hair, glasses, expression, clothes, colours; never who the person is. The parts that match best make the document; why each was picked goes to stderr. Needs Claude credentials: ANTHROPIC_API_KEY, or an ant auth login. The photo is not kept. Each call is a paid model call (${PERCEIVE_MODEL} by default).`,
+    options: [
+      { long: 'seed', value: 'N', help: 'picks among equally good parts; the same photo and seed give the same document' },
+      { long: 'model', value: 'ID', help: `the Claude model that reads the photo (default ${PERCEIVE_MODEL})`, complete: () => ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'] },
+      help,
+    ],
+    examples: ['peep from-image me.jpg > me.json', 'peep from-image me.jpg | peep render - --save', 'peep from-image https://example.com/me.png --seed 2'],
+    complete: (p) => (p.length ? [] : 'files'),
+  },
   { name: 'completion', args: 'SHELL', summary: 'print tab completion for zsh or bash', about: 'zsh: peep completion zsh > ~/.oh-my-zsh/cache/completions/_peep (or a folder on your fpath). bash: add eval "$(peep completion bash)" to ~/.bashrc.', options: [help], examples: ['peep completion zsh'], complete: (p) => (p.length ? [] : ['zsh', 'bash']) },
   { name: 'help', args: '[COMMAND]', summary: 'show help for peep or one command', options: [], examples: ['peep help render'], complete: (p) => (p.length ? [] : COMMANDS.map((c) => c.name)) },
 ]
@@ -214,10 +230,12 @@ export async function run(argv: string[], io: Io): Promise<number> {
       case 'share': return await share(rest, io)
       case 'open': return await open(rest, io)
       case 'completion': return completion(rest, io)
+      case 'from-image': return await fromImage(rest, io)
     }
     return 2
   } catch (e) {
     if (e instanceof DocInvalid) { for (const x of e.errors) io.err(line(x)); return 1 }
+    if (e instanceof PerceiveError) { io.err(`peep: ${e.message}`); return 1 }
     if (e instanceof Usage) { io.err(`peep: ${e.message}\nRun peep ${e.command ? `${e.command} ` : ''}--help for usage.`); return 2 }
     io.err(`peep: ${(e as Error).message}`); return 1
   }
@@ -457,5 +475,31 @@ async function open(rest: string[], io: Io): Promise<number> {
   const { positionals } = args('open', rest)
   if (!positionals[0]) throw new Usage('open: which link?', 'open')
   io.out(JSON.stringify(await decodeShare(positionals[0]), null, 2))
+  return 0
+}
+
+const PHOTO_TYPES: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' }
+
+async function fromImage(rest: string[], io: Io): Promise<number> {
+  const { values, positionals } = args('from-image', rest)
+  if (positionals.length !== 1) throw new Usage('from-image: give one photo, a file or an https URL', 'from-image')
+  const seed = values.seed === undefined ? 0 : Number(values.seed)
+  if (!Number.isInteger(seed)) throw new Usage('from-image: --seed is a whole number', 'from-image')
+  if (!io.perceive || !io.readBytes) throw new Error('from-image: reading photos is not available here')
+  const src = positionals[0]
+  let image: ImageInput
+  if (/^[a-z]+:\/\//i.test(src)) image = { url: src }
+  else {
+    const ext = src.split('.').pop()?.toLowerCase() ?? ''
+    const mediaType = PHOTO_TYPES[ext]
+    if (!mediaType) throw new Usage(`from-image: ${src} is not a .jpg, .png, .webp or .gif file`, 'from-image')
+    image = { data: Buffer.from(await io.readBytes(src)).toString('base64'), mediaType }
+  }
+  checkImage(image)
+  const { attributes, people } = readPerception(await io.perceive(perceiveRequest(image, typeof values.model === 'string' ? { model: values.model } : {})))
+  const { doc, reasons } = match(attributes, { seed })
+  if (people === 'many') io.err('The photo shows several people; this is the most prominent one.')
+  for (const r of reasons) io.err(`${r.slot}: ${r.id} (${r.matched.join(', ') || 'closest'})`)
+  io.out(JSON.stringify(doc, null, 2))
   return 0
 }
