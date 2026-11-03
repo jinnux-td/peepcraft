@@ -11,7 +11,7 @@ import type { Perceive } from './tools.ts'
 export { PhotoCap } from './cap.ts'
 
 /** Photos a day when PHOTO_DAILY_LIMIT is unset or not a number. */
-const DAILY_LIMIT = 100
+const DAILY_LIMIT = 50
 
 interface Limiter { limit(options: { key: string }): Promise<{ success: boolean }> }
 

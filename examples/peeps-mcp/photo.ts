@@ -20,7 +20,7 @@ export async function photo(request: Request, { perceive, origins }: PhotoOption
   const allowed = !!origin && origins.split(',').map((o) => o.trim()).includes(origin)
   const headers = { 'Content-Type': 'application/json', Vary: 'Origin', ...(allowed ? { 'Access-Control-Allow-Origin': origin } : {}) }
   const answer = (status: number, body: unknown, extra: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { ...headers, ...extra } })
-  const error = (status: number, message: string, retry?: string) => answer(status, { error: message }, retry ? { 'Retry-After': retry } : {})
+  const error = (status: number, message: string, retry?: string, code?: string) => answer(status, { error: message, ...(code ? { code } : {}) }, retry ? { 'Retry-After': retry } : {})
 
   if (!allowed) return error(403, 'this page may not read photos here')
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...headers, 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400' } })
@@ -39,7 +39,7 @@ export async function photo(request: Request, { perceive, origins }: PhotoOption
     const { doc, reasons } = match(attributes, { seed })
     return answer(200, { doc, reasons, people })
   } catch (e) {
-    if (e instanceof PerceiveError) return error(STATUS[e.code], e.message, e.code === 'busy' ? '60' : undefined)
+    if (e instanceof PerceiveError) return error(STATUS[e.code], e.message, e.code === 'busy' ? '60' : undefined, e.code)
     // An API failure (a bad key, an outage): said plainly, without the provider's message, which may carry request details.
     console.error('photo', e)
     return error(502, 'Reading the photo failed on the server; try again later.')

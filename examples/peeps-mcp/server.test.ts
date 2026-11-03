@@ -237,6 +237,7 @@ test('POST /photo: only the listed origins, a document back, errors as statuses 
     assert.equal(r.status, status, JSON.stringify(body))
     const text = await r.text()
     assert.match(text, /"error"/); assert.ok(!text.includes('sk-ant'))
+    if (status === 429) assert.match(text, /"code":"busy"/, 'the page tells a busy minute from a used-up day')
   }
 })
 

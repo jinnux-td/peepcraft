@@ -8,7 +8,7 @@
   // Also on workers.dev: outside the jinnux.com zone, so its bot protection (a challenge MCP clients cannot pass) does not apply there.
   "workers_dev": true,
   // PHOTO_ORIGINS: the pages whose From photo button may call POST /photo (each photo is paid for with this server's key).
-  "vars": { "PEEPCRAFT_URL": "https://peepcraft.jinnux.com/", "ALLOWED_ORIGINS": "*", "PHOTO_ORIGINS": "https://peepcraft.jinnux.com", "PHOTO_DAILY_LIMIT": "100" },
+  "vars": { "PEEPCRAFT_URL": "https://peepcraft.jinnux.com/", "ALLOWED_ORIGINS": "*", "PHOTO_ORIGINS": "https://peepcraft.jinnux.com", "PHOTO_DAILY_LIMIT": "50" },
   // 60 requests a minute per client address; a render is the costly call.
   // PHOTO_LIMITER: 5 photos a minute per client address for from_image, each a paid model call. The model reads its key from the
   // ANTHROPIC_API_KEY secret (npx wrangler secret put ANTHROPIC_API_KEY); PERCEIVE_MODEL in "vars" picks another model.

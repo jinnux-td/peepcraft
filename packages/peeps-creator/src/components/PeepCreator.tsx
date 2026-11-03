@@ -1,4 +1,4 @@
-import { useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { pending, type PeepType, type Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
 import { boxes, pictureBox, fromState, shareUrl, exportSceneSvg, exportSvg, fileName, randomize, type Target, boxKey, frameBox, frameSize, SceneView, SIZE, addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History, initialState, RATIOS, swatches, resolve, type CreatorState, type PeepCraftDoc, type Ratio, type Upload } from '@kit/peeps-engine'
@@ -39,6 +39,8 @@ export interface PeepCreatorProps {
   /** Reads a photo into a document (a vision model, on the host's server). With it, a From photo button sits in the toolbar; the result
    *  replaces the peep being built (one undo step), and `note`, when given, is shown under the toolbar. A thrown error's message is shown. */
   readPhoto?: (file: File) => Promise<{ doc: PeepCraftDoc; note?: string }>
+  /** The host's own controls for reading photos (PeepCraft: the visitor's own API key), under the photo note. Only with `readPhoto`. */
+  photoExtra?: ReactNode
   className?: string
   style?: CSSProperties
 }
@@ -50,7 +52,7 @@ function download(file: ExportedFile) {
 }
 
 /** The whole creator. It lays itself out by its own width (container queries), so it fits a page or a dashboard panel alike. */
-export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', shareBase, readPhoto, className = '', style }: PeepCreatorProps) {
+export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', shareBase, readPhoto, photoExtra, className = '', style }: PeepCreatorProps) {
   useInsertionEffect(() => ensureUiStyles(), []) // the kit tokens (the four themes are its brands) and the @kit/ui controls, before the first paint
   const [hist, setHist] = useState<History>(() => startHistory({ ...initialState, ...defaultState }))
   const [tab, setTab] = useState<Tab>('head')
@@ -215,6 +217,8 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
           {showThemeButton && <ThemeMenu theme={theme} onChange={pickTheme} />}
         </div>
         {readPhoto && <p className="pc-photo-note" role="status" data-warn={photo.warn || undefined}>{photo.text}</p>}
+        {/* Not in the scene, where From photo is off: the scene's side panel needs the height. */}
+        {readPhoto && photoExtra && !inScene && <div className="pc-photo-extra">{photoExtra}</div>}
       </header>
 
       <div className="pc-main">

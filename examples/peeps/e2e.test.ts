@@ -638,3 +638,46 @@ test('from photo: the photo goes to the reader shrunk, its peep replaces the one
   errors.splice(0, errors.length, ...errors.filter((e) => !/status of 422/.test(e)));
   await page.close();
 });
+
+test('own key: a bad key is refused, a good one reads the photo with Anthropic directly (not PeepCraft), kept in the tab, forgotten on demand', async () => {
+  const page = await open(); const full = page.locator('#full');
+  let worker = 0, anthropic: { key: string | null; body: any } | undefined;
+  await page.route('https://peepcraft-mcp.jinnux.com/photo', (r) => { worker++; return r.abort(); });
+  const attributes = {
+    person: 'one', type: 'bust', hair: { length: 'long', texture: 'coily', style: 'afro', bangs: false, cover: 'none' },
+    face: { mood: 'happy', eyes: 'open', mouth: 'smile', wrinkles: false }, facialHair: { kind: 'none', size: 'none', moustache: false, styled: 'none' },
+    eyewear: { kind: 'sunglasses', frame: 'none', thick: false, light: false }, mask: 'none',
+    outfit: { top: 'tee', sleeves: 'short', pattern: 'plain', bottom: 'none', pose: 'relaxed', holds: 'none' },
+    colours: { skin: null, hair: null, top: null, bottom: null },
+  };
+  await page.route('https://api.anthropic.com/**', async (r) => {
+    if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST' } });
+    const all = await r.request().allHeaders(); anthropic = { key: all['x-api-key'] ?? all.authorization?.replace(/^Bearer /, '') ?? null, body: r.request().postDataJSON() };
+    await r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({
+      id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'end_turn', stop_sequence: null,
+      content: [{ type: 'text', text: JSON.stringify(attributes) }], usage: { input_tokens: 1, output_tokens: 1 } }) });
+  });
+  await full.getByRole('button', { name: 'Use my own Anthropic key' }).click();
+  const input = full.getByLabel('Anthropic API key');
+  await input.fill('sk-ant-oat01-' + 'x'.repeat(40)); await input.press('Enter');
+  await full.getByRole('alert').filter({ hasText: 'Claude Code token' }).waitFor();
+  const key = 'sk-ant-api03-' + 'k'.repeat(40);
+  await input.fill(key); await full.getByRole('button', { name: 'Use key' }).click();
+  await full.getByText('Photos are read with your own Anthropic key').waitFor();
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('peeps-own-key')), key);
+
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), full.getByRole('button', { name: 'From photo' }).click()]);
+  const photo = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 40; c.height = 30; const b = await new Promise<Blob>((r) => c.toBlob((x) => r(x!), 'image/png')); return [...new Uint8Array(await b.arrayBuffer())]; });
+  await chooser.setFiles({ name: 'me.png', mimeType: 'image/png', buffer: Buffer.from(photo) });
+  await full.locator('.pc-photo-note', { hasText: 'Made from your photo' }).waitFor();
+  assert.equal(anthropic?.key, key, 'the key goes to Anthropic');
+  assert.equal(anthropic?.body.messages[0].content[0].source.media_type, 'image/jpeg');
+  assert.equal(worker, 0, 'nothing went to PeepCraft');
+  const made = await selection(full);
+  assert.equal(made.Hair, 'Long Afro'); assert.match(made.Accessories, /^Sunglasses/);
+
+  await full.getByRole('button', { name: 'Forget key' }).click();
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('peeps-own-key')), null);
+  await full.getByRole('button', { name: 'Use my own Anthropic key' }).waitFor();
+  await page.close();
+});
