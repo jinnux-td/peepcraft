@@ -65,7 +65,7 @@ export function perceiveRequest(image: ImageInput, { model = PERCEIVE_MODEL, eff
 
 /** A photo the model could not, or would not, describe. `code` says which, for the caller's message. */
 export class PerceiveError extends Error {
-  readonly code: 'image' | 'refusal' | 'truncated' | 'no-person' | 'reply'
+  readonly code: 'image' | 'refusal' | 'truncated' | 'no-person' | 'reply' | 'busy'
   constructor(code: PerceiveError['code'], message: string) {
     super(message)
     this.code = code

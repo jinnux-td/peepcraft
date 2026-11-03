@@ -1,5 +1,5 @@
 // The four tools and the two resources, the same for every protocol version. All read-only: nothing is stored, nothing is fetched.
-import { catalog, DocInvalid, nameOf, randomDoc, renderSvg, search, shareUrl, type DocError, type PeepCraftDoc } from '@kit/peeps-engine'
+import { catalog, checkImage, DocInvalid, IMAGE_TYPES, match, nameOf, perceiveRequest, PerceiveError, randomDoc, readPerception, renderSvg, search, shareUrl, type DocError, type ImageInput, type PeepCraftDoc } from '@kit/peeps-engine'
 import type { PeepType } from '@kit/peeps'
 import { docSchema, typeSchema } from './schema.ts'
 
@@ -48,6 +48,29 @@ export const tools = [
   },
 ] as const
 
+/** Reading a photo: listed only when the server has a model to send it to (an API key). The photo is sent to the model and not kept. */
+export const photoTool = {
+  name: 'from_image',
+  title: 'A peep that looks like the person in a photo',
+  description: 'Reads a photo of one person (hair, facial hair, glasses, expression, clothes, colours; never who they are) and picks the PeepCraft parts that match, then draws it with a link to edit it in PeepCraft. Give an https URL of the image, or its bytes as base64 with the media type. The photo is sent to a vision model and not stored. Another seed gives another of the equally good matches.',
+  inputSchema: {
+    type: 'object', additionalProperties: false,
+    properties: {
+      url: { type: 'string', description: 'An https URL of a JPEG, PNG, WebP or GIF image.' },
+      data: { type: 'string', description: 'The image as base64, when there is no URL (up to 5 MB).' },
+      mediaType: { type: 'string', enum: [...IMAGE_TYPES], description: 'The type of data.' },
+      seed: { type: 'integer', description: 'Picks among equally good parts; the same photo and seed give the same peep.' },
+    },
+  },
+  annotations: { title: 'Peep from a photo', readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+} as const
+
+/** The tools this server lists: the four always, from_image when it can read photos. */
+export const toolsFor = (photos: boolean) => (photos ? [...tools, photoTool] : tools)
+
+/** Sends a perceive request to a vision model (the Worker's Claude client; a fake in tests). */
+export type Perceive = (request: ReturnType<typeof perceiveRequest>) => Promise<{ stop_reason?: string | null; content: readonly { type: string; text?: string }[] }>
+
 export const resources = [
   { uri: 'peepcraft://catalog', name: 'catalog', title: 'PeepCraft catalogue', mimeType: 'application/json', description: 'Every part, figure and thing a document can name, with the pieces each can colour, the slots per type, defaults and limits.' },
   { uri: 'peepcraft://doc-schema', name: 'doc-schema', title: 'PeepCraft document schema', mimeType: 'application/schema+json', description: 'The document as JSON Schema.' },
@@ -72,7 +95,7 @@ const errors = (list: DocError[]): ToolResult => ({
 })
 
 /** Runs a tool. An unknown tool is undefined (a protocol error); a bad argument is a tool result with isError, so the model sees it. */
-export async function callTool(name: string, args: Record<string, unknown>, base: string): Promise<ToolResult | undefined> {
+export async function callTool(name: string, args: Record<string, unknown>, base: string, perceive?: Perceive): Promise<ToolResult | undefined> {
   switch (name) {
     case 'describe': {
       const c = catalog()
@@ -112,6 +135,35 @@ export async function callTool(name: string, args: Record<string, unknown>, base
       catch (e) {
         if (e instanceof DocInvalid) return errors(e.errors.map((x) => (x.path === 'type' ? x : { ...x, path: `keep${x.path ? `.${x.path}` : ''}` })))
         throw e
+      }
+    }
+    case 'from_image': {
+      if (!perceive) return undefined
+      const fail = (message: string): ToolResult => ({ content: [{ type: 'text', text: message }], isError: true })
+      const image: ImageInput | undefined = typeof args.url === 'string' ? { url: args.url }
+        : typeof args.data === 'string' && typeof args.mediaType === 'string' ? { data: args.data, mediaType: args.mediaType } : undefined
+      if (!image) return fail('Give url, or data with mediaType.')
+      const seed = typeof args.seed === 'number' && Number.isInteger(args.seed) ? args.seed : 0
+      try {
+        checkImage(image)
+        const { attributes, people } = readPerception(await perceive(perceiveRequest(image)))
+        const { doc, reasons } = match(attributes, { seed })
+        const { svg, state } = await renderSvg(doc)
+        const fileName = nameOf(state, 'svg'), link = await shareUrl(doc, base)
+        const why = reasons.map((r) => `${r.slot} ${r.id} (${r.matched.join(', ') || 'closest'})`).join('; ')
+        return {
+          content: [
+            { type: 'text', text: `${people === 'many' ? 'The photo shows several people; this is the most prominent one. ' : ''}Picked: ${why}.${link ? ` Open or edit it in PeepCraft: ${link}` : ''}` },
+            { type: 'resource', resource: { uri: `peepcraft://render/${fileName}`, mimeType: 'image/svg+xml', text: svg } },
+          ],
+          structuredContent: { doc, attributes, reasons, people, shareUrl: link, fileName },
+        }
+      } catch (e) {
+        if (e instanceof PerceiveError) return fail(e.message)
+        if (e instanceof DocInvalid) return errors(e.errors)
+        // An API failure (a bad key, an outage): said plainly, without the provider's message, which may carry request details.
+        console.error('from_image', e)
+        return fail('Reading the photo failed on the server; try again later.')
       }
     }
     default: return undefined

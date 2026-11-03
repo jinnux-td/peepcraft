@@ -9,6 +9,11 @@
   "workers_dev": true,
   "vars": { "PEEPCRAFT_URL": "https://peepcraft.jinnux.com/", "ALLOWED_ORIGINS": "*" },
   // 60 requests a minute per client address; a render is the costly call.
-  "ratelimits": [{ "name": "LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } }],
+  // PHOTO_LIMITER: 5 photos a minute per client address for from_image, each a paid model call. The model reads its key from the
+  // ANTHROPIC_API_KEY secret (npx wrangler secret put ANTHROPIC_API_KEY); PERCEIVE_MODEL in "vars" picks another model.
+  "ratelimits": [
+    { "name": "LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "PHOTO_LIMITER", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+  ],
   "observability": { "enabled": true }
 }

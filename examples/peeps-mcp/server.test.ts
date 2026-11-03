@@ -147,3 +147,58 @@ test('the built Worker bundle draws the golden SVGs too, within the size budget'
   const over = await post({ jsonrpc: '2.0', id: 1, method: 'ping' }, {}, fetch(limited))
   assert.equal(over.status, 429)
 })
+
+// from_image: a fake model in place of Claude, so the test sends nothing anywhere.
+const photoReply = (over: Record<string, unknown> = {}) => ({
+  stop_reason: 'end_turn',
+  content: [{ type: 'text', text: JSON.stringify({
+    person: 'one', type: 'bust',
+    hair: { length: 'long', texture: 'coily', style: 'afro', bangs: false, cover: 'none' },
+    face: { mood: 'happy', eyes: 'open', mouth: 'smile', wrinkles: false },
+    facialHair: { kind: 'none', size: 'none', moustache: false, styled: 'none' },
+    eyewear: { kind: 'sunglasses', frame: 'round', thick: false, light: false },
+    mask: 'none',
+    outfit: { top: 'hoodie', sleeves: 'long', pattern: 'plain', bottom: 'none', pose: 'relaxed', holds: 'none' },
+    colours: { skin: '#8d5524', hair: '#111111', top: '#e02030', bottom: null },
+    ...over,
+  }) }],
+})
+
+test('from_image: listed only with a model; reads, matches, draws, links; the request carries the photo', async () => {
+  const plain = await modern('tools/list')
+  assert.ok(!plain.body.result.tools.some((t: any) => t.name === 'from_image'))
+  const sent: any[] = []
+  const withPhotos: Fetch = (r) => handle(r, { ...options, perceive: async (req) => { sent.push(req); return photoReply() } })
+  const list = await modern('tools/list', {}, {}, withPhotos)
+  assert.ok(list.body.result.tools.some((t: any) => t.name === 'from_image'))
+  const res = await modern('tools/call', { name: 'from_image', arguments: { url: 'https://example.com/me.jpg', seed: 3 } }, {}, withPhotos)
+  const r = res.body.result
+  assert.ok(!r.isError, JSON.stringify(r.content))
+  assert.equal(r.structuredContent.doc.parts.head, 'long-afro')
+  assert.equal(r.structuredContent.doc.parts.accessories, 'sunglasses')
+  assert.match(r.content[0].text, /head long-afro/)
+  assert.match(r.structuredContent.shareUrl, /^https:\/\/peepcraft\.jinnux\.com\/#d=/)
+  assert.match(svgOf(r), /^<svg/)
+  assert.deepEqual(sent[0].messages[0].content[0], { type: 'image', source: { type: 'url', url: 'https://example.com/me.jpg' } })
+})
+
+test('from_image: bad input, no person, a refusal, an API failure: each an error result the model can read', async () => {
+  const call = async (args: Record<string, unknown>, reply: () => Promise<any>) => {
+    const f: Fetch = (r) => handle(r, { ...options, perceive: reply })
+    return (await modern('tools/call', { name: 'from_image', arguments: args }, {}, f)).body.result
+  }
+  const ok = async () => photoReply()
+  for (const [args, reply, text] of [
+    [{}, ok, /url, or data/],
+    [{ url: 'http://example.com/a.jpg' }, ok, /https/],
+    [{ data: 'AAAA', mediaType: 'image/bmp' }, ok, /not one of/],
+    [{ url: 'https://example.com/a.jpg' }, async () => photoReply({ person: 'none' }), /no person/],
+    [{ url: 'https://example.com/a.jpg' }, async () => ({ ...photoReply(), stop_reason: 'refusal' }), /declined/],
+    [{ url: 'https://example.com/a.jpg' }, async () => { throw new Error('401 invalid x-api-key sk-ant-secret') }, /failed on the server/],
+  ] as const) {
+    const r = await call(args as Record<string, unknown>, reply as () => Promise<any>)
+    assert.equal(r.isError, true, JSON.stringify(args))
+    assert.match(r.content[0].text, text)
+    assert.ok(!r.content[0].text.includes('sk-ant'), 'no provider message leaks')
+  }
+})

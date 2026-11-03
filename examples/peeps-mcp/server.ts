@@ -3,7 +3,7 @@
 //     the body and are checked; server/discover; results carry resultType and the server's identity.
 //   legacy (2025-03-26 to 2025-11-25): an initialize handshake, answered without a session (none is needed: nothing is kept between calls).
 // One JSON response per request; no SSE stream, no GET stream, no sessions.
-import { callTool, readResource, resources, tools } from './tools.ts'
+import { callTool, readResource, resources, toolsFor, type Perceive } from './tools.ts'
 
 export const MODERN = ['2026-07-28'] as const
 export const LEGACY = ['2025-11-25', '2025-06-18', '2025-03-26'] as const
@@ -20,6 +20,8 @@ export interface Options {
   base: string
   /** Origins allowed to call from a browser; '*' (the default) allows any, as nothing here is private or stored. */
   origins?: string
+  /** Sends a photo to a vision model; without it, from_image is not listed. */
+  perceive?: Perceive
 }
 
 type Id = string | number | null
@@ -114,7 +116,7 @@ async function modern(id: Id, method: string, params: Record<string, unknown>, o
   const done = (result: Record<string, unknown>) => ok(id, { resultType: 'complete', ...result, ...serverMeta }, origin)
   switch (method) {
     case 'server/discover': return done({ supportedVersions: SUPPORTED, capabilities: CAPABILITIES, instructions: INSTRUCTIONS, ...CACHE })
-    case 'tools/list': return done({ tools, ...CACHE })
+    case 'tools/list': return done({ tools: toolsFor(!!options.perceive), ...CACHE })
     case 'resources/list': return done({ resources, ...CACHE })
     case 'resources/templates/list': return done({ resourceTemplates: [], ...CACHE })
     case 'resources/read': {
@@ -135,7 +137,7 @@ async function legacy(id: Id, method: string, params: Record<string, unknown>, o
   switch (method) {
     case 'ping': return ok(id, {}, origin)
     case 'server/discover': return ok(id, { supportedVersions: SUPPORTED, capabilities: CAPABILITIES, instructions: INSTRUCTIONS, ...serverMeta }, origin)
-    case 'tools/list': return ok(id, { tools }, origin)
+    case 'tools/list': return ok(id, { tools: toolsFor(!!options.perceive) }, origin)
     case 'resources/list': return ok(id, { resources }, origin)
     case 'resources/templates/list': return ok(id, { resourceTemplates: [] }, origin)
     case 'resources/read': {
@@ -156,7 +158,7 @@ async function call(params: Record<string, unknown>, options: Options): Promise<
   const name = params.name, args = params.arguments ?? {}
   if (typeof name !== 'string') return { error: { code: -32602, message: 'tools/call needs a name' } }
   if (typeof args !== 'object' || args === null || Array.isArray(args)) return { error: { code: -32602, message: 'arguments is an object' } }
-  const result = await callTool(name, args as Record<string, unknown>, options.base)
-  if (!result) return { error: { code: -32602, message: `Unknown tool: ${name}`, data: { tools: tools.map((t) => t.name) } } }
+  const result = await callTool(name, args as Record<string, unknown>, options.base, options.perceive)
+  if (!result) return { error: { code: -32602, message: `Unknown tool: ${name}`, data: { tools: toolsFor(!!options.perceive).map((t) => t.name) } } }
   return { ok: result as unknown as Record<string, unknown> }
 }
