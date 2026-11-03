@@ -1,7 +1,8 @@
 // The host page: the creator alone, filling the window edge to edge.
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { createRoot } from 'react-dom/client'
 import { PeepCreator, type CreatorState, type ThemeId } from '@kit/peeps-creator'
+import { dialog, toaster } from '@kit/ui'
 import { decodeShare, resolve, SHARE_KEY, type PeepCraftDoc } from '@kit/peeps-engine'
 
 const KEY = 'peeps-theme'
@@ -51,7 +52,7 @@ async function viaWorker(file: File): Promise<Read> {
   const body = await res.json().catch(() => ({})) as { doc?: PeepCraftDoc; people?: string; error?: string; code?: string }
   if (!res.ok || !body.doc) {
     const said = body.error ? sentence(body.error) : 'The photo could not be read. Try again later.'
-    throw new Error(body.code === 'quota' ? `${said} Or use your own Anthropic key below.` : said)
+    throw new Error(body.code === 'quota' ? `${said} Or use your own Anthropic key, from the From photo menu.` : said)
   }
   return { doc: body.doc, note: several(body.people) }
 }
@@ -67,30 +68,39 @@ const session = {
   set: (k: string | null) => { try { if (k) sessionStorage.setItem(OWN_KEY, k); else sessionStorage.removeItem(OWN_KEY) } catch { /* the key lasts until the page closes */ } },
 }
 
-/** The visitor's own key: a small button that opens a form; with a key, a line that says so and a Forget button. */
-function OwnKey({ value, onChange }: { value: string | null; onChange: (key: string | null) => void }) {
-  const [open, setOpen] = useState(false)
+/** The visitor's own key, in a @kit/ui dialog (a bottom sheet on a phone), opened from the From photo menu. */
+function OwnKeyDialog({ open, onClose, onSave }: { open: boolean; onClose: () => void; onSave: (key: string) => void }) {
+  const ref = useRef<HTMLDialogElement>(null)
   const [error, setError] = useState('')
-  if (value) return (
-    <div className="own-key"><span>Photos are read with your own Anthropic key, in this tab only.</span>
-      <button className="k-btn" data-variant="ghost" data-size="sm" onClick={() => onChange(null)}>Forget key</button></div>
-  )
-  if (!open) return <div className="own-key"><button className="k-btn" data-variant="ghost" data-size="sm" aria-expanded="false" onClick={() => setOpen(true)}>Use my own Anthropic key</button></div>
+  const onCloseRef = useRef(onClose); onCloseRef.current = onClose
+  useEffect(() => {
+    const d = dialog(ref.current!)
+    const closed = () => { setError(''); onCloseRef.current() }
+    ref.current!.addEventListener('close', closed)
+    return () => { ref.current?.removeEventListener('close', closed); d.destroy() }
+  }, [])
+  useEffect(() => { const d = ref.current!; if (open && !d.open) d.showModal(); if (!open && d.open) d.close() }, [open])
   const save = async (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault()
-    const key = String(new FormData(ev.currentTarget).get('key') ?? '').trim()
+    const form = ev.currentTarget, key = String(new FormData(form).get('key') ?? '').trim()
     const { looksLikeKey } = await ownKeyCode()
     if (!looksLikeKey(key)) return setError('That is not an Anthropic API key: those start with sk-ant-api. A Claude Code token (sk-ant-oat…) does not work here.')
-    setError(''); setOpen(false); onChange(key)
+    form.reset(); onSave(key); ref.current!.close()
   }
   return (
-    <form className="own-key" onSubmit={save} aria-label="Your own Anthropic key">
-      <input className="k-input" data-size="sm" name="key" type="password" autoComplete="off" spellCheck={false} autoFocus required
-        placeholder="sk-ant-api03-…" aria-label="Anthropic API key" aria-invalid={!!error || undefined} aria-describedby="own-key-help" />
-      <button className="k-btn" data-variant="primary" data-size="sm">Use key</button>
-      <button className="k-btn" type="button" data-variant="ghost" data-size="sm" onClick={() => { setOpen(false); setError('') }}>Cancel</button>
-      <p id="own-key-help" role={error ? 'alert' : undefined} data-warn={error ? '' : undefined}>{error || 'Kept in this tab only and sent straight to Anthropic, never to PeepCraft. Your Anthropic account pays; give it a key with a spend limit.'}</p>
-    </form>
+    <dialog ref={ref} className="k-dialog own-key">
+      <form method="dialog" onSubmit={save}>
+        <h2 className="k-dialog-title">Use your own Anthropic key</h2>
+        <p>From photo then sends the photo and the key straight to Anthropic, never to PeepCraft, and your Anthropic account pays. The key is kept in this tab only. Give it a key with a spend limit.</p>
+        <input className="k-input" name="key" type="password" autoComplete="off" spellCheck={false} required placeholder="sk-ant-api03-…"
+          aria-label="Anthropic API key" aria-invalid={!!error || undefined} aria-describedby={error ? 'own-key-error' : undefined} />
+        {error && <p id="own-key-error" role="alert" data-warn="">{error}</p>}
+        <div className="k-dialog-actions">
+          <button className="k-btn" type="button" onClick={() => ref.current!.close()}>Cancel</button>
+          <button className="k-btn" data-variant="primary">Use key</button>
+        </div>
+      </form>
+    </dialog>
   )
 }
 
@@ -99,11 +109,17 @@ function App() {
   const pick = (t: ThemeId) => { setTheme(t); try { localStorage.setItem(KEY, t) } catch { /* the theme just lasts the visit */ } }
   const [ownKey, setOwnKey] = useState<string | null>(session.get)
   const keep = (k: string | null) => { setOwnKey(k); session.set(k) }
+  const [asking, setAsking] = useState(false)
   const readPhoto = !PHOTO_URL ? undefined : ownKey ? (file: File) => withOwnKey(ownKey, file) : viaWorker
+  const told = (text: string) => toaster().show(text, { kind: 'success' })
+  const actions = ownKey
+    ? [{ label: 'Forget my Anthropic key', onSelect: () => { keep(null); told('Your key is forgotten. Photos go through PeepCraft again.') } }]
+    : [{ label: 'Use my own Anthropic key…', onSelect: () => setAsking(true) }]
   return (
     <div id="full" data-brand={theme}>
       <PeepCreator theme={theme} onThemeChange={pick} defaultState={start} shareBase={location.origin + location.pathname}
-        readPhoto={readPhoto} photoExtra={<OwnKey value={ownKey} onChange={keep} />} />
+        readPhoto={readPhoto} photoActions={actions} />
+      <OwnKeyDialog open={asking} onClose={() => setAsking(false)} onSave={(k) => { keep(k); told('Photos are now read with your own Anthropic key, in this tab only.') }} />
       {/* who made it: the creator's portfolio, in the creator's theme */}
       <footer className="made-by"><a href="https://jinnux.com" rel="author">Made by Dat Nguyen</a> · Open Peeps by Pablo Stanley (CC0)</footer>
     </div>

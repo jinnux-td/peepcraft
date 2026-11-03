@@ -606,9 +606,10 @@ test('from photo: the photo goes to the reader shrunk, its peep replaces the one
     await route.fulfill({ status: reply.status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(reply.body) });
   });
   const button = full.getByRole('button', { name: 'From photo' });
-  const note = full.locator('.pc-photo-note');
+  const note = page.locator('.k-toast');
   const pick = async () => {
-    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), button.click()]);
+    await button.click();
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('menuitem', { name: 'Choose a photo…' }).click()]);
     // A 3000 x 2000 photo: sent at 1568 on its long side, as JPEG.
     const photo = await page.evaluate(async () => {
       const c = document.createElement('canvas'); c.width = 3000; c.height = 2000;
@@ -657,27 +658,33 @@ test('own key: a bad key is refused, a good one reads the photo with Anthropic d
       id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'end_turn', stop_sequence: null,
       content: [{ type: 'text', text: JSON.stringify(attributes) }], usage: { input_tokens: 1, output_tokens: 1 } }) });
   });
-  await full.getByRole('button', { name: 'Use my own Anthropic key' }).click();
-  const input = full.getByLabel('Anthropic API key');
+  const photoButton = full.getByRole('button', { name: 'From photo' });
+  const header = await full.locator('.pc-head').boundingBox();
+  await photoButton.click(); await page.getByRole('menuitem', { name: 'Use my own Anthropic key…' }).click();
+  const box = page.getByRole('dialog', { name: 'Use your own Anthropic key' });
+  const input = box.getByLabel('Anthropic API key');
   await input.fill('sk-ant-oat01-' + 'x'.repeat(40)); await input.press('Enter');
-  await full.getByRole('alert').filter({ hasText: 'Claude Code token' }).waitFor();
+  await box.getByRole('alert').filter({ hasText: 'Claude Code token' }).waitFor();
   const key = 'sk-ant-api03-' + 'k'.repeat(40);
-  await input.fill(key); await full.getByRole('button', { name: 'Use key' }).click();
-  await full.getByText('Photos are read with your own Anthropic key').waitFor();
+  await input.fill(key); await box.getByRole('button', { name: 'Use key' }).click();
+  await page.locator('.k-toast', { hasText: 'your own Anthropic key' }).waitFor();
+  assert.ok(!(await box.isVisible()), 'the dialog closes');
+  assert.deepEqual(await full.locator('.pc-head').boundingBox(), header, 'nothing is added under the toolbar');
   assert.equal(await page.evaluate(() => sessionStorage.getItem('peeps-own-key')), key);
 
-  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), full.getByRole('button', { name: 'From photo' }).click()]);
+  await photoButton.click();
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('menuitem', { name: 'Choose a photo…' }).click()]);
   const photo = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 40; c.height = 30; const b = await new Promise<Blob>((r) => c.toBlob((x) => r(x!), 'image/png')); return [...new Uint8Array(await b.arrayBuffer())]; });
   await chooser.setFiles({ name: 'me.png', mimeType: 'image/png', buffer: Buffer.from(photo) });
-  await full.locator('.pc-photo-note', { hasText: 'Made from your photo' }).waitFor();
+  await page.locator('.k-toast', { hasText: 'Made from your photo' }).waitFor();
   assert.equal(anthropic?.key, key, 'the key goes to Anthropic');
   assert.equal(anthropic?.body.messages[0].content[0].source.media_type, 'image/jpeg');
   assert.equal(worker, 0, 'nothing went to PeepCraft');
   const made = await selection(full);
   assert.equal(made.Hair, 'Long Afro'); assert.match(made.Accessories, /^Sunglasses/);
 
-  await full.getByRole('button', { name: 'Forget key' }).click();
+  await photoButton.click(); await page.getByRole('menuitem', { name: 'Forget my Anthropic key' }).click();
   assert.equal(await page.evaluate(() => sessionStorage.getItem('peeps-own-key')), null);
-  await full.getByRole('button', { name: 'Use my own Anthropic key' }).waitFor();
+  await photoButton.click(); await page.getByRole('menuitem', { name: 'Use my own Anthropic key…' }).waitFor();
   await page.close();
 });

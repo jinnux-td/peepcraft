@@ -1,4 +1,5 @@
 export { PeepCreator, type ExportedFile, type PeepCreatorProps } from './components/PeepCreator.tsx'
+export { PhotoMenu, type PhotoAction } from './components/PhotoMenu.tsx'
 export { PartPicker, tabs, nice } from './components/PartPicker.tsx'
 export { Stage } from './components/Stage.tsx'
 export { Swatches } from './components/Swatches.tsx'
