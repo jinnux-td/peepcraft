@@ -19,5 +19,8 @@
   // PHOTO_CAP: the daily cap on photos for the whole server (PHOTO_DAILY_LIMIT in "vars", a UTC day); without it photos are off.
   "durable_objects": { "bindings": [{ "name": "PHOTO_CAP", "class_name": "PhotoCap" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PhotoCap"] }],
+  // Run in the US, not next to the visitor: a Worker calls out from where it runs, and the Anthropic API refuses some regions (a visitor in
+  // Vietnam was served from Hong Kong, and the API answered 403 "Request not allowed").
+  "placement": { "region": "aws:us-east-1" },
   "observability": { "enabled": true }
 }

@@ -41,7 +41,16 @@ function photoReader(env: Env, client: string): Perceive | undefined {
   return async (request) => {
     if (env.PHOTO_LIMITER && !(await env.PHOTO_LIMITER.limit({ key: client })).success) throw new PerceiveError('busy', 'Too many photos from here; try again in a minute.')
     if (!(await takePlace(cap, daily))) throw new PerceiveError('quota', 'PeepCraft has read all the photos it can today; try again tomorrow.')
-    return anthropic.beta.messages.create({ ...request, model: env.PERCEIVE_MODEL || request.model } as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming)
+    try {
+      return await anthropic.beta.messages.create({ ...request, model: env.PERCEIVE_MODEL || request.model } as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming)
+    } catch (e) {
+      // For the logs only (the caller sees a plain message): which limit a 429 hit, from the API's rate limit headers.
+      if (e instanceof Anthropic.APIError && e.headers) {
+        const h = e.headers as Headers
+        console.error('anthropic', e.status, Object.fromEntries([...h.entries()].filter(([k]) => k.startsWith('anthropic-ratelimit') || k === 'retry-after' || k === 'request-id')))
+      }
+      throw e
+    }
   }
 }
 
