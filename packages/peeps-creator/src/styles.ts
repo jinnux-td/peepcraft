@@ -108,6 +108,7 @@ export const creatorCss = `
 .pc-save{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pc-save .pc-share{grid-column:1/-1}.pc-share-note{margin:0;font-size:12px;color:var(--pc-muted)}.pc-share-link{width:100%}
 .pc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.pc-photo-note{flex-basis:100%;margin:0;font-size:13px;color:var(--pc-muted)}.pc-photo-note:empty{position:absolute;width:1px;height:1px;overflow:hidden}.pc-photo-note[data-warn]{color:var(--pc-text);font-weight:600}
 .pc-member{display:flex;flex-direction:column;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--pc-line)}
 .pc-row{display:flex;flex-wrap:wrap;gap:8px}
 .pc-add span:last-child{display:inline-flex;align-items:center;gap:4px;color:var(--pc-text);font-weight:600}
@@ -182,6 +183,6 @@ export const creatorCss = `
   .pc-side-scene{position:static;max-height:none;overflow:visible}
   .pc-side-scene .pc-members{max-height:272px}
 }
-@container (max-width:520px){.pc .k-btn span{display:none}.pc .k-btn[data-variant=primary] span,.pc .k-btn.pc-wide span{display:inline}.pc-save{grid-template-columns:1fr}}
+@container (max-width:520px){.pc .k-btn span{display:none}.pc-toolbar .k-btn{padding-inline:var(--k-space-3)}.pc .k-btn[data-variant=primary] span,.pc .k-btn.pc-wide span{display:inline}.pc-save{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.pc *{transition:none!important}}
 `

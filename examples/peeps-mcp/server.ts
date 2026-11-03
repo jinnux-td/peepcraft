@@ -3,6 +3,7 @@
 //     the body and are checked; server/discover; results carry resultType and the server's identity.
 //   legacy (2025-03-26 to 2025-11-25): an initialize handshake, answered without a session (none is needed: nothing is kept between calls).
 // One JSON response per request; no SSE stream, no GET stream, no sessions.
+import { photo, PHOTO_BODY } from './photo.ts'
 import { callTool, readResource, resources, toolsFor, type Perceive } from './tools.ts'
 
 export const MODERN = ['2026-07-28'] as const
@@ -22,6 +23,8 @@ export interface Options {
   origins?: string
   /** Sends a photo to a vision model; without it, from_image is not listed. */
   perceive?: Perceive
+  /** Browser origins that may send photos to POST /photo (the PeepCraft page); none, no browser may. */
+  photoOrigins?: string
 }
 
 type Id = string | number | null
@@ -51,6 +54,7 @@ export async function handle(request: Request, options: Options): Promise<Respon
   const url = new URL(request.url)
   const origin = request.headers.get('Origin')
   const allowed = !origin || !options.origins || options.origins === '*' || options.origins.split(',').map((o) => o.trim()).includes(origin)
+  if (url.pathname === '/photo') return photo(request, { perceive: options.perceive, origins: options.photoOrigins ?? '' })
   if (url.pathname !== '/mcp') {
     if (url.pathname === '/' && request.method === 'GET') return new Response('PeepCraft MCP server. Endpoint: POST /mcp (Streamable HTTP). https://peepcraft.jinnux.com/\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
     return new Response('Not found\n', { status: 404 })
@@ -62,7 +66,9 @@ export async function handle(request: Request, options: Options): Promise<Respon
   if (!/^application\/json\b/i.test(request.headers.get('Content-Type') ?? '')) return fail(415, null, { code: -32600, message: 'send JSON (Content-Type: application/json)' }, origin)
 
   const text = await request.text()
-  if (text.length > MAX_BODY) return fail(413, null, { code: -32600, message: `a request is at most ${MAX_BODY} bytes` }, origin)
+  // from_image may carry a photo's bytes; every other request is small.
+  const max = options.perceive ? PHOTO_BODY : MAX_BODY
+  if (text.length > max) return fail(413, null, { code: -32600, message: `a request is at most ${max} bytes` }, origin)
   let msg: unknown
   try { msg = JSON.parse(text) } catch { return fail(400, null, { code: -32700, message: 'Parse error' }, origin) }
   if (Array.isArray(msg)) return fail(400, null, { code: -32600, message: 'batches are not supported; send one message per request' }, origin)

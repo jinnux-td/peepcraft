@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { handle } from './server.ts'
+import { PerceiveError } from '@kit/peeps-engine'
 
 const golden = new URL('../../packages/peeps-engine/test/golden/', import.meta.url)
 const doc = (name: string) => JSON.parse(readFileSync(new URL(`${name}.json`, golden), 'utf8'))
@@ -201,4 +202,48 @@ test('from_image: bad input, no person, a refusal, an API failure: each an error
     assert.match(r.content[0].text, text)
     assert.ok(!r.content[0].text.includes('sk-ant'), 'no provider message leaks')
   }
+})
+
+test('POST /photo: only the listed origins, a document back, errors as statuses without the provider message', async () => {
+  const page = 'https://peepcraft.jinnux.com'
+  const at = (perceive: any, init: { origin?: string; method?: string; body?: unknown } = {}) => handle(new Request('https://peepcraft-mcp.jinnux.com/photo', {
+    method: init.method ?? 'POST', headers: { 'Content-Type': 'application/json', ...(init.origin === undefined ? { Origin: page } : init.origin ? { Origin: init.origin } : {}) },
+    body: (init.method ?? 'POST') === 'POST' ? JSON.stringify(init.body ?? { data: 'AAAA', mediaType: 'image/jpeg' }) : undefined,
+  }), { ...options, perceive, photoOrigins: page })
+  const ok = async () => photoReply()
+  const res = await at(ok)
+  assert.equal(res.status, 200)
+  assert.equal(res.headers.get('Access-Control-Allow-Origin'), page)
+  const body = await res.json() as any
+  assert.equal(body.doc.parts.head, 'long-afro')
+  assert.ok(Array.isArray(body.reasons) && body.people === 'one')
+  const pre = await at(ok, { method: 'OPTIONS' })
+  assert.equal(pre.status, 204); assert.match(pre.headers.get('Access-Control-Allow-Methods')!, /POST/)
+  // Another site, or no Origin at all (a script): refused before any model call.
+  let called = 0
+  const counted = async () => { called++; return photoReply() }
+  assert.equal((await at(counted, { origin: 'https://evil.example' })).status, 403)
+  assert.equal((await at(counted, { origin: '' })).status, 403)
+  assert.equal(called, 0)
+  assert.equal((await at(undefined)).status, 503, 'no key: not set up')
+  for (const [reply, body, status] of [
+    [ok, { data: 1 }, 400],
+    [ok, { data: 'AAAA', mediaType: 'image/bmp' }, 400],
+    [async () => photoReply({ person: 'none' }), undefined, 422],
+    [async () => { throw new PerceiveError('busy', 'Too many photos from here; try again in a minute.') }, undefined, 429],
+    [async () => { throw new Error('401 invalid x-api-key sk-ant-secret') }, undefined, 502],
+  ] as const) {
+    const r = await at(reply, { body })
+    assert.equal(r.status, status, JSON.stringify(body))
+    const text = await r.text()
+    assert.match(text, /"error"/); assert.ok(!text.includes('sk-ant'))
+  }
+})
+
+test('a photo in a from_image call fits: the body limit grows only when photos are read', async () => {
+  const big = { name: 'from_image', arguments: { data: 'A'.repeat(200_000), mediaType: 'image/jpeg' } }
+  assert.equal((await modern('tools/call', big)).status, 413)
+  const f: Fetch = (r) => handle(r, { ...options, perceive: async () => photoReply() })
+  const r = await modern('tools/call', big, {}, f)
+  assert.equal(r.status, 200); assert.ok(!r.body.result.isError, JSON.stringify(r.body.result.content))
 })

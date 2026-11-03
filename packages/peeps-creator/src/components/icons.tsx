@@ -31,6 +31,7 @@ export const icons = {
   back: draw(<><rect x="4" y="4" width="11" height="11" rx="2" /><path d="M9 19v1h11V9h-1" /></>),
   remove: draw(<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />),
   add: draw(<path d="M12 5v14M5 12h14" />),
+  photo: draw(<><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13.5" r="3.5" /></>),
   upload: draw(<path d="M12 16V4M7 9l5-5 5 5M4 20h16" />),
   more: draw(<path strokeWidth="3.2" d="M5 6h.01M12 6h.01M19 6h.01M5 12h.01M12 12h.01M19 12h.01M5 18h.01M12 18h.01M19 18h.01" />),
   close: draw(<path d="M6 6l12 12M18 6 6 18" />),

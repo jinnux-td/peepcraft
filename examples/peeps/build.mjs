@@ -12,7 +12,9 @@ const roundPaths = { name: 'round-paths', setup: (b) => b.onLoad({ filter: /\/(a
   contents: readFileSync(path, 'utf8').replace(/ d: "([^"]*)"/g, (_, d) => ` d: "${d.replace(/-?\d+\.\d+/g, (n) => String(+(+n).toFixed(1)))}"`) })) };
 const dist = new URL('dist/', here).pathname;
 const out = await build({ entryPoints: { main: new URL('main.tsx', here).pathname }, bundle: true, minify: true, write: false, format: 'esm', splitting: true, outdir: dist,
-  chunkNames: 'figures/[name]-[hash]', metafile: true, jsx: 'automatic', loader: { '.json': 'json' }, plugins: [roundPaths] });
+  chunkNames: 'figures/[name]-[hash]', metafile: true, jsx: 'automatic', loader: { '.json': 'json' }, plugins: [roundPaths],
+  // The From photo button's endpoint (the MCP Worker); PHOTO_URL= (empty) builds the page without the button.
+  define: { PHOTO_URL: JSON.stringify(process.env.PHOTO_URL ?? 'https://peepcraft-mcp.jinnux.com/photo') } });
 // The entry goes inline into the page (one request before the first paint); its import() of a chunk resolves against the page, next to it.
 const entry = out.outputFiles.find((f) => f.path === dist + 'main.js'), chunks = out.outputFiles.filter((f) => f !== entry);
 rmSync(dist, { recursive: true, force: true }); mkdirSync(dist + 'figures', { recursive: true });

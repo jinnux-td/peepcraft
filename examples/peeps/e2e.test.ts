@@ -595,3 +595,46 @@ test('share links: a link opens its picture, Copy link copies one that opens the
   assert.equal(await other.evaluate(() => location.hash), '');
   await page.close(); await other.close();
 });
+
+test('from photo: the photo goes to the reader shrunk, its peep replaces the one being built, errors are shown, undo takes it back', async () => {
+  const page = await open(); const full = page.locator('#full');
+  const sent: { data: string; mediaType: string }[] = [];
+  let reply: { status: number; body: unknown } = { status: 200, body: { doc: { v: 1, type: 'bust', parts: { head: 'long-afro', accessories: 'sunglasses' }, skin: '#8d5524' }, reasons: [], people: 'many' } };
+  await page.route('https://peepcraft-mcp.jinnux.com/photo', async (route) => {
+    sent.push(route.request().postDataJSON());
+    await new Promise((r) => setTimeout(r, 150));
+    await route.fulfill({ status: reply.status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(reply.body) });
+  });
+  const button = full.getByRole('button', { name: 'From photo' });
+  const note = full.locator('.pc-photo-note');
+  const pick = async () => {
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), button.click()]);
+    // A 3000 x 2000 photo: sent at 1568 on its long side, as JPEG.
+    const photo = await page.evaluate(async () => {
+      const c = document.createElement('canvas'); c.width = 3000; c.height = 2000;
+      const b = await new Promise<Blob>((r) => c.toBlob((x) => r(x!), 'image/png'));
+      return [...new Uint8Array(await b.arrayBuffer())];
+    });
+    await chooser.setFiles({ name: 'me.png', mimeType: 'image/png', buffer: Buffer.from(photo) });
+  };
+  await pick();
+  assert.equal(await button.getAttribute('aria-busy'), 'true', 'busy while reading');
+  await note.filter({ hasText: 'several people' }).waitFor();
+  assert.equal(sent[0].mediaType, 'image/jpeg');
+  const size = await page.evaluate(async (d) => { const i = new Image(); i.src = `data:image/jpeg;base64,${d}`; await i.decode(); return [i.naturalWidth, i.naturalHeight]; }, sent[0].data);
+  assert.deepEqual(size, [1568, 1045]);
+  assert.equal(await button.getAttribute('aria-busy'), null);
+  const made = await selection(full);
+  assert.equal(made.Hair, 'Long Afro'); assert.equal(made.Accessories, 'Sunglasses'); assert.equal(made.Type, 'bust');
+
+  reply = { status: 422, body: { error: 'no person found in the photo' } };
+  await pick();
+  await note.filter({ hasText: 'No person found in the photo.' }).waitFor();
+  assert.equal((await selection(full)).Hair, 'Long Afro', 'an error leaves the peep alone');
+
+  await full.getByRole('button', { name: 'Undo' }).click();
+  assert.notEqual((await selection(full)).Hair, 'Long Afro', 'one undo step takes the photo peep back');
+  // The browser logs the 422 itself; that one is expected.
+  errors.splice(0, errors.length, ...errors.filter((e) => !/status of 422/.test(e)));
+  await page.close();
+});

@@ -1,7 +1,7 @@
 import { useEffect, useInsertionEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { pending, type PeepType, type Slot } from '@kit/peeps'
 import { figures } from '@kit/transhumans'
-import { boxes, pictureBox, fromState, shareUrl, exportSceneSvg, exportSvg, fileName, randomize, type Target, boxKey, frameBox, frameSize, SceneView, SIZE, addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History, initialState, RATIOS, swatches, type CreatorState, type Ratio, type Upload } from '@kit/peeps-engine'
+import { boxes, pictureBox, fromState, shareUrl, exportSceneSvg, exportSvg, fileName, randomize, type Target, boxKey, frameBox, frameSize, SceneView, SIZE, addToScene, choose, chooseExtra, chooseFigure, commit, toggleLock, designColors, dragEntry, dropUpload, resizeEntry, setRatio, moveEntry, reorderEntry, redo, removeEntry, showPeep, startHistory, tweak, undo, updateEntry, type History, initialState, RATIOS, swatches, resolve, type CreatorState, type PeepCraftDoc, type Ratio, type Upload } from '@kit/peeps-engine'
 import { svgToPng } from '../png.ts'
 import { ensureUiStyles } from '@kit/ui'
 import { creatorCss } from '../styles.ts'
@@ -36,6 +36,9 @@ export interface PeepCreatorProps {
   title?: string | false
   /** The page a share link opens (PeepCraft reads the document from its fragment, `#d=...`). With it, a Copy link button sits under Save. */
   shareBase?: string
+  /** Reads a photo into a document (a vision model, on the host's server). With it, a From photo button sits in the toolbar; the result
+   *  replaces the peep being built (one undo step), and `note`, when given, is shown under the toolbar. A thrown error's message is shown. */
+  readPhoto?: (file: File) => Promise<{ doc: PeepCraftDoc; note?: string }>
   className?: string
   style?: CSSProperties
 }
@@ -47,7 +50,7 @@ function download(file: ExportedFile) {
 }
 
 /** The whole creator. It lays itself out by its own width (container queries), so it fits a page or a dashboard panel alike. */
-export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', shareBase, className = '', style }: PeepCreatorProps) {
+export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', shareBase, readPhoto, className = '', style }: PeepCreatorProps) {
   useInsertionEffect(() => ensureUiStyles(), []) // the kit tokens (the four themes are its brands) and the @kit/ui controls, before the first paint
   const [hist, setHist] = useState<History>(() => startHistory({ ...initialState, ...defaultState }))
   const [tab, setTab] = useState<Tab>('head')
@@ -131,6 +134,21 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
       try { await saveUpload(u) } catch { setUploadNote(`"${u.name}" could not be saved in this browser; it lasts until the page is closed.`) }
     }
   }
+  // From photo: the host reads the photo; the peep it describes replaces the one being built, keeping the scene, the background and the locks.
+  const photoInput = useRef<HTMLInputElement>(null)
+  const [photo, setPhoto] = useState<{ busy?: boolean; text?: string; warn?: boolean }>({})
+  const fromPhoto = async (file: File | undefined) => {
+    if (!file || !readPhoto) return
+    setPhoto({ busy: true, text: 'Reading the photo…' })
+    try {
+      const { doc, note } = await readPhoto(file)
+      const made = resolve(doc)
+      record((s) => ({ ...made, bg: s.bg, scene: s.scene, frame: s.frame, ...(s.locked ? { locked: s.locked } : {}) }))
+      setPhoto({ text: note ?? 'Made from your photo. Change anything that is off.', warn: !!note })
+    } catch (err) {
+      setPhoto({ text: (err as Error).message || 'The photo could not be read.', warn: true })
+    }
+  }
   const removeUpload = (id: string) => {
     setUploads((list) => list.filter((u) => u.id !== id))
     if (state.scene.some((e) => e.upload?.id === id)) { setPicked(null); record((s) => dropUpload(s, id)) }
@@ -183,11 +201,20 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
         {title !== false && <h1 className="pc-title">{title}<small>character creator</small></h1>}
         <div className="pc-toolbar" role="toolbar" aria-label="Actions">
           <button className="k-btn" onClick={() => dice('all')} disabled={inScene}><I.shuffle /><span>Shuffle all</span></button>
+          {readPhoto && <>
+            {/* aria-disabled while busy, not disabled, so the focus stays on the button */}
+            <button className="k-btn" aria-label="From photo" aria-busy={photo.busy || undefined} aria-disabled={photo.busy || undefined} disabled={inScene}
+              title="Pick a photo of one person. It is sent to an AI model to read and is not kept; the peep is drawn from what it sees."
+              onClick={() => !photo.busy && photoInput.current?.click()}><I.photo /><span>From photo</span></button>
+            <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden aria-label="Photo of a person"
+              onChange={(ev) => { fromPhoto(ev.target.files?.[0]); ev.target.value = '' }} />
+          </>}
           <button className="k-btn" onClick={() => setHist(undo)} disabled={!hist.past.length}><I.undo /><span>Undo</span></button>
           <button className="k-btn" onClick={() => setHist(redo)} disabled={!hist.future.length}><I.redo /><span>Redo</span></button>
           <button className="k-btn" onClick={reset} disabled={isStart}><I.reset /><span>Reset</span></button>
           {showThemeButton && <ThemeMenu theme={theme} onChange={pickTheme} />}
         </div>
+        {readPhoto && <p className="pc-photo-note" role="status" data-warn={photo.warn || undefined}>{photo.text}</p>}
       </header>
 
       <div className="pc-main">
