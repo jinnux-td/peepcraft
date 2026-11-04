@@ -152,6 +152,18 @@ test('the drawings of the figures are not in the page; they load after it, and e
   await page.close();
 });
 
+test('a phone: the toolbar shows icons only, and every button still has its name for a screen reader', async () => {
+  const page = await open(390, 844); const full = page.locator('#full');
+  const shuffle = full.getByRole('button', { name: 'Shuffle all' });
+  assert.ok((await shuffle.boundingBox())!.width < 60, 'the label takes no room');
+  for (const t of [...TABS, 'Mask', 'Extra', 'Figures', 'Scene']) {
+    await full.getByRole('tab', { name: t, exact: true }).click();
+    const all = await full.getByRole('button').count(), named = await full.getByRole('button', { name: /\S/ }).count();
+    assert.equal(named, all, `a button without a name on the ${t} tab`);
+  }
+  await page.close();
+});
+
 test('a phone: no sideways scroll, the options are reachable', async () => {
   const page = await open(390, 844);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal scroll');

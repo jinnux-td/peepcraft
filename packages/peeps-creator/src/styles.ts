@@ -134,7 +134,7 @@ export const creatorCss = `
 .pc-side-scene .pc-member{gap:8px}
 .pc-side-scene .pc-row{flex-wrap:nowrap}
 .pc-side-scene .pc-row .k-btn{flex:1;padding:0 var(--k-space-2)}
-.pc-side-scene .pc-row .k-btn span{display:none}
+.pc-side-scene .pc-row .k-btn span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .pc-side-scene .pc-slider,.pc-frame .pc-slider{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:8px}
 .pc-side-scene .pc-slider .pc-label,.pc-frame .pc-slider .pc-label{display:contents}
 .pc-side-scene .pc-slider .pc-track,.pc-frame .pc-slider .pc-track{grid-column:2;grid-row:1}
@@ -185,6 +185,6 @@ export const creatorCss = `
   .pc-side-scene{position:static;max-height:none;overflow:visible}
   .pc-side-scene .pc-members{max-height:272px}
 }
-@container (max-width:520px){.pc .k-btn span{display:none}.pc-toolbar .k-btn{padding-inline:var(--k-space-3)}.pc .k-btn[data-variant=primary] span,.pc .k-btn.pc-wide span{display:inline}.pc-save{grid-template-columns:1fr}}
+@container (max-width:520px){.pc .k-btn:not([data-variant=primary],.pc-wide) span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.pc-toolbar .k-btn{padding-inline:var(--k-space-3)}.pc-save{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.pc *{transition:none!important}}
 `
