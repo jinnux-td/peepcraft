@@ -37,7 +37,7 @@ npm install
 npm test                    # every package's tests + examples
 npm run typecheck          # packages + examples (examples/contract.ts checks the seam between data-layer and worldmap)
 npm run e2e                # the examples, the token CSS and every Storybook story in a real browser
-npm run storybook          # the finished components, http://localhost:6006
+npm run storybook          # every finished component, http://localhost:6006 (examples/storybook): carousels, @kit/ui, folio, heat map, panel, shell, map, peeps, creator
 scripts/standalone.sh       # copy each package out of the repo and test it alone
 npm run peep -- help       # PeepCraft from the terminal (examples/peeps-cli)
 claude plugin marketplace add ./claude-marketplace   # the jinnux Claude Code marketplace: plugin peepcraft (MCP + skill)
