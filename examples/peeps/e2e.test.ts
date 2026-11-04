@@ -553,7 +553,12 @@ test('thumbnails show each item by itself, or on the whole peep with "On peep"; 
 
 test('a slider marks its default and pulls a drag that comes near it onto it', async () => {
   const page = await open(); const full = page.locator('#full');
-  assert.equal(await full.locator('.pc-side .pc-slider').first().locator('.pc-tick').count(), 1);
+  const first = full.locator('.pc-side .pc-slider').first();
+  assert.equal(await first.locator('.pc-tick').count(), 1);
+  assert.equal(await first.locator('.k-slider input[type=range]').count(), 1, 'the @kit/ui slider');
+  assert.equal(await first.locator('input.k-input[type=number]').count(), 1, 'the @kit/ui field');
+  const button = (await first.locator('button.k-btn').boundingBox())!;
+  assert.ok(button.width >= 24 && button.height >= 24, 'the reset button is a real target');
   const r = (await full.getByRole('slider', { name: 'Scale' }).boundingBox())!;
   await page.mouse.click(r.x + r.width * 0.8, r.y + r.height / 2);
   assert.notEqual(await full.getByRole('spinbutton', { name: 'Scale value' }).inputValue(), '1');

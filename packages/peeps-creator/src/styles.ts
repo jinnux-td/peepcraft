@@ -76,12 +76,8 @@ export const creatorCss = `
 .pc-side{padding:18px;display:flex;flex-direction:column;gap:18px}
 .pc-field{display:flex;flex-direction:column;gap:8px}
 .pc-label{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--pc-muted);text-transform:var(--pc-caps);letter-spacing:var(--pc-track)}
-.pc-value{display:inline-grid;grid-template-columns:56px 12px 22px;align-items:center;gap:3px;color:var(--pc-text);font-variant-numeric:tabular-nums}
-.pc-value input{width:56px;padding:2px 6px;border:1px solid var(--pc-line);border-radius:8px;background:var(--pc-tile);text-align:right;font-size:12px}
-.pc-reset{display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--pc-muted)}
-.pc-reset svg{width:15px;height:15px}
-.pc-reset:hover:not(:disabled){color:var(--pc-text);background:var(--pc-tile)}
-.pc-reset:disabled{opacity:.3;cursor:default}
+.pc-value{display:inline-grid;grid-template-columns:56px 12px var(--k-space-8);align-items:center;gap:3px;color:var(--pc-text);font-variant-numeric:tabular-nums}
+.pc-value input{text-align:right}
 .pc-pill button[aria-checked=true]{background:var(--pc-accent);color:var(--pc-on-accent);font-weight:600}
 .pc-export{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .pc-export .pc-pill{box-shadow:none;padding:3px}
@@ -104,9 +100,8 @@ export const creatorCss = `
 .pc-seven{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .pc-seven .pc-swatch{width:100%;height:auto;aspect-ratio:1}
 .pc-slider{display:flex;flex-direction:column;gap:8px}
-.pc input[type=range]{width:100%;accent-color:var(--pc-accent)}
-.pc-track{position:relative;display:block}
-.pc-track input[type=range]{display:block;margin:0;position:relative;z-index:1;background:transparent}
+.pc-track{position:relative;grid-template-columns:minmax(0,1fr)}
+.pc-track input[type=range]{display:block;position:relative;z-index:1}
 .pc-tick{position:absolute;top:50%;width:2px;height:14px;margin:-7px 0 0 -1px;border-radius:1px;background:var(--pc-muted);pointer-events:none}
 .pc-save{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pc-save .pc-share{grid-column:1/-1}.pc-share-note{margin:0;font-size:12px;color:var(--pc-muted)}.pc-share-link{width:100%}

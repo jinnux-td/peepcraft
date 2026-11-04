@@ -21,17 +21,17 @@ export function Slider({ label, value, min, max, step, unit = '', reset, onChang
         <label htmlFor={id}>{label}</label>
         <span className="pc-value">
           <input
-            type="number" inputMode="decimal" aria-label={`${label} value`} min={min} max={max} step={step} value={draft ?? shown}
+            className="k-input" data-size="sm" type="number" inputMode="decimal" aria-label={`${label} value`} min={min} max={max} step={step} value={draft ?? shown}
             onChange={(e) => { setDraft(e.target.value); const v = e.target.valueAsNumber; if (Number.isFinite(v)) onChange(Math.min(max, Math.max(min, v))) }}
             onBlur={() => setDraft(null)}
           />
           <span aria-hidden="true">{unit}</span>
           {reset !== undefined && (
-            <button type="button" className="pc-reset" aria-label={`Reset ${label.toLowerCase()}`} title={`Back to ${reset}${unit}`} disabled={shown === reset} onClick={() => onChange(reset)}><Reset /></button>
+            <button type="button" className="k-btn" data-variant="ghost" data-size="sm" data-icon aria-label={`Reset ${label.toLowerCase()}`} title={`Back to ${reset}${unit}`} disabled={shown === reset} onClick={() => onChange(reset)}><Reset /></button>
           )}
         </span>
       </span>
-      <span className="pc-track">
+      <span className="pc-track k-slider">
         <input id={id} type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(snap(Number(e.target.value)))} />
         {/* The thumb's centre runs from half a thumb in from each end, so the mark does too. */}
         {reset !== undefined && <i className="pc-tick" aria-hidden="true" style={{ left: `calc(${at * 100}% + ${(0.5 - at) * 16}px)` }} />}
