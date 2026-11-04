@@ -9,12 +9,14 @@
   "scripts": {
     "test": "npm test --workspaces && node --test examples/*.test.ts examples/peeps-cli/*.test.ts examples/peeps-mcp/*.test.ts",
     "typecheck": "npm run typecheck --workspaces && tsc -p examples",
-    "e2e": "node --test examples/world/e2e.test.ts examples/panel/e2e.test.ts examples/dashboard/e2e.test.ts examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts examples/ui/e2e.test.ts",
+    "e2e": "node --test examples/world/e2e.test.ts examples/panel/e2e.test.ts examples/dashboard/e2e.test.ts examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts examples/ui/e2e.test.ts examples/carousel/e2e.test.ts examples/storybook/e2e.test.ts",
     "example": "node examples/world/build.mjs && node examples/world/serve.ts",
     "example:panel": "node examples/panel/build.mjs && node examples/panel/serve.ts",
     "example:dashboard": "node examples/dashboard/build.mjs && node examples/dashboard/serve.ts",
     "example:peeps": "node examples/peeps/build.mjs && node examples/peeps/serve.ts",
     "example:ui": "node examples/ui/build.mjs && node examples/ui/serve.ts",
+    "storybook": "storybook dev -p 6006 -c examples/storybook/config --no-version-updates",
+    "build:storybook": "storybook build -c examples/storybook/config -o examples/storybook/dist",
     "perf:peeps": "node examples/peeps/build.mjs && node scripts/budget.ts --dist examples/peeps/dist --kind tool --tap \".pc-rail [role=tab]:nth-child(2)\"",
     "measure:peeps": "node scripts/measure-boxes.ts",
     "build:mcp": "node examples/peeps-mcp/build.mjs",
@@ -29,11 +31,15 @@
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "1.3.0",
+    "@storybook/addon-a11y": "10.6.5",
+    "@storybook/html-vite": "10.6.5",
     "@types/node": "22.20.5",
     "esbuild": "0.28.2",
     "playwright-core": "1.64.1",
+    "storybook": "10.6.5",
     "topojson-client": "3.1.0",
     "typescript": "5.9.3",
+    "vite": "8.3.5",
     "world-atlas": "2.0.2"
   }
 }

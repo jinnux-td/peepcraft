@@ -5,6 +5,8 @@ mock/worldmap/mock.html
 examples/world/dist/
 examples/peeps/dist/
 examples/ui/dist/
+examples/carousel/dist/
+examples/storybook/dist/
 review/
 
 # Wrangler local secrets (ANTHROPIC_API_KEY for npm run dev:mcp)

@@ -15,6 +15,7 @@ To reuse one, copy its folder into another project.
 | [`@kit/heatmap`](packages/heatmap) | activity heat map (a square per day) fed with **per-day counts**, not records: a `‹ year ›` selector that asks the host for one window, replay, scrubber, tooltip | `ui` |
 | [`@kit/shell`](packages/shell) | the frame of a dashboard page: header with tab bar, actions and theme mode, a bar for filters, sidebar (a drawer on a phone), main; theme tokens reach every kit module | `ui` |
 | [`@kit/folio`](packages/folio) | a portfolio page: header, a hero made of named parts, sections, footer; the same parts take six arrangements (type, character, world, object, work, quiet) at one switch, and a picker to switch them | `ui` (the picker) |
+| [`@kit/carousel`](packages/carousel) | five carousel components with any content inside: Poster, Curve, Spine, Select, Arc; each has its own render, behaviour, typed slots and CSS on a small core, and the host fills the slots. Design: `docs/carousel.md`; see them in the Storybook: `npm run storybook` | `ui` |
 | [`@kit/peeps`](packages/peeps) | Open Peeps illustrations as React components (177 atoms): a `Peep` that composes them, with defaults per type (standing, sitting, bust), and a `Scene` that puts peeps and figures on one background | `react` (peer) |
 | [`@kit/transhumans`](packages/transhumans) | Transhumans illustrations (Pablo Stanley, CC0): 38 whole black and white figures as React components that recolour (ink and paper) | `react` (peer) |
 | [`@kit/things`](packages/things) | things for a peeps scene, drawn in code in the same ink and paper style: 22 in five groups (furniture, plants and home, small props, pets, extras a peep wears) | `react` (peer) |
@@ -23,11 +24,11 @@ To reuse one, copy its folder into another project.
 | [`@kit/worldmap`](packages/worldmap) | world map, flat or globe (MapLibre), draws resolved layers; Natural Earth basemap bundled, works offline | `maplibre-gl` (BSD-3) |
 
 ## Rules
-1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `folio`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder, except the **foundation** packages (`@kit/tokens`, `@kit/ui`), which a leaf may name in its `package.json` (decision D1, `~/services/docs/ui/migration.md`). A runtime dependency on another kit package is written `"file:../ui"`, so a host that links kit packages by path (the portfolio) never asks the npm registry for `@kit/*`. An **assembly** (`map-view`, `peeps-engine`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host, with one exception: a UI assembly may import the headless assembly it draws (`peeps-creator` imports `peeps-engine`, so the web app, the CLI and the MCP server draw the same picture). `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
+1. **Standalone.** Leaf packages (`notes-graph`, `layout`, `data-layer`, `worldmap`, `panel`, `heatmap`, `shell`, `folio`, `carousel`, `peeps`, `transhumans`, `things`) import nothing from each other or from outside their folder, except the **foundation** packages (`@kit/tokens`, `@kit/ui`), which a leaf may name in its `package.json` (decision D1, `~/services/docs/ui/migration.md`). A runtime dependency on another kit package is written `"file:../ui"`, so a host that links kit packages by path (the portfolio) never asks the npm registry for `@kit/*`. An **assembly** (`map-view`, `peeps-engine`, `peeps-creator`) may import the leaves it names in its `package.json`; nothing imports an assembly except a host, with one exception: a UI assembly may import the headless assembly it draws (`peeps-creator` imports `peeps-engine`, so the web app, the CLI and the MCP server draw the same picture). `scripts/standalone.sh` copies each package out of the repo and runs its typecheck and tests there.
 2. **Extract, don't invent.** A package comes from code that already works in an app and has, or is about to have, a
    second user. Keep its tests with it.
 3. **Small public API:** everything exported goes through `src/index.ts`.
-4. **No network, no telemetry.** Dependencies stay minimal and MIT/Apache/BSD; record any new one in the package README. Root dev dependencies (for the example and its test only): `esbuild` (MIT), `playwright-core` (Apache-2.0), `typescript` (Apache-2.0), `world-atlas` and `topojson-client` (ISC).
+4. **No network, no telemetry.** Dependencies stay minimal and MIT/Apache/BSD; record any new one in the package README. Root dev dependencies (for the examples and their tests only): `esbuild` (MIT), `playwright-core` (Apache-2.0), `typescript` (Apache-2.0), `world-atlas` and `topojson-client` (ISC), `storybook`, `@storybook/html-vite`, `@storybook/addon-a11y` and `vite` (MIT; telemetry off in `examples/storybook/config/main.ts`).
 5. Never publish or push without being asked.
 
 ## Commands
@@ -35,7 +36,8 @@ To reuse one, copy its folder into another project.
 npm install
 npm test                    # every package's tests + examples
 npm run typecheck          # packages + examples (examples/contract.ts checks the seam between data-layer and worldmap)
-npm run e2e                # the examples and the token CSS in a real browser
+npm run e2e                # the examples, the token CSS and every Storybook story in a real browser
+npm run storybook          # the finished components, http://localhost:6006
 scripts/standalone.sh       # copy each package out of the repo and test it alone
 npm run peep -- help       # PeepCraft from the terminal (examples/peeps-cli)
 claude plugin marketplace add ./claude-marketplace   # the jinnux Claude Code marketplace: plugin peepcraft (MCP + skill)
