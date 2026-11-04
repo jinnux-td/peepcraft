@@ -124,26 +124,31 @@ class Canvas {
   }
 
   fill(polygons: Point[][], colour: [number, number, number], evenOdd: boolean) {
-    let top = Infinity, bottom = -Infinity
+    let top = Infinity, bottom = -Infinity, left = Infinity, right = -Infinity
     for (const poly of polygons) for (let i = 0, n = poly.length; i < n; i++) {
       const [ax, ay] = poly[i], [bx, by] = poly[(i + 1) % n]
       this.edge(ax, ay, bx, by)
       if (ay < top) top = ay
       if (ay > bottom) bottom = ay
+      if (ax < left) left = ax
+      if (ax > right) right = ax
     }
     const from = Math.max(0, Math.floor(top)), to = Math.min(this.height, Math.ceil(bottom)), [r, g, b] = colour, { a, rgb, row, width } = this
+    // Only the columns the path reaches, which is most of the time saved on a small piece. edge() clamps to 0..width and writes one past, so a
+    // path wholly off the picture still has cells to clear.
+    const first = Math.max(0, Math.min(width, Math.floor(left))), last = Math.max(1, Math.min(width + 1, Math.ceil(right) + 1))
     for (let y = from; y < to; y++) {
-      let sum = 0, base = y * row, px = y * width * 3
-      for (let x = 0; x < width; x++, px += 3) {
+      let sum = 0, base = y * row, px = (y * width + first) * 3
+      for (let x = first; x <= last; x++, px += 3) {
         const v = a[base + x]
         if (v) { sum += v; a[base + x] = 0 }
+        if (x >= width) continue
         let cover = Math.abs(sum)
         if (evenOdd) { cover %= 2; if (cover > 1) cover = 2 - cover } else if (cover > 1) cover = 1
         if (cover < 0.004) continue
         if (cover > 0.996) { rgb[px] = r; rgb[px + 1] = g; rgb[px + 2] = b; continue }
         rgb[px] += (r - rgb[px]) * cover; rgb[px + 1] += (g - rgb[px + 1]) * cover; rgb[px + 2] += (b - rgb[px + 2]) * cover
       }
-      a[base + width] = 0; a[base + width + 1] = 0
     }
   }
 }

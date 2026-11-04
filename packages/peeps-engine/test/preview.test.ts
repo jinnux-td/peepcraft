@@ -63,6 +63,12 @@ test('off the picture: clipped, and what lies left of it still counts for the ro
   assert.deepEqual(p.at(0, 0), RED); assert.deepEqual(p.at(49, 49), RED); assert.deepEqual(p.at(60, 60), WHITE); assert.deepEqual(p.at(99, 99), BLUE); assert.deepEqual(p.at(79, 99), WHITE)
 })
 
+test('a path wholly off the picture leaves nothing behind for the next one', async () => {
+  const p = await pixels(picture('<rect x="-50" y="10" width="20" height="80" fill="#0000ff"></rect><rect x="150" y="10" width="20" height="80" fill="#0000ff"></rect><rect x="40" y="40" width="20" height="20" fill="#ff0000"></rect>'))
+  for (const [x, y] of [[0, 50], [1, 50], [30, 50], [70, 50], [99, 50]]) assert.deepEqual(p.at(x, y), WHITE, `${x},${y}`)
+  assert.deepEqual(p.at(50, 50), RED)
+})
+
 test('keeps the shape of the picture, and refuses what it cannot read', async () => {
   const wide = await previewPng(picture('', '0 0 1600 900'), 512)
   assert.deepEqual([wide.width, wide.height], [512, 288])
