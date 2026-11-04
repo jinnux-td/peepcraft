@@ -65,6 +65,9 @@ export const creatorCss = `
 .pc-stage{width:100%;max-width:var(--pc-stage-max,680px);min-width:240px;aspect-ratio:1;border-radius:var(--pc-r);overflow:hidden;box-shadow:var(--pc-shadow);border:1px solid var(--pc-line)}
 .pc-stage[data-transparent]{background:repeating-conic-gradient(#d4d4d4 0 25%,#fff 0 50%) 0 0/24px 24px}
 .pc-stage svg{display:block;width:100%;height:100%}
+/* Parts on their way: dimmed only if they take long enough to notice, so a fast change never flickers. */
+@keyframes pc-wait{to{opacity:.55}}
+.pc-stage[data-loading] svg{animation:pc-wait var(--k-dur-base) var(--k-dur-slow) forwards}
 .pc-pill{display:inline-flex;gap:4px;padding:5px;border-radius:999px;background:var(--pc-surface);border:1px solid var(--pc-line);backdrop-filter:blur(var(--pc-blur));box-shadow:var(--pc-shadow)}
 .pc-pill button{border:0;background:transparent;border-radius:999px;padding:8px 18px;text-transform:capitalize}
 .pc-pill button[aria-pressed=true]{background:var(--pc-accent);color:var(--pc-on-accent);font-weight:600}

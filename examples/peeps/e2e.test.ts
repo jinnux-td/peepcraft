@@ -49,6 +49,30 @@ test('the dice of a tab changes that tab only; the toolbar one changes every tab
   await page.close();
 });
 
+test('Shuffle all shows the new peep whole: the hair, fetched ahead for its tab, never shows without its body', async () => {
+  const page = await open();
+  await page.waitForLoadState('networkidle');
+  let fetched = 0;
+  await page.route('**/figures/**', async (r) => { fetched++; await new Promise((d) => setTimeout(d, 300)); await r.continue(); });
+  for (let i = 0; i < 3; i++) {
+    const { bodyless, body } = await page.evaluate(() => new Promise<{ bodyless: number; body: number }>((done) => {
+      const paths = (slot: string) => document.querySelectorAll(`#full [data-testid=pc-stage] [data-slot=${slot}] path`).length;
+      const button = [...document.querySelectorAll<HTMLElement>('#full button')].find((b) => b.textContent === 'Shuffle all')!;
+      const t0 = performance.now(); let bodyless = 0;
+      button.click();
+      const frame = () => {
+        if (!paths('body')) bodyless++;
+        if (performance.now() - t0 < 1000) requestAnimationFrame(frame); else done({ bodyless, body: paths('body') });
+      };
+      requestAnimationFrame(frame);
+    }));
+    assert.equal(bodyless, 0, 'the stage never drew a frame without a body');
+    assert.ok(body > 0, 'the new body arrived');
+  }
+  assert.ok(fetched > 0, 'the shuffles fetched parts, or this test shows nothing');
+  await page.close();
+});
+
 test('undo takes a dice back, redo returns it', async () => {
   const page = await open(); const full = page.locator('#full');
   await full.getByRole('tab', { name: 'Hair', exact: true }).click();

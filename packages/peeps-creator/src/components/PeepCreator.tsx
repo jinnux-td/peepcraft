@@ -77,11 +77,11 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
   useEffect(() => { loadUploads().then(setUploads, () => {}) }, [])
   // The drawings of the figures load after the first paint, so the Figures tab is ready by the time it is opened.
   // The figures (most of the package's weight) are fetched ahead, but only once the stage's own parts are in and the page is idle,
-  // so on a slow line they never compete with what the first screen needs.
+  // so on a slow line they never compete with what the first screen needs. One at a time, or a Shuffle pressed meanwhile queues behind them all.
   useEffect(() => {
     let on = true
     const later = (fn: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 500))
-    pending().then(() => on && later(() => { for (const f of figures) f.load().catch(() => {}) }))
+    pending().then(() => on && later(async () => { for (const f of figures) { if (!on) return; await f.load().catch(() => {}) } }))
     return () => { on = false }
   }, [])
   const theme = themeProp ?? innerTheme
