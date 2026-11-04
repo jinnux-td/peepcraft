@@ -65,6 +65,12 @@ const before: Record<string, Record<string, string>> = {
   'sitting/one-leg-up-2': { top: '#ffffff', pants: '#111111', shoes: '#ffffff' },
   'sitting/wheelchair': { top: '#111111', jacket: '#5aa7a0', pants: '#2c3e5c', shoes: '#111111' },
 }
+/** Pieces whose Figma layer cannot take a colour, redrawn here. Gray Short's "Hair" is only the hairline, a sliver, so the hair
+ *  was the skin's colour whatever was picked; this is the skin silhouette above that hairline (computed once with paper.js
+ *  path booleans, 2026-11-04). */
+const redrawn: Record<string, Record<string, string>> = {
+  'head/gray-short': { hair: "M63.21 126.82C69.19 120.03 77.81 115.97 84.07 109.02C89.66 102.95 94.97 96.73 101.42 91.92C121.23 76.88 155.27 68.87 176.6 65.1C265.52 45.86 333.87 80.44 414.55 109.6C409.91 121.21 403.46 131.79 396.06 141.65C414.29 148.45 408.28 163 395.39 171.97L386.33 171.97L383.23 170.47C382.66 167.55 381.85 163.96 380.71 160.35C379.38 156.09 377.67 151.84 375.4 148.58C373.12 145.31 370.47 143.16 367.43 142.86C364.21 142.54 359.94 143.8 354.92 146.01C350.09 148.19 344.59 151.24 339.09 154.36C338.61 154.65 338.05 154.96 337.57 155.26L337.48 155.28C332.64 158.08 327.71 160.86 323.26 163.01C318.42 165.39 313.87 167.07 310.36 167.07C308.66 167.07 306.1 166.6 302.97 165.82C299.75 165.03 295.86 163.91 291.5 162.57C287.23 161.23 282.4 159.68 277.18 158C271.97 156.32 266.37 154.52 260.59 152.74C237.65 145.58 211.77 138.47 193.57 138.47C175.36 138.47 158.49 145.98 144.65 156.26C130.71 166.53 119.91 179.55 113.74 190.45C107.77 201.07 112.13 213.06 118.29 222.6C121.33 227.34 124.84 231.41 127.49 234.3C128.82 235.74 129.95 236.88 130.81 237.66C131.19 238.05 131.57 238.35 131.76 238.55C131.85 238.66 131.95 238.73 132.04 238.78L132.04 238.86L132.61 239.32L132.13 239.88L132.13 239.95C132.13 239.99 132.04 240.06 131.95 240.15C131.85 240.32 131.66 240.58 131.38 240.91C130.9 241.58 130.14 242.53 129.29 243.73C127.58 246.11 125.31 249.38 122.94 252.98C120.66 256.58 118.39 260.48 116.68 264.13C114.88 267.79 113.84 271.09 113.84 273.51C113.84 278.41 114.78 288.33 115.86 297.41C115.91 297.86 115.97 298.31 116.02 298.75C116.49 303.46 117.06 307.84 117.44 311.05C117.63 312.65 117.82 313.97 118.01 314.87C118.01 315.32 118.1 315.68 118.1 315.92L118.1 316.29C118.1 316.29 118.76 316.19 118.1 316.29L118.29 317.47L117.16 317.1L117.16 317.08L116.97 317.03C116.78 316.98 116.59 316.91 116.3 316.82C115.73 316.64 114.88 316.39 113.93 316.08C111.85 315.48 109 314.66 105.87 313.85C99.97 312.35 92.94 310.86 87.51 310.62C87.01 310.6 86.53 310.59 86.06 310.59C80.66 310.59 75.92 313.61 72.41 316.72C71.73 317.33 71.09 317.95 70.52 318.54C69.64 319.43 68.9 320.27 68.33 320.97C67.86 321.55 67.57 322.04 67.29 322.37C67.29 322.43 67.2 322.49 67.2 322.54C67.1 322.62 67.1 322.7 67.01 322.76L67.01 322.82L66.91 322.85L66.91 322.88L66.72 323.22L64.72 323.22C46.66 278.1 35.13 170.86 63.21 126.82Z" },
+}
 /** Categories whose pieces are offered as colours of their own (a face's eyes and glasses' lenses are its fill). */
 const offered = new Set(['body', 'standing', 'sitting', 'head', 'facialHair', 'mask'])
 /** A piece by what it is where Figma names it vaguely: a beard's "Background" is its grey hair, a mask's "Color" the
@@ -165,7 +171,8 @@ for (const category of new Set(Object.values(folders))) {
   for (const { ident, meta, id, found } of atoms) {
     if (!found) throw new Error(`no symbol for ${category}/${id}`)
     const own = before[`${category}/${id}`] ?? {}
-    const shapes = found.shapes.map((s) => ({ ...s, piece: pieceOf(category, id, s) })).map((s) => ({ ...s, fill: own[s.piece] ?? s.fill }))
+    const fixed = redrawn[`${category}/${id}`] ?? {}
+    const shapes = found.shapes.map((s) => ({ ...s, piece: pieceOf(category, id, s) })).map((s) => ({ ...s, fill: own[s.piece] ?? s.fill, d: fixed[s.piece] ?? s.d }))
     const pieces: Record<string, string> = {}
     if (offered.has(category)) for (const s of shapes) if (s.piece !== 'skin' && s.piece !== 'ink') pieces[s.piece] ??= s.fill
     const list = shapes.map((s) => `  { piece: ${str(s.piece)}, fill: ${str(s.fill)}, ${s.stroke ? `stroke: ${s.stroke}, ` : ''}d: ${str(s.d)} },`).join('\n')
