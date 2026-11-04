@@ -40,6 +40,7 @@ Bash: `eval "$(peep completion bash)"` in `~/.bashrc`.
 | `peep parts [category] [-q words] [--type T]` | the ids a document can name, with the pieces each can colour (`peep parts head -q curly`, `peep parts thing`) |
 | `peep random [--type T] [--head ID] [--color SLOT.PIECE=C] ... [--seed N] [--keep DOC]` | a random document with what you choose fixed (below) |
 | `peep render DOC` | the SVG on stdout |
+| `peep render DOC --show` | a preview drawn in the terminal, 512 px on white, with no browser: kitty, Ghostty, iTerm2 and WezTerm are detected, not through tmux; `PEEP_IMAGES=kitty` or `iterm` says so by hand; with `--save` it does both |
 | `peep render DOC --save [--png] [--scale 1-4]` | saved in this folder under PeepCraft's name; `-o FOLDER/` for another folder, `-o name.svg` for a name of your own |
 | `peep share DOC` / `peep open LINK` | a document to a PeepCraft link, and back |
 

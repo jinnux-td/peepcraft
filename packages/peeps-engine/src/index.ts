@@ -8,6 +8,7 @@ export { initialState, RATIOS, SKIN, swatches, type CreatorState, type Lockable,
 // The document: one picture as versioned JSON, for the CLI, the MCP server and share links.
 export { DOC_VERSION, fromState, LIMITS, resolve, validate, type DocError, type DocMember, type PeepCraftDoc } from './doc.ts'
 export { DocInvalid, load, nameOf, renderSvg } from './render.ts'
+export { previewPng } from './preview.ts'
 export { randomDoc } from './random-doc.ts'
 export { seeded } from './random.ts'
 export { catalog, search, type Catalog, type CatalogItem } from './catalog.ts'

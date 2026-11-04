@@ -248,3 +248,15 @@ test('a photo in a from_image call fits: the body limit grows only when photos a
   const r = await modern('tools/call', big, {}, f)
   assert.equal(r.status, 200); assert.ok(!r.body.result.isError, JSON.stringify(r.body.result.content))
 })
+
+test('render preview: a PNG only when asked; the SVG and the link as before', async () => {
+  const plain = await modern('tools/call', { name: 'render', arguments: { doc: doc('start') } })
+  assert.equal(plain.body.result.content.some((c: any) => c.type === 'image'), false)
+  const r = await modern('tools/call', { name: 'render', arguments: { doc: doc('start'), preview: true } })
+  const image = r.body.result.content.find((c: any) => c.type === 'image')
+  assert.equal(image.mimeType, 'image/png')
+  assert.deepEqual([...Buffer.from(image.data, 'base64').subarray(0, 4)], [137, 80, 78, 71])
+  assert.equal(svgOf(r.body.result), svg('start')); assert.deepEqual(r.body.result.structuredContent, plain.body.result.structuredContent)
+  const aura = await modern('tools/call', { name: 'render', arguments: { doc: doc('aura'), preview: true } })
+  assert.ok(aura.body.result.content.some((c: any) => c.type === 'text' && /leaves out the aura/.test(c.text)), 'says what the preview cannot show')
+})

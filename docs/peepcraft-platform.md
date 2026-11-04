@@ -151,7 +151,7 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 |---|---|---|
 | `describe` | none | types; slots per type; the category a slot draws from; colour pieces; ratios; limits; one example document |
 | `search_parts` | `category?`, `type?`, `query?` (matches id and label) | `[{ category, id, label, pieces }]`; categories include `figure`, `thing`, `extra` |
-| `render` | `doc` | the resolved document, the SVG (text resource, `image/svg+xml`), the share link, the file name. On a bad document: `DocError[]` with `choices`, and no picture. |
+| `render` | `doc`, `preview?` | the resolved document, the SVG (text resource, `image/svg+xml`), the share link, the file name; with `preview: true` also a 512 px PNG (`image` content). On a bad document: `DocError[]` with `choices`, and no picture. |
 | `random` | `type?`, `keep?`, `seed?` | a document (render it with `render`) |
 
 v2's `customize_character` and `validate_character` are gone. The agent changes the document it holds and calls `render`, which validates.
@@ -235,6 +235,6 @@ Phases 1 to 3 help the web app on their own; nothing in them waits on MCP.
 
 ## 12. Open questions
 
-1. **PNG preview in MCP.** Agents see `image/png` content and not SVG. resvg-wasm in the Worker would add its wasm (size not yet measured) to a bundle that already has 0.4 MB of headroom. For now the link and SVG are enough; decide after phase 5 with the measured size.
+1. **PNG preview in MCP: built 2026-11-04, opt-in.** Agents see `image/png` content and not SVG. resvg-wasm was out: MPL-2.0 is outside kit rule 4, and the package is 2.5 MB unpacked against 0.3 MB of headroom in the Worker (its gzip size was not measured). `previewPng` (`peeps-engine/src/preview.ts`) is about 230 lines with no dependency: it reads only what the art uses (`g`, `rect`, `path`, fills, round strokes, transforms). Against Chromium at 512 px, the mean difference is under 1 of 255 on every golden picture except Aura, whose glow (an SVG filter) it leaves out and says so. Time: 5 to 8 ms warm, about 25 ms on a cold isolate, in Node. Workers Free allows 10 ms of CPU a request and the limit is not enforced locally, so `preview` stays opt-in and `from_image` does not draw one (a failure there would waste a paid model call). **Next:** deploy, read `cpuTime` from the Worker's logs, then decide whether it can be the default. A terminal draws the image only if the MCP client passes it on; the Worker cannot write to a terminal, so `peep render --show` does it directly.
 2. **Workers plan.** Stay on Free (figures may have to leave MCP if the art grows) or Paid ($5/month, 10 MB).
 3. **Listing.** Whether to list the MCP server publicly (an MCP registry, the portfolio's projects section) once it is stable.

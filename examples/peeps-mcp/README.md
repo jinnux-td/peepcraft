@@ -8,7 +8,7 @@ An MCP server that lets an AI agent draw PeepCraft pictures: the same document, 
 |---|---|
 | `describe` | the document format: types, slots per type, defaults, ratios, limits, two examples |
 | `search_parts` | ids by category (`head`, `face`, ..., `figure`, `thing`), type and words, with the pieces each can colour |
-| `render` | checks a document and returns the SVG (an embedded `image/svg+xml` resource), a share link that opens it in PeepCraft, and its file name; a bad document comes back as a tool error listing each problem with its path and the choices |
+| `render` | checks a document and returns the SVG (an embedded `image/svg+xml` resource), a share link that opens it in PeepCraft, and its file name; with `preview: true` also a 512 px PNG on white (`image` content, no glow on the Aura extra); a bad document comes back as a tool error listing each problem with its path and the choices |
 | `random` | a random document: only the open parts roll, the rest is PeepCraft's start unless `keep` sets it; a piece colour in `keep` rolls among the items that have it; contradictions are errors (`seed` repeats it) |
 
 Resources: `peepcraft://catalog` (everything a document can name) and `peepcraft://doc-schema` (the document as JSON Schema). Every tool is marked read-only and idempotent.

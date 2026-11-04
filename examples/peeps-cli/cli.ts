@@ -4,7 +4,8 @@
 import { parseArgs } from 'node:util'
 import type { PeepType, Slot } from '@kit/peeps'
 import { NAMES, suggestColours, toColour, type ColourUse } from './colours.ts'
-import { categoryOf, checkImage, decodeShare, DocInvalid, frameSize, LIMITS, match, nameOf, perceiveRequest, PerceiveError, PERCEIVE_MODEL, randomDoc, readPerception, renderSvg, search, shareUrl, SIZE, validate, type ImageInput, type PeepCraftDoc } from '@kit/peeps-engine'
+import { imageSequence, type ImageProtocol } from './show.ts'
+import { categoryOf, checkImage, decodeShare, DocInvalid, frameSize, LIMITS, match, nameOf, perceiveRequest, PerceiveError, PERCEIVE_MODEL, previewPng, randomDoc, readPerception, renderSvg, search, shareUrl, SIZE, validate, type ImageInput, type PeepCraftDoc } from '@kit/peeps-engine'
 
 export interface Io {
   out: (text: string) => void
@@ -17,6 +18,8 @@ export interface Io {
   isDir: (path: string) => Promise<boolean>
   /** Bold headings in help: stdout is a terminal and NO_COLOR is not set. */
   color?: boolean
+  /** How this terminal draws images (terminalImages in show.ts); unset when it cannot, or stdout is not a terminal. */
+  images?: ImageProtocol
   /** SVG to PNG at a pixel size; Chromium in main.ts. */
   png: (svg: string, width: number, height: number) => Promise<Uint8Array>
   /** A file's bytes, for a photo. */
@@ -76,11 +79,12 @@ export const COMMANDS: readonly Command[] = [
     options: [
       { long: 'save', help: 'save in this folder (or -o FOLDER) under PeepCraft\'s name' },
       { long: 'png', help: 'save as PNG rather than SVG' },
+      { long: 'show', help: 'draw a preview here (kitty, Ghostty, iTerm2, WezTerm)' },
       { long: 'output', short: 'o', value: 'PATH', help: 'a folder, or a file of your own ending in .svg or .png', complete: () => 'files' },
       { long: 'scale', value: 'N', help: 'PNG size: 1, 2, 3 or 4 times 1024 px', complete: () => ['1', '2', '3', '4'] },
       help,
     ],
-    examples: ['peep render me.json --save', 'peep render me.json --save --png --scale 2', 'peep render me.json -o out/', 'peep random | peep render - > me.svg'],
+    examples: ['peep render me.json --save', 'peep render me.json --save --png --scale 2', 'peep render me.json -o out/', 'peep render me.json --show', 'peep random | peep render - > me.svg'],
     complete: () => 'files',
   },
   {
@@ -451,8 +455,10 @@ async function render(rest: string[], io: Io): Promise<number> {
     if (!/\.(svg|png)$/i.test(out)) throw new Usage('render: -o is a folder, or a file ending in .svg or .png', 'render')
     if (values.png && !/\.png$/i.test(out)) throw new Usage('render: --png with -o FILE.svg; name the file .png, or give a folder', 'render')
   }
+  if (values.show && !io.images) throw new Usage('render: --show needs a terminal that draws images (kitty, Ghostty, iTerm2, WezTerm), not a pipe or tmux; set PEEP_IMAGES=kitty or iterm if yours does, or --save writes a file', 'render')
   const { svg, state } = await renderSvg(await read(positionals[0], io))
-  if (out === undefined && folder === undefined) { io.out(svg); return 0 }
+  if (values.show) io.out(imageSequence((await previewPng(svg)).png, io.images!))
+  if (out === undefined && folder === undefined) { if (!values.show) io.out(svg); return 0 }
   const kind = folder !== undefined ? (values.png ? 'png' : 'svg') : /\.png$/i.test(out!) ? 'png' : 'svg'
   const file = folder !== undefined ? `${folder.replace(/[\\/]+$/, '') || '.'}/${nameOf(state, kind)}`.replace(/^\.\//, '') : out!
   if (kind === 'svg') { await io.writeFile(file, svg); io.err(`${file}  ${Math.round(svg.length / 1024)} KB`); return 0 }

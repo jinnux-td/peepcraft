@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 import { run, type Io } from './cli.ts'
+import { imageSequence, terminalImages } from './show.ts'
 
 const golden = new URL('../../packages/peeps-engine/test/golden/', import.meta.url)
 
@@ -296,4 +297,28 @@ test('from-image is in the help and completes files', async () => {
   const c = io()
   await run(['__complete', 'from-image', ''], c.it)
   assert.equal(c.out.join(''), '__files__')
+})
+
+test('render --show: the picture in the terminal, and a clear refusal where it cannot be drawn', async () => {
+  const file = { 'me.json': '{ "v": 1 }' }
+  const kitty = io(file); kitty.it.images = 'kitty'
+  assert.equal(await run(['render', 'me.json', '--show'], kitty.it), 0)
+  assert.match(kitty.out.join(''), /^\x1b_Ga=T,f=100,m=1;iVBORw0KGgo/, 'a PNG by the kitty protocol, instead of the SVG')
+  assert.match(kitty.out.join(''), /m=0;[^\x1b]*\x1b\\$/, 'the last piece says it is the last')
+  assert.ok(kitty.out.join('').split('\x1b\\').every((p) => p.length <= 4096 + 32), 'pieces of at most 4096')
+  const saved = io(file); saved.it.images = 'iterm'
+  assert.equal(await run(['render', 'me.json', '--show', '--save'], saved.it), 0)
+  assert.match(saved.out[0], /^\x1b\]1337;File=inline=1;size=\d+:iVBORw0KGgo.*\x07$/s)
+  assert.equal(Object.keys(saved.written).length, 1, 'and the file')
+  const plain = io(file)
+  assert.notEqual(await run(['render', 'me.json', '--show'], plain.it), 0)
+  assert.match(plain.err.join('\n'), /--show needs a terminal that draws images/)
+})
+
+test('terminal detection', () => {
+  assert.equal(terminalImages({ KITTY_WINDOW_ID: '1' }), 'kitty'); assert.equal(terminalImages({ TERM: 'xterm-kitty' }), 'kitty'); assert.equal(terminalImages({ TERM_PROGRAM: 'ghostty' }), 'kitty')
+  assert.equal(terminalImages({ TERM_PROGRAM: 'iTerm.app' }), 'iterm'); assert.equal(terminalImages({ TERM_PROGRAM: 'WezTerm' }), 'iterm')
+  assert.equal(terminalImages({ TERM_PROGRAM: 'Apple_Terminal' }), undefined); assert.equal(terminalImages({ KITTY_WINDOW_ID: '1', TMUX: 'x' }), undefined)
+  assert.equal(terminalImages({ TMUX: 'x', PEEP_IMAGES: 'kitty' }), 'kitty', 'the owner can say')
+  assert.equal(imageSequence(Uint8Array.of(1), 'iterm'), '\x1b]1337;File=inline=1;size=1:AQ==\x07')
 })

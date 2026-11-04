@@ -1,5 +1,5 @@
 // The four tools and the two resources, the same for every protocol version. All read-only: nothing is stored, nothing is fetched.
-import { catalog, checkImage, DocInvalid, IMAGE_TYPES, match, nameOf, perceiveRequest, PerceiveError, randomDoc, readPerception, renderSvg, search, shareUrl, type DocError, type ImageInput, type PeepCraftDoc } from '@kit/peeps-engine'
+import { catalog, checkImage, DocInvalid, IMAGE_TYPES, match, nameOf, perceiveRequest, PerceiveError, previewPng, randomDoc, readPerception, renderSvg, search, shareUrl, type DocError, type ImageInput, type PeepCraftDoc } from '@kit/peeps-engine'
 import type { PeepType } from '@kit/peeps'
 import { docSchema, typeSchema } from './schema.ts'
 
@@ -32,8 +32,8 @@ export const tools = [
   {
     name: 'render',
     title: 'Draw a PeepCraft picture',
-    description: 'Checks the document and draws it as SVG (1024 px on the long side), with a link that opens it in PeepCraft to edit or save as PNG. A bad document returns every problem with its path and the valid choices; fix them and call again.',
-    inputSchema: { type: 'object', additionalProperties: false, required: ['doc'], properties: { doc: docSchema } },
+    description: 'Checks the document and draws it as SVG (1024 px on the long side), with a link that opens it in PeepCraft to edit or save as PNG. Set preview to also get a PNG to look at. A bad document returns every problem with its path and the valid choices; fix them and call again.',
+    inputSchema: { type: 'object', additionalProperties: false, required: ['doc'], properties: { doc: docSchema, preview: { type: 'boolean', description: 'Also return the picture as a 512 px PNG on white, to check how it looks and for clients that show images. For saving, use the link.' } } },
     annotations: { title: 'Render', ...readOnly },
   },
   {
@@ -83,7 +83,7 @@ export function readResource(uri: string): string | undefined {
 }
 
 export interface ToolResult {
-  content: ({ type: 'text'; text: string } | { type: 'resource'; resource: { uri: string; mimeType: string; text: string } })[]
+  content: ({ type: 'text'; text: string } | { type: 'image'; data: string; mimeType: 'image/png' } | { type: 'resource'; resource: { uri: string; mimeType: string; text: string } })[]
   structuredContent?: Record<string, unknown>
   isError?: boolean
 }
@@ -93,6 +93,22 @@ const errors = (list: DocError[]): ToolResult => ({
   content: [{ type: 'text', text: `The document has ${list.length} problem${list.length > 1 ? 's' : ''}; fix them and render again:\n${list.map((e) => `- ${e.path || '(document)'}: ${e.message}${e.choices ? ` (choices: ${e.choices.slice(0, 40).join(', ')}${e.choices.length > 40 ? ', ...' : ''})` : ''}`).join('\n')}` }],
   structuredContent: { errors: list }, isError: true,
 })
+
+/** The picture as an image block; a picture the preview cannot draw still has its SVG and link. */
+async function previewBlock(svg: string): Promise<ToolResult['content']> {
+  try {
+    const { png } = await previewPng(svg)
+    let binary = ''
+    for (let i = 0; i < png.length; i += 0x8000) binary += String.fromCharCode(...png.subarray(i, i + 0x8000))
+    return [
+      ...(svg.includes(' filter="') ? [{ type: 'text' as const, text: 'The preview leaves out the aura\'s glow; the SVG and the link have it.' }] : []),
+      { type: 'image', data: btoa(binary), mimeType: 'image/png' },
+    ]
+  } catch (e) {
+    console.error('preview', e)
+    return [{ type: 'text', text: 'No preview for this picture; the SVG and the link are fine.' }]
+  }
+}
 
 /** Runs a tool. An unknown tool is undefined (a protocol error); a bad argument is a tool result with isError, so the model sees it. */
 export async function callTool(name: string, args: Record<string, unknown>, base: string, perceive?: Perceive): Promise<ToolResult | undefined> {
@@ -120,6 +136,7 @@ export async function callTool(name: string, args: Record<string, unknown>, base
           content: [
             { type: 'text', text: `Drew ${fileName} (${Math.round(svg.length / 1024)} KB SVG).${link ? ` Open or edit it in PeepCraft (and save a PNG there): ${link}` : ' Too big for a share link.'}` },
             { type: 'resource', resource: { uri: `peepcraft://render/${fileName}`, mimeType: 'image/svg+xml', text: svg } },
+            ...(args.preview === true ? await previewBlock(svg) : []),
           ],
           structuredContent: { fileName, shareUrl: link, bytes: svg.length, doc },
         }
