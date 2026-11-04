@@ -1,0 +1,2 @@
+packages/peeps/docs/art/**/*.psd filter=lfs diff=lfs merge=lfs -text
+packages/peeps/docs/art/**/*.png filter=lfs diff=lfs merge=lfs -text

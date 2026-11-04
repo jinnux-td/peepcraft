@@ -17,7 +17,7 @@ figures.map((f) => f.label)        // for a menu
 
 ## Regenerate
 ```
-node scripts/build-figures.ts "<path to>/transhumans art/SVG"    # writes src/figures/<Name>.ts (the paths) and index.ts (names, sizes, loaders); stops on any tag or attribute it does not know
+node scripts/build-figures.ts "../peeps/docs/art/transhumans art/SVG"    # writes src/figures/<Name>.ts (the paths) and index.ts (names, sizes, loaders); stops on any tag or attribute it does not know
 ```
 Path data is copied verbatim. License of the art: CC0; crediting Pablo Stanley is a courtesy, not a duty.
 

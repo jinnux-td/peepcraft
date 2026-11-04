@@ -1,4 +1,4 @@
-// Opt-in: PEEPS_ASSETS="<path to>/Flat Assets" re-derives the layout from the pack's 302 ready-made templates.
+// Opt-in: PEEPS_ASSETS="docs/art/Flat Assets" (the pack, in this package) re-derives the layout from the pack's 302 ready-made templates.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'

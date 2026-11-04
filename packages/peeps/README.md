@@ -30,7 +30,7 @@ new Scene({ width: 4200, height: 3400, background: '#f7d56e' })
 ## Regenerate the atoms
 ```
 node scripts/build-figma.ts <symbols.svg>    # writes src/atoms/<category>/<Name>.ts (the paths) and index.ts (meta, pieces, loaders), keeping ids, labels, sizes and file names
-PEEPS_ASSETS="<path to>/Flat Assets" npm test   # adds the template check
+PEEPS_ASSETS="docs/art/Flat Assets" npm test   # adds the template check (the pack is in docs/art, Git LFS)
 ```
 `<symbols.svg>` is the Figma page Symbols exported whole as SVG with layer names as ids (the Figma MCP's `download_assets` on node `0:808`, format svg). Figma scales that page down to 4096 wide; `scripts/figma-symbols.json` holds the scale, the page origin and where each symbol sits, to put each path back in its symbol's own units. Symbols Figma has beyond the pack are atoms too, after the pack's: Dreads 1 and 2, the doctor and nurse poses (`doctor-nurse-1` to `3`), the eyes-only faces to wear under a mask (`masked-calm`, `masked-cheers`, `masked-smile`) and the masks.
 

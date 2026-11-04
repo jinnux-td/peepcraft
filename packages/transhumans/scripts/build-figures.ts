@@ -1,4 +1,4 @@
-// Converts the Transhumans SVGs into src/figures/<Name>.ts (the paths) plus an index (the names and sizes, each drawing loaded on demand). Usage: node scripts/build-figures.ts "<path to>/transhumans art/SVG"
+// Converts the Transhumans SVGs into src/figures/<Name>.ts (the paths) plus an index (the names and sizes, each drawing loaded on demand). Usage: node scripts/build-figures.ts "../peeps/docs/art/transhumans art/SVG"
 // The files hold only <path d fill="black|white"> in a 1080 canvas, so a path is `{ d, paper }`; anything else stops the build rather than being dropped.
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
