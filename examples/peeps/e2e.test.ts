@@ -738,3 +738,25 @@ test('own key: From photo asks for a key first; a bad one is refused, a good one
   await photoButton.click(); await box.waitFor();   // forgotten: it asks again
   await page.close();
 });
+
+test('the live headers: the policy names the one inline script and Anthropic, and the page runs under it', async () => {
+  const page = await browser.newPage();
+  const res = await page.goto(url);
+  const csp = res!.headers()['content-security-policy'];
+  assert.match(csp, /script-src 'self' 'sha256-[\w+/=]+'/); assert.match(csp, /connect-src 'self' https:\/\/api\.anthropic\.com/); assert.ok(!/script-src[^;]*unsafe-inline/.test(csp));
+  await page.locator('main [data-testid=pc-stage] svg').waitFor();
+  await page.close();
+});
+
+for (const [path, heading] of [['privacy.html', 'Privacy'], ['404.html', 'This page does not exist']] as const) for (const colorScheme of ['light', 'dark'] as const) test(`${path} in ${colorScheme}: says what it is, links home, fits a phone, passes axe`, async () => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, colorScheme });
+  const seen: string[] = []; page.on('console', (m) => m.type() === 'error' && seen.push(m.text())); page.on('pageerror', (e) => seen.push(String(e)));
+  await page.goto(url + path);
+  assert.equal(await page.getByRole('heading', { level: 1 }).textContent(), heading);
+  assert.equal(await page.locator('main a[href="/"]').count(), 1);
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), 0);
+  await page.evaluate(readFileSync(new URL('../../node_modules/axe-core/axe.min.js', import.meta.url), 'utf8'));
+  const bad = await page.evaluate(async () => (await (window as any).axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'] })).violations.map((v: any) => `${v.id}: ${v.nodes[0].html.slice(0, 120)}`));
+  assert.deepEqual(bad, []); assert.deepEqual(seen, []);
+  await page.close();
+});
