@@ -15,7 +15,7 @@ export async function readWithKey(apiKey: string, image: { data: string; mediaTy
     reply = await client.beta.messages.create(perceiveRequest(image) as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming)
   } catch (e) {
     // Said plainly; the provider's own message is left out, as it may repeat request details.
-    if (e instanceof Anthropic.AuthenticationError) throw new Error('Anthropic did not accept your key. Check it, or forget it to use PeepCraft’s.')
+    if (e instanceof Anthropic.AuthenticationError) throw new Error('Anthropic did not accept your key. Check it, or forget it and give another.')
     if (e instanceof Anthropic.RateLimitError) throw new Error('Anthropic is rate limiting your key. Try again in a minute.')
     if (e instanceof Anthropic.APIConnectionError) throw new Error('Anthropic could not be reached. Check the connection and try again.')
     if (e instanceof Anthropic.APIError) throw new Error(`Anthropic refused the photo with your key (${e.status ?? 'no status'}).`)

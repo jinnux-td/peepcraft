@@ -145,7 +145,7 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 
 **How:** Streamable HTTP, stateless, written against `fetch` with no SDK (`examples/peeps-mcp/server.ts`, about 200 lines). It speaks the current revision, 2026-07-28 (no handshake: the version travels in each request's `_meta` and in headers the server checks; `server/discover`), and answers the legacy `initialize` handshake of 2025-03-26 to 2025-11-25 without a session, so today's clients connect too. Each call is self-contained, the agent holds the document, and there are no Durable Objects or sessions.
 
-**Tools:** four, plus `from_image` when the Worker has an `ANTHROPIC_API_KEY`, each with a JSON Schema input derived from `PeepCraftDoc` (`schema.ts`). The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
+**Tools:** four, plus `from_image` only when the Worker has `SERVER_PHOTOS` on and an `ANTHROPIC_API_KEY` (off since 2026-11-05: PeepCraft's From photo uses the visitor's own key, and `peep from-image` the caller's), each with a JSON Schema input derived from `PeepCraftDoc` (`schema.ts`). The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
 
 | Tool | Input | Returns |
 |---|---|---|

@@ -1,5 +1,6 @@
 // The Cloudflare Worker: rate limit (when the binding is there), then the MCP endpoint and the avatars. Deploy: npm run deploy:mcp (from the kit root).
-// With the ANTHROPIC_API_KEY secret set (npx wrangler secret put ANTHROPIC_API_KEY), from_image is listed and reads photos with Claude;
+// Reading photos on this server's key is off (PeepCraft's page uses the visitor's own key): from_image is not listed and POST /photo answers 503.
+// To turn it on: SERVER_PHOTOS "on" in wrangler.jsonc and the ANTHROPIC_API_KEY secret (npx wrangler secret put ANTHROPIC_API_KEY); then
 // each photo also passes PHOTO_LIMITER, a tighter limit, because each one is a paid model call, then the daily cap (PHOTO_CAP, a Durable
 // Object, PHOTO_DAILY_LIMIT photos a UTC day for the whole server). Without the cap binding, photos are not offered: no cap, no spending.
 import Anthropic from '@anthropic-ai/sdk'
@@ -20,6 +21,8 @@ interface Env {
   ALLOWED_ORIGINS?: string
   /** Workers Rate Limiting binding (wrangler.jsonc, "ratelimits"). */
   LIMITER?: Limiter
+  /** "on" lets the server read photos on its own key; anything else, it never uses the key. */
+  SERVER_PHOTOS?: string
   /** A secret: without it, the server does not offer from_image. */
   ANTHROPIC_API_KEY?: string
   /** The model that reads photos; the engine's PERCEIVE_MODEL when unset. */
@@ -35,7 +38,7 @@ interface Env {
 }
 
 function photoReader(env: Env, client: string): Perceive | undefined {
-  if (!env.ANTHROPIC_API_KEY || !env.PHOTO_CAP) return undefined
+  if (env.SERVER_PHOTOS !== 'on' || !env.ANTHROPIC_API_KEY || !env.PHOTO_CAP) return undefined
   const cap = env.PHOTO_CAP, n = Number(env.PHOTO_DAILY_LIMIT ?? DAILY_LIMIT), daily = Number.isFinite(n) ? n : DAILY_LIMIT
   const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 1 })
   return async (request) => {

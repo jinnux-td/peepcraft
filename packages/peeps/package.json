@@ -2,6 +2,7 @@
   "name": "@kit/peeps",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Open Peeps (Pablo Stanley, CC0) as React components: every separate atom (hair, face, body, pose, ...) is a component, and a Peep composes them into one SVG with per-type defaults.",
   "exports": { ".": "./src/index.ts" },

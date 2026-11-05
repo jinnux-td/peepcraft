@@ -12,14 +12,13 @@ const roundPaths = { name: 'round-paths', setup: (b) => b.onLoad({ filter: /\/(a
   contents: readFileSync(path, 'utf8').replace(/ d: "([^"]*)"/g, (_, d) => ` d: "${d.replace(/-?\d+\.\d+/g, (n) => String(+(+n).toFixed(1)))}"`) })) };
 const dist = new URL('dist/', here).pathname;
 const out = await build({ entryPoints: { main: new URL('main.tsx', here).pathname }, bundle: true, minify: true, write: false, format: 'esm', splitting: true, outdir: dist,
-  chunkNames: 'figures/[name]-[hash]', metafile: true, jsx: 'automatic', loader: { '.json': 'json' }, plugins: [roundPaths],
-  // The From photo button's endpoint (the MCP Worker); PHOTO_URL= (empty) builds the page without the button.
-  define: { PHOTO_URL: JSON.stringify(process.env.PHOTO_URL ?? 'https://peepcraft-mcp.jinnux.com/photo') } });
+  chunkNames: 'figures/[name]-[hash]', metafile: true, jsx: 'automatic', loader: { '.json': 'json' }, plugins: [roundPaths] });
 // The entry goes inline into the page (one request before the first paint); its import() of a chunk resolves against the page, next to it.
 const entry = out.outputFiles.find((f) => f.path === dist + 'main.js'), chunks = out.outputFiles.filter((f) => f !== entry);
 rmSync(dist, { recursive: true, force: true }); mkdirSync(dist + 'figures', { recursive: true });
 for (const f of chunks) writeFileSync(f.path, f.contents);
-copyFileSync(new URL('og.png', here), dist + 'og.png');   // the share card: npm run og:peeps
+// The share card and the icons: npm run og:peeps
+for (const f of ['og.png', 'favicon.svg', 'favicon.ico', 'apple-touch-icon.png']) copyFileSync(new URL(f, here), dist + f);
 // The chunks the entry imports up front (esbuild's shared helpers) are hinted in the head, so they download alongside the page, not after it.
 // So are the paths of the parts the first stage draws (the default peep: an atom per part, each its own chunk): without the hint they
 // would only be asked for once the page's script has run.

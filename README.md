@@ -69,3 +69,6 @@ Five packages make the peeps family: three leaves that draw, a headless assembly
 
 ## Candidates not extracted yet
 Graph view (2D/3D engines, needs React), frames and query cache, secret box + SQLite store. Extract when a second app needs one.
+
+## Licence
+MIT, see `LICENSE`. Bundled work keeps its own terms: Open Peeps and Transhumans by Pablo Stanley are CC0 (`packages/peeps/docs/art/README.md`), Inter is SIL OFL 1.1 (`examples/peeps/og/OFL-Inter.txt`).

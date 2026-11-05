@@ -2,6 +2,7 @@
   "name": "@kit/transhumans",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Transhumans (Pablo Stanley, CC0): 38 full-figure black and white illustrations as React components. Black is the ink colour and white the paper colour, so each recolours.",
   "exports": { ".": "./src/index.ts" },

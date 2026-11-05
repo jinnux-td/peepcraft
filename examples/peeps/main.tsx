@@ -19,10 +19,8 @@ async function shared(): Promise<Partial<CreatorState> | undefined> {
 }
 const start = await shared()
 
-// From photo: the PeepCraft MCP Worker reads the photo with Claude (POST /photo, this page's origin only, PeepCraft's key and daily cap).
-// Set at build time (build.mjs, PHOTO_URL); empty, no button. A visitor may give their own Anthropic key instead: kept in this tab only
-// (sessionStorage), and the browser then calls Anthropic itself (own-key.ts, loaded on first use).
-declare const PHOTO_URL: string
+// From photo needs the visitor's own Anthropic key: kept in this tab only (sessionStorage), and the browser calls Anthropic itself (own-key.ts,
+// loaded on first use). PeepCraft's own key is not used: nothing here calls the Worker.
 /** Claude reads an image at up to about 1568 px on its long side; a larger photo only costs more to send. */
 const LONG = 1568
 const OWN_KEY = 'peeps-own-key'
@@ -42,19 +40,6 @@ async function shrink(file: File): Promise<{ data: string; mediaType: string }> 
   canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
   bitmap.close()
   return { data: canvas.toDataURL('image/jpeg', 0.85).split(',')[1], mediaType: 'image/jpeg' }
-}
-
-async function viaWorker(file: File): Promise<Read> {
-  const image = await shrink(file)
-  let res: Response
-  try { res = await fetch(PHOTO_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(image) }) }
-  catch { throw new Error('The photo reader could not be reached. Check the connection and try again.') }
-  const body = await res.json().catch(() => ({})) as { doc?: PeepCraftDoc; people?: string; error?: string; code?: string }
-  if (!res.ok || !body.doc) {
-    const said = body.error ? sentence(body.error) : 'The photo could not be read. Try again later.'
-    throw new Error(body.code === 'quota' ? `${said} Or use your own Anthropic key, from the From photo menu.` : said)
-  }
-  return { doc: body.doc, note: several(body.people) }
 }
 
 async function withOwnKey(key: string, file: File): Promise<Read> {
@@ -91,7 +76,7 @@ function OwnKeyDialog({ open, onClose, onSave }: { open: boolean; onClose: () =>
     <dialog ref={ref} className="k-dialog own-key">
       <form method="dialog" onSubmit={save}>
         <h2 className="k-dialog-title">Use your own Anthropic key</h2>
-        <p>From photo then sends the photo and the key straight to Anthropic, never to PeepCraft, and your Anthropic account pays. The key is kept in this tab only. Give it a key with a spend limit.</p>
+        <p>From photo needs your own key. The photo and the key go straight to Anthropic, never to PeepCraft, and your Anthropic account pays. The key is kept in this tab only. Give it a key with a spend limit.</p>
         <input className="k-input" name="key" type="password" autoComplete="off" spellCheck={false} required placeholder="sk-ant-api03-…"
           aria-label="Anthropic API key" aria-invalid={!!error || undefined} aria-describedby={error ? 'own-key-error' : undefined} />
         {error && <p id="own-key-error" role="alert" data-warn="">{error}</p>}
@@ -110,16 +95,13 @@ function App() {
   const [ownKey, setOwnKey] = useState<string | null>(session.get)
   const keep = (k: string | null) => { setOwnKey(k); session.set(k) }
   const [asking, setAsking] = useState(false)
-  const readPhoto = !PHOTO_URL ? undefined : ownKey ? (file: File) => withOwnKey(ownKey, file) : viaWorker
   const told = (text: string) => toaster().show(text, { kind: 'success' })
-  const actions = ownKey
-    ? [{ label: 'Forget my Anthropic key', onSelect: () => { keep(null); told('Your key is forgotten. Photos go through PeepCraft again.') } }]
-    : [{ label: 'Use my own Anthropic key…', onSelect: () => setAsking(true) }]
+  const actions = ownKey ? [{ label: 'Forget my Anthropic key', onSelect: () => { keep(null); told('Your key is forgotten.') } }] : []
   return (
     <div id="full" data-brand={theme}>
       <PeepCreator theme={theme} onThemeChange={pick} defaultState={start} shareBase={location.origin + location.pathname}
-        readPhoto={readPhoto} photoActions={actions} />
-      <OwnKeyDialog open={asking} onClose={() => setAsking(false)} onSave={(k) => { keep(k); told('Photos are now read with your own Anthropic key, in this tab only.') }} />
+        readPhoto={(file) => withOwnKey(ownKey!, file)} beforePhoto={ownKey ? undefined : () => setAsking(true)} photoActions={actions} />
+      <OwnKeyDialog open={asking} onClose={() => setAsking(false)} onSave={(k) => { keep(k); told('Your own Anthropic key is set, in this tab only. Now choose a photo from the From photo menu.') }} />
       {/* who made it: the creator's portfolio, in the creator's theme */}
       <footer className="made-by"><a href="https://jinnux.com" rel="author">Made by Dat Nguyen</a> · Open Peeps by Pablo Stanley (CC0)</footer>
     </div>

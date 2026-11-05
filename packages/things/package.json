@@ -2,6 +2,7 @@
   "name": "@kit/things",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Things to put in a peeps scene (furniture, plants, small props, pets), drawn in code as ink outlines on paper fills, so each recolours like the peeps.",
   "exports": { ".": "./src/index.ts" },

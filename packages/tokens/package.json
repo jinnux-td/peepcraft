@@ -2,6 +2,7 @@
   "name": "@kit/tokens",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "The kit's design tokens: one set of --k-* CSS variables for light, dark and brand themes, plus generated bridges for Tailwind v4 and shadcn/ui, and tokens.json. No dependencies.",
   "exports": {

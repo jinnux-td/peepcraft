@@ -2,6 +2,7 @@
   "name": "@kit/peeps-creator",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Assembly: a character creator for @kit/peeps (and the whole figures of @kit/transhumans, and the things of @kit/things in a scene) as one React component (<PeepCreator />): part picker with a dice per tab, colours, transparent background, scale/rotate/flip, undo, themes, SVG and PNG export. Drops into a page or a dashboard panel.",
   "exports": { ".": "./src/index.ts" },

@@ -37,12 +37,14 @@ export interface PeepCreatorProps {
   title?: string | false
   /** The page a share link opens (PeepCraft reads the document from its fragment, `#d=...`). With it, a Copy link button sits under Save. */
   shareBase?: string
-  /** Reads a photo into a document (a vision model, on the host's server). With it, a From photo button sits in the toolbar; the result
+  /** Reads a photo into a document (a vision model). With it, a From photo button sits in the toolbar; the result
    *  replaces the peep being built (one undo step), and `note`, when given, is shown under the toolbar. A thrown error's message is shown. */
   readPhoto?: (file: File) => Promise<{ doc: PeepCraftDoc; note?: string }>
   /** More items for the From photo menu (PeepCraft: the visitor's own API key); with them From photo opens a menu, "Choose a photo…"
    *  first. Only with `readPhoto`. */
   photoActions?: PhotoAction[]
+  /** When set, From photo calls this instead of opening the file picker (PeepCraft: no key yet). Only with `readPhoto`. */
+  beforePhoto?: () => void
   className?: string
   style?: CSSProperties
 }
@@ -54,7 +56,7 @@ function download(file: ExportedFile) {
 }
 
 /** The whole creator. It lays itself out by its own width (container queries), so it fits a page or a dashboard panel alike. */
-export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', shareBase, readPhoto, photoActions, className = '', style }: PeepCreatorProps) {
+export function PeepCreator({ defaultState, onChange, onExport = download, theme: themeProp, defaultTheme = 'sunny', onThemeChange, showThemeButton = true, title = 'Peeps', shareBase, readPhoto, photoActions, beforePhoto, className = '', style }: PeepCreatorProps) {
   useInsertionEffect(() => ensureUiStyles(), []) // the kit tokens (the four themes are its brands) and the @kit/ui controls, before the first paint
   const [hist, setHist] = useState<History>(() => startHistory({ ...initialState, ...defaultState }))
   const [tab, setTab] = useState<Tab>('head')
@@ -211,7 +213,7 @@ export function PeepCreator({ defaultState, onChange, onExport = download, theme
         <div className="pc-toolbar" role="toolbar" aria-label="Actions">
           <button className="k-btn" onClick={() => dice('all')} disabled={inScene}><I.shuffle /><span>Shuffle all</span></button>
           {readPhoto && <>
-            <PhotoMenu busy={photoBusy} disabled={inScene} onChoose={() => photoInput.current?.click()} actions={photoActions} />
+            <PhotoMenu busy={photoBusy} disabled={inScene} onChoose={() => (beforePhoto ? beforePhoto() : photoInput.current?.click())} actions={photoActions} />
             <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden aria-label="Photo of a person"
               onChange={(ev) => { fromPhoto(ev.target.files?.[0]); ev.target.value = '' }} />
           </>}

@@ -2,6 +2,7 @@
   "name": "@kit/ui",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "The kit's shared controls: buttons, fields, checkbox, switch, slider, segmented control, tabs, card, chip, dialog, menu, tooltip, toast and the loading / empty / error states, as CSS on native elements plus small DOM helpers. Reads the --k-* tokens of @kit/tokens. No dependencies.",
   "exports": { ".": "./src/index.ts" },

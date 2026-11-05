@@ -640,14 +640,31 @@ test('share links: a link opens its picture, Copy link copies one that opens the
   await page.close(); await other.close();
 });
 
-test('from photo: the photo goes to the reader shrunk, its peep replaces the one being built, errors are shown, undo takes it back', async () => {
+// What Claude answers for a photo; a test's reply changes only what it is about.
+const perception = (over: Record<string, unknown> = {}) => ({
+  person: 'one', type: 'bust', hair: { length: 'long', texture: 'coily', style: 'afro', bangs: false, cover: 'none' },
+  face: { mood: 'happy', eyes: 'open', mouth: 'smile', wrinkles: false }, facialHair: { kind: 'none', size: 'none', moustache: false, styled: 'none' },
+  eyewear: { kind: 'sunglasses', frame: 'none', thick: false, light: false }, mask: 'none',
+  outfit: { top: 'tee', sleeves: 'short', pattern: 'plain', bottom: 'none', pose: 'relaxed', holds: 'none' },
+  colours: { skin: null, hair: null, top: null, bottom: null }, ...over,
+});
+const anthropicAnswers = (attributes: unknown) => ({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({
+  id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'end_turn', stop_sequence: null,
+  content: [{ type: 'text', text: JSON.stringify(attributes) }], usage: { input_tokens: 1, output_tokens: 1 } }) });
+const PREFLIGHT = { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST' } };
+const API_KEY = 'sk-ant-api03-' + 'k'.repeat(40);
+
+test('from photo: the photo goes to Anthropic shrunk, its peep replaces the one being built, errors are shown, undo takes it back', async () => {
   const page = await open(); const full = page.locator('#full');
-  const sent: { data: string; mediaType: string }[] = [];
-  let reply: { status: number; body: unknown } = { status: 200, body: { doc: { v: 1, type: 'bust', parts: { head: 'long-afro', accessories: 'sunglasses' }, skin: '#8d5524' }, reasons: [], people: 'many' } };
-  await page.route('https://peepcraft-mcp.jinnux.com/photo', async (route) => {
-    sent.push(route.request().postDataJSON());
+  await page.evaluate((k) => sessionStorage.setItem('peeps-own-key', k), API_KEY);
+  await page.reload();
+  const sent: { media_type: string; data: string }[] = [];
+  let reply: unknown = perception({ person: 'many' });
+  await page.route('https://api.anthropic.com/**', async (route) => {
+    if (route.request().method() === 'OPTIONS') return route.fulfill(PREFLIGHT);
+    sent.push(route.request().postDataJSON().messages[0].content[0].source);
     await new Promise((r) => setTimeout(r, 150));
-    await route.fulfill({ status: reply.status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(reply.body) });
+    await route.fulfill(anthropicAnswers(reply));
   });
   const button = full.getByRole('button', { name: 'From photo' });
   const note = page.locator('.k-toast');
@@ -665,53 +682,42 @@ test('from photo: the photo goes to the reader shrunk, its peep replaces the one
   await pick();
   assert.equal(await button.getAttribute('aria-busy'), 'true', 'busy while reading');
   await note.filter({ hasText: 'several people' }).waitFor();
-  assert.equal(sent[0].mediaType, 'image/jpeg');
+  assert.equal(sent[0].media_type, 'image/jpeg');
   const size = await page.evaluate(async (d) => { const i = new Image(); i.src = `data:image/jpeg;base64,${d}`; await i.decode(); return [i.naturalWidth, i.naturalHeight]; }, sent[0].data);
   assert.deepEqual(size, [1568, 1045]);
   assert.equal(await button.getAttribute('aria-busy'), null);
   const made = await selection(full);
-  assert.equal(made.Hair, 'Long Afro'); assert.equal(made.Accessories, 'Sunglasses'); assert.equal(made.Type, 'bust');
+  assert.equal(made.Hair, 'Long Afro'); assert.match(made.Accessories, /^Sunglasses/); assert.equal(made.Type, 'bust');
 
-  reply = { status: 422, body: { error: 'no person found in the photo' } };
+  reply = perception({ person: 'none' });
   await pick();
   await note.filter({ hasText: 'No person found in the photo.' }).waitFor();
   assert.equal((await selection(full)).Hair, 'Long Afro', 'an error leaves the peep alone');
 
   await full.getByRole('button', { name: 'Undo' }).click();
   assert.notEqual((await selection(full)).Hair, 'Long Afro', 'one undo step takes the photo peep back');
-  // The browser logs the 422 itself; that one is expected.
-  errors.splice(0, errors.length, ...errors.filter((e) => !/status of 422/.test(e)));
   await page.close();
 });
 
-test('own key: a bad key is refused, a good one reads the photo with Anthropic directly (not PeepCraft), kept in the tab, forgotten on demand', async () => {
+test('own key: From photo asks for a key first; a bad one is refused, a good one reads the photo with Anthropic directly (never the Worker), kept in the tab, forgotten on demand', async () => {
   const page = await open(); const full = page.locator('#full');
   let worker = 0, anthropic: { key: string | null; body: any } | undefined;
-  await page.route('https://peepcraft-mcp.jinnux.com/photo', (r) => { worker++; return r.abort(); });
-  const attributes = {
-    person: 'one', type: 'bust', hair: { length: 'long', texture: 'coily', style: 'afro', bangs: false, cover: 'none' },
-    face: { mood: 'happy', eyes: 'open', mouth: 'smile', wrinkles: false }, facialHair: { kind: 'none', size: 'none', moustache: false, styled: 'none' },
-    eyewear: { kind: 'sunglasses', frame: 'none', thick: false, light: false }, mask: 'none',
-    outfit: { top: 'tee', sleeves: 'short', pattern: 'plain', bottom: 'none', pose: 'relaxed', holds: 'none' },
-    colours: { skin: null, hair: null, top: null, bottom: null },
-  };
+  await page.route('https://peepcraft-mcp.jinnux.com/**', (r) => { worker++; return r.abort(); });
   await page.route('https://api.anthropic.com/**', async (r) => {
-    if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST' } });
+    if (r.request().method() === 'OPTIONS') return r.fulfill(PREFLIGHT);
     const all = await r.request().allHeaders(); anthropic = { key: all['x-api-key'] ?? all.authorization?.replace(/^Bearer /, '') ?? null, body: r.request().postDataJSON() };
-    await r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({
-      id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'end_turn', stop_sequence: null,
-      content: [{ type: 'text', text: JSON.stringify(attributes) }], usage: { input_tokens: 1, output_tokens: 1 } }) });
+    await r.fulfill(anthropicAnswers(perception()));
   });
   const photoButton = full.getByRole('button', { name: 'From photo' });
   const header = await full.locator('.pc-head').boundingBox();
-  await photoButton.click(); await page.getByRole('menuitem', { name: 'Use my own Anthropic key…' }).click();
+  await photoButton.click();   // no key yet: no menu, and no file picker
   const box = page.getByRole('dialog', { name: 'Use your own Anthropic key' });
   const input = box.getByLabel('Anthropic API key');
   await input.fill('sk-ant-oat01-' + 'x'.repeat(40)); await input.press('Enter');
   await box.getByRole('alert').filter({ hasText: 'Claude Code token' }).waitFor();
-  const key = 'sk-ant-api03-' + 'k'.repeat(40);
+  const key = API_KEY;
   await input.fill(key); await box.getByRole('button', { name: 'Use key' }).click();
-  await page.locator('.k-toast', { hasText: 'your own Anthropic key' }).waitFor();
+  await page.locator('.k-toast', { hasText: 'own Anthropic key is set' }).waitFor();
   assert.ok(!(await box.isVisible()), 'the dialog closes');
   assert.deepEqual(await full.locator('.pc-head').boundingBox(), header, 'nothing is added under the toolbar');
   assert.equal(await page.evaluate(() => sessionStorage.getItem('peeps-own-key')), key);
@@ -729,6 +735,6 @@ test('own key: a bad key is refused, a good one reads the photo with Anthropic d
 
   await photoButton.click(); await page.getByRole('menuitem', { name: 'Forget my Anthropic key' }).click();
   assert.equal(await page.evaluate(() => sessionStorage.getItem('peeps-own-key')), null);
-  await photoButton.click(); await page.getByRole('menuitem', { name: 'Use my own Anthropic key…' }).waitFor();
+  await photoButton.click(); await box.waitFor();   // forgotten: it asks again
   await page.close();
 });

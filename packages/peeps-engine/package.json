@@ -2,6 +2,7 @@
   "name": "@kit/peeps-engine",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Assembly, headless: what a PeepCraft picture is (CreatorState, a versioned JSON document) and how it turns into an SVG, with no UI and no DOM: choosing, dice, scenes, validation, rendering to a string. Used by @kit/peeps-creator, the CLI and the MCP server alike.",
   "exports": { ".": "./src/index.ts" },

@@ -10,7 +10,7 @@ An MCP server that lets an AI agent draw PeepCraft pictures: the same document, 
 | `search_parts` | ids by category (`head`, `face`, ..., `figure`, `thing`), type and words, with the pieces each can colour |
 | `render` | checks a document and returns the SVG (an embedded `image/svg+xml` resource), a share link that opens it in PeepCraft, and its file name; with `preview: true` also a 512 px PNG on white (`image` content, no glow on the Aura extra); a bad document comes back as a tool error listing each problem with its path and the choices |
 | `random` | a random document: only the open parts roll, the rest is PeepCraft's start unless `keep` sets it; a piece colour in `keep` rolls among the items that have it; contradictions are errors (`seed` repeats it) |
-| `from_image` | listed only with the `ANTHROPIC_API_KEY` secret: a photo (`url`, or `data` and `mediaType`) to a peep that looks like the person; the model picks trait words, `match` picks the parts; returns the SVG, the link and the reasons |
+| `from_image` | **off:** listed only with `SERVER_PHOTOS` set to `on` and the `ANTHROPIC_API_KEY` secret, because it spends the server's key. Then: a photo (`url`, or `data` and `mediaType`) to a peep that looks like the person; the model picks trait words, `match` picks the parts; returns the SVG, the link and the reasons |
 
 **Avatars:** `GET /avatar/<seed>.svg` draws a peep for an `<img>`, no MCP needed. The same seed gives the same peep (until the art changes); a seed is 1 to 64 characters and is never written into the picture. Browsers and proxies may keep one for a day; the 60-a-minute limit applies.
 
