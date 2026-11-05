@@ -28,7 +28,6 @@
     "deploy:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 deploy -c examples/peeps-mcp/wrangler.jsonc",
     "peep": "node examples/peeps-cli/main.ts",
     "install:peep": "sh examples/peeps-cli/install.sh",
-    "deploy:now": "npm run now:data && node examples/now/build.mjs && npx -y wrangler@4 pages deploy examples/now/dist --project-name kit-now --branch main --commit-dirty=true",
     "deploy:storybook": "npm run build:storybook && npx -y wrangler@4 pages deploy examples/storybook/dist --project-name kit-storybook --branch main --commit-dirty=true",
     "deploy:peeps": "node examples/peeps/build.mjs && npx -y wrangler@4 pages deploy examples/peeps/dist --project-name peepcraft --branch \"$(git branch --show-current)\" --commit-dirty=true"
   },
