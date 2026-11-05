@@ -24,7 +24,7 @@ peep share me.json                         # a link that opens it in PeepCraft
 - A **scene**: `"scene": [{ "type": "standing", "parts": { "head": "afro" } }, { "figure": "runner" }, { "thing": "potted-plant" }]`, with `"frame": { "ratio": "16:9" }`.
 
 ## Install (this computer only)
-`npm run install:peep` (kit root) bundles the command, installs it globally from a local tarball, and sets up zsh tab completion: into oh-my-zsh's `cache/completions` when there is one, else `~/.zfunc` (add it to `fpath`). The package is `private`, so `npm publish` refuses it. Run it again after a change to update; `npm uninstall -g peepcraft` removes it. Under nvm the command belongs to the Node version that was active when it was installed.
+`npm run install:peep` (repository root) bundles the command, installs it globally from a local tarball, and sets up zsh tab completion: into oh-my-zsh's `cache/completions` when there is one, else `~/.zfunc` (add it to `fpath`). The package is `private`, so `npm publish` refuses it. Run it again after a change to update; `npm uninstall -g peepcraft` removes it. Under nvm the command belongs to the Node version that was active when it was installed.
 
 Bash: `eval "$(peep completion bash)"` in `~/.bashrc`.
 

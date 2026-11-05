@@ -7,7 +7,7 @@ The two original packs by Pablo Stanley that the kit's drawings are made from. B
 | `Flat Assets/` | Open Peeps: `Separate Atoms/` (heads, faces, bodies, poses…) and `Templates/` (302 ready-made peeps) | `@kit/peeps` (`PEEPS_ASSETS` for the template check), the portfolio's PeepCraft cover (`portfolio/tools/art.sh`) |
 | `transhumans art/` | Transhumans: `SVG/`, `PNG/`, `PSD/` | `@kit/transhumans` (`scripts/build-figures.ts`), the portfolio's work covers (`portfolio/tools/art.sh`) |
 
-PNG and PSD files are stored with Git LFS (`.gitattributes` at the kit root); run `git lfs install` once on a new machine before cloning.
+PNG and PSD files are stored with Git LFS (`.gitattributes` at the repository root); run `git lfs install` once on a new machine before cloning.
 The packages ship their own generated code, never these files.
 
 ```bash
