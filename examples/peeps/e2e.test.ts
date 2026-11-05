@@ -131,7 +131,8 @@ test('full screen: the creator fills the window edge to edge, the picker on the 
   const page = await open(1440, 900);
   const box = (await page.locator('#full .pc').boundingBox())!;
   assert.deepEqual([box.x, box.y, box.width], [0, 0, 1440], 'no margin around the creator');
-  assert.ok(box.height >= 900, `at least as tall as the window (${box.height})`);
+  const foot = (await page.locator('.made-by').boundingBox())!;
+  assert.equal(box.height + foot.height, 900, 'the creator and the footer fill the window exactly');
   const stage = (await page.locator('#full [data-testid=pc-stage]').boundingBox())!;
   const picker = (await page.locator('#full [aria-label=Parts]').boundingBox())!;
   assert.ok(picker.x < stage.x, 'on a wide page the picker is on the left');
@@ -314,6 +315,7 @@ test('a short window: the side panel of the scene fits, with nothing cut off ins
   assert.ok(fit.bottom + 16 <= fit.inner + 1, `the panel and the creator's edge are in view (${fit.bottom} of ${fit.inner})`);
   assert.ok(fit.all <= fit.shown + 1, `the panel itself does not scroll; the list does (${fit.all} > ${fit.shown})`);
   assert.ok(await full.getByRole('button', { name: 'Save as PNG' }).isVisible());
+  assert.equal(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), 0, 'the page itself does not scroll, even with twelve members');
   await page.close();
 });
 
@@ -759,4 +761,16 @@ for (const [path, heading] of [['privacy.html', 'Privacy'], ['404.html', 'This p
   const bad = await page.evaluate(async () => (await (window as any).axe.run(document, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'] })).violations.map((v: any) => `${v.id}: ${v.nodes[0].html.slice(0, 120)}`));
   assert.deepEqual(bad, []); assert.deepEqual(seen, []);
   await page.close();
+});
+
+test('on a laptop or larger the whole page fits the window, footer included, on every tab; a stacked layout may scroll', async () => {
+  for (const [width, height] of [[1920, 1080], [1440, 900], [1366, 768], [1280, 720]]) {
+    const page = await open(width, height); const full = page.locator('#full');
+    for (const tab of ['Hair', 'Type', 'Figures', 'Scene']) {
+      await full.getByRole('tab', { name: tab, exact: true }).click();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), 0, `${width}x${height} ${tab}`);
+    }
+    assert.ok(await page.locator('.made-by').evaluate((f) => f.getBoundingClientRect().bottom <= innerHeight), 'the footer is in view');
+    await page.close();
+  }
 });
