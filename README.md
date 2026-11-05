@@ -4,7 +4,7 @@ Draw [Open Peeps](https://www.openpeeps.com) characters and scenes, in the brows
 
 **Try it: [peepcraft.jinnux.com](https://peepcraft.jinnux.com)**
 
-<a href="https://peepcraft.jinnux.com"><img src="peepcraft.png" width="100%" alt="Six hand-drawn characters on coloured cards, each made with PeepCraft."></a>
+<a href="https://peepcraft.jinnux.com"><img src="peepcraft.png" width="100%" alt="The PeepCraft editor: parts on the left, a hand-drawn character on the stage, colours and export on the right."></a>
 
 | Way in | What it is | Where |
 |---|---|---|
