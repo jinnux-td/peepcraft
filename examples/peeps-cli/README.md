@@ -64,5 +64,13 @@ PNG is drawn by the Chrome or Edge on your computer (through `playwright-core`),
 
 Art: [Open Peeps](https://www.openpeeps.com/) and Transhumans by Pablo Stanley, both CC0.
 
-## In the kit repo
+## From a photo
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # your own key, from platform.claude.com/settings/keys; your account pays
+peep from-image me.jpg > me.json      # a document that looks like the person; nothing is kept
+peep from-image me.jpg | peep render - --save
+```
+Create the key for one workspace: Anthropic refuses a key with no workspace unless each request names one, and `peep` does not. The photo goes straight to Anthropic, never to PeepCraft.
+
+## In this repository
 `npm run peep -- <command>` runs it from source. `cli.ts` is the command: one table (`COMMANDS`) drives the help, the guesses and the completion, and `run(argv, io)` is tested in memory by `cli.test.ts`. `main.ts` wires it to the process, `png.ts` drives the browser, `build.mjs` bundles everything but `playwright-core` into `dist/peep.js`, `install.sh` installs it.

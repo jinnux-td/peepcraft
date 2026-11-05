@@ -68,4 +68,4 @@ Five packages make the peeps family: three leaves that draw, a headless assembly
 `@kit/ui` and `@kit/tokens` are copies from a private repository, `jinnux-td/kit`; `kit.lock.json` records the version, commit and content hash of each, and `npm test` fails if a copy has been edited. The other five packages live here, and git history is their record.
 
 ## Licence
-MIT, see `LICENSE`. Bundled work keeps its own terms: Open Peeps and Transhumans by Pablo Stanley are CC0 (`packages/peeps/docs/art/README.md`), Inter is SIL OFL 1.1 (`examples/peeps/og/OFL-Inter.txt`).
+MIT, see `LICENSE`. Bundled work keeps its own terms: Open Peeps and Transhumans by Pablo Stanley are CC0 (`packages/peeps/docs/art/README.md`), Inter is SIL OFL 1.1 (`examples/peeps/og/OFL-Inter.txt`). `axe-core` (MPL-2.0) is used only by the browser tests and is not in anything shipped.

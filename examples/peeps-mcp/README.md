@@ -30,7 +30,7 @@ npm run deploy:mcp     # build, then wrangler deploy (needs a Cloudflare login; 
 ```
 `wrangler.jsonc` sets the custom domain `peepcraft-mcp.jinnux.com` (one level under the zone, so Universal SSL covers it), `PEEPCRAFT_URL` (the page share links open), and a rate limit of 60 requests a minute per address (the `LIMITER` binding; over it, `429`).
 
-**Bot protection:** the `jinnux.com` zone challenges unknown clients (`403`, `cf-mitigated: challenge`), which MCP clients cannot pass, so they report `auth_required`. Either exempt `peepcraft-mcp.jinnux.com` (a WAF Skip rule; Bot Fight Mode on the Free plan applies to the whole zone) or use the `workers.dev` address, which `workers_dev: true` keeps on and which the zone's settings do not reach.
+**Bot protection:** the zone's Bot Fight Mode was turned off on 2026-11-05, so clients reach the custom domain. It used to answer `403`, which MCP clients report as `auth_required`, and on the Free plan it applies to the whole zone with no way to exempt one host. If that comes back, the `workers.dev` address still works: `workers_dev: true` keeps it on, and the zone's settings do not reach it.
 
 **Listing:** `server.json` is the entry for the official MCP Registry, with the `workers.dev` address because clients must reach it whatever the zone's settings are. To publish: `brew install mcp-publisher`, `mcp-publisher login github` (as `jinnux-td`, which owns the `io.github.jinnux-td/*` names), then `mcp-publisher publish` from this folder.
 
