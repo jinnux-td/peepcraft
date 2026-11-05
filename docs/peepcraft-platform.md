@@ -1,6 +1,6 @@
 # PeepCraft beyond the browser: engine, CLI, MCP
 
-**Status:** built, phases 1–5 (MCP not deployed) · **Version:** 3 · **Date:** 2026-11-02
+**Status:** built, phases 1–5; PeepCraft and the MCP Worker live since 2026-11-03 · **Version:** 3 · **Date:** 2026-11-02
 **Replaces:** the v2.0 draft of 2026-10-31 (`packages/peeps/PeepCraft MCP.md`, deleted 2026-11-02). That draft planned a PNG-layer engine; the kit already has a vector one, so this version builds on the code that exists.
 
 ## 1. Goal
@@ -87,7 +87,7 @@ flowchart TB
   WEB["examples/peeps<br/>PeepCraft web"] --> CR["@kit/peeps-creator<br/>React UI"]
   CLI["examples/peeps-cli<br/>Node"] --> EN
   MCP["examples/peeps-mcp<br/>Cloudflare Worker"] --> EN
-  CR --> EN["@kit/peeps-engine<br/>doc · validate · load · render · share · random"]
+  CR --> EN["@kit/peeps-engine<br/>doc · validate · load · render · share · random · match · perceive · preview"]
   EN --> P["@kit/peeps"]
   EN --> T["@kit/transhumans"]
   EN --> TH["@kit/things"]
@@ -145,7 +145,7 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 
 **How:** Streamable HTTP, stateless, written against `fetch` with no SDK (`examples/peeps-mcp/server.ts`, about 200 lines). It speaks the current revision, 2026-07-28 (no handshake: the version travels in each request's `_meta` and in headers the server checks; `server/discover`), and answers the legacy `initialize` handshake of 2025-03-26 to 2025-11-25 without a session, so today's clients connect too. Each call is self-contained, the agent holds the document, and there are no Durable Objects or sessions.
 
-**Tools:** four, each with a JSON Schema input derived from `PeepCraftDoc` (`schema.ts`). The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
+**Tools:** four, plus `from_image` when the Worker has an `ANTHROPIC_API_KEY`, each with a JSON Schema input derived from `PeepCraftDoc` (`schema.ts`). The schemas are what make an agent use the tools well, so they carry descriptions and enums (types, slots, ratios).
 
 | Tool | Input | Returns |
 |---|---|---|
@@ -153,6 +153,7 @@ https://peepcraft.jinnux.com/#d=<base64url(deflate-raw(JSON))>
 | `search_parts` | `category?`, `type?`, `query?` (matches id and label) | `[{ category, id, label, pieces }]`; categories include `figure`, `thing`, `extra` |
 | `render` | `doc`, `preview?` | the resolved document, the SVG (text resource, `image/svg+xml`), the share link, the file name; with `preview: true` also a 512 px PNG (`image` content). On a bad document: `DocError[]` with `choices`, and no picture. |
 | `random` | `type?`, `keep?`, `seed?` | a document (render it with `render`) |
+| `from_image` | `url`, or `data` and `mediaType`; `seed?` | a peep that looks like the person in the photo: the model picks trait words, `match` picks the parts; SVG, link and the reasons |
 
 v2's `customize_character` and `validate_character` are gone. The agent changes the document it holds and calls `render`, which validates.
 
@@ -165,7 +166,7 @@ v2's `customize_character` and `validate_character` are gone. The agent changes 
 3. `render { doc }`. On a bad id, take the `choices` from the error and render again.
 4. Give the user the share link (they open it in PeepCraft and edit), and the SVG.
 
-**Bundle:** all art is bundled into the Worker. The built Worker is 2.44 MB gzipped (measured 2026-11-02; the art paths are not rounded as on the web, so the output stays the golden SVGs). Workers Free allows 3 MB compressed and Paid 10 MB, so there is 0.4 MB of headroom on Free. A budget check in the build fails above 2.8 MB; past it, either move to Paid or leave figures out of MCP. Also check startup time after the first deploy.
+**Bundle:** all art is bundled into the Worker. The built Worker is 2.52 MB gzipped (measured 2026-11-05; the art paths are not rounded as on the web, so the output stays the golden SVGs). Workers Free allows 3 MB compressed and Paid 10 MB, so there is 0.3 MB of headroom under the build's budget. A budget check in the build fails above 2.8 MB; past it, either move to Paid or leave figures out of MCP. Also check startup time after the first deploy.
 
 **Security:**
 
@@ -184,9 +185,11 @@ npm run peep -- render doc.json --save [--png]       # named as PeepCraft's Save
 npm run peep -- render - -o peep.svg < doc.json      # document on stdin
 npm run peep -- share doc.json                       # prints the link
 npm run peep -- open 'https://peepcraft.jinnux.com/#d=...' > doc.json
+npm run peep -- render doc.json --show              # a preview in the terminal (kitty, Ghostty, iTerm2, WezTerm)
+npm run peep -- from-image me.jpg > doc.json         # a document from a photo; sends the photo to Claude
 ```
 
-- It runs from the kit repo with all art local, so there is no network, no cache and no download step.
+- It runs from the kit repo with all art local, so there is no network, no cache and no download step, except `from-image`.
 - PNG is drawn in headless Chromium through `playwright-core` (Apache-2.0), already the kit's browser driver, the same way the web app draws it on a canvas. `@resvg/resvg-js` was the first plan, but it is MPL-2.0 and kit rule 4 allows MIT, Apache and BSD only. SVG needs no browser.
 - It also takes a share link wherever it takes a document, and it stops quietly when piped into a reader that closes early (`| head`).
 - Errors are the engine's `DocError`s, one per line: `parts.head: no head atom "afroo"; known: afro, bun, ...`. A bad document exits with 1.
