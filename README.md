@@ -4,6 +4,8 @@ Draw [Open Peeps](https://www.openpeeps.com) characters and scenes, in the brows
 
 **Try it: [peepcraft.jinnux.com](https://peepcraft.jinnux.com)**
 
+<a href="https://peepcraft.jinnux.com"><img src="peepcraft.png" width="100%" alt="Six hand-drawn characters on coloured cards, each made with PeepCraft."></a>
+
 | Way in | What it is | Where |
 |---|---|---|
 | Web app | The editor: parts, colours, scenes, undo, SVG and PNG export, share links | [`examples/peeps`](examples/peeps) |
