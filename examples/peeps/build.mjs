@@ -17,8 +17,8 @@ const out = await build({ entryPoints: { main: new URL('main.tsx', here).pathnam
 const entry = out.outputFiles.find((f) => f.path === dist + 'main.js'), chunks = out.outputFiles.filter((f) => f !== entry);
 rmSync(dist, { recursive: true, force: true }); mkdirSync(dist + 'figures', { recursive: true });
 for (const f of chunks) writeFileSync(f.path, f.contents);
-// The share card and the icons: npm run og:peeps
-for (const f of ['og.png', 'favicon.svg', 'favicon.ico', 'apple-touch-icon.png']) copyFileSync(new URL(f, here), dist + f);
+// The share card and the icons (npm run og:peeps), and what search engines read.
+for (const f of ['og.png', 'favicon.svg', 'favicon.ico', 'apple-touch-icon.png', 'robots.txt', 'sitemap.xml']) copyFileSync(new URL(f, here), dist + f);
 // The chunks the entry imports up front (esbuild's shared helpers) are hinted in the head, so they download alongside the page, not after it.
 // So are the paths of the parts the first stage draws (the default peep: an atom per part, each its own chunk): without the hint they
 // would only be asked for once the page's script has run.

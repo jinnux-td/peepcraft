@@ -99,7 +99,7 @@ function App() {
   const actions = ownKey ? [{ label: 'Forget my Anthropic key', onSelect: () => { keep(null); told('Your key is forgotten.') } }] : []
   return (
     <div id="full" data-brand={theme}>
-      <PeepCreator theme={theme} onThemeChange={pick} defaultState={start} shareBase={location.origin + location.pathname}
+      <PeepCreator title="PeepCraft" theme={theme} onThemeChange={pick} defaultState={start} shareBase={location.origin + location.pathname}
         readPhoto={(file) => withOwnKey(ownKey!, file)} beforePhoto={ownKey ? undefined : () => setAsking(true)} photoActions={actions} />
       <OwnKeyDialog open={asking} onClose={() => setAsking(false)} onSave={(k) => { keep(k); told('Your own Anthropic key is set, in this tab only. Now choose a photo from the From photo menu.') }} />
       {/* who made it: the creator's portfolio, in the creator's theme */}
