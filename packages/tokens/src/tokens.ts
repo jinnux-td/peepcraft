@@ -106,7 +106,7 @@ export const BRANDS: Record<string, Brand> = {
     },
     scales: { 'font-sans': rounded, 'font-display': rounded, 'radius-md': '12px', 'radius-lg': '24px', 'radius-xl': '32px', 'shadow-lg': '0 18px 50px #2a1f6a55', blur: '16px' },
   },
-  // @kit/shell's dashboard palette: cool, with a green accent, in both modes. Every colour is solid, so it can follow the mode with light-dark().
+  // A dashboard palette: cool, with a green accent, in both modes. Every colour is solid, so it can follow the mode with light-dark().
   dashboard: {
     light: {
       page: '#e9eff5', 'page-fill': '#e9eff5', surface: '#ffffff', 'surface-2': '#f1f5f9', popover: '#ffffff', text: '#1b2733', muted: '#5a6b7b',

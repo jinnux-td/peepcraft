@@ -1,4 +1,4 @@
-// The performance budget of a built site (~/services/docs/ui/performance.md), checked in a real browser on a mid-range phone: 4× slower
+// The performance budget of a built site , checked in a real browser on a mid-range phone: 4× slower
 // CPU, slow 4G (1.6 Mbps down, 150 ms), the files served gzip-compressed as a static host serves them. Three runs, the median of each
 // measure; exits with 1 when one is over its budget. Run it after building.
 //   node scripts/budget.ts --dist <folder> --kind content|tool [--page /] [--tap "<css selector>"]

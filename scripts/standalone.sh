@@ -1,6 +1,6 @@
 #!/bin/sh
 # Proves each package works outside this repo: copy it (and the @kit packages it names in its dependencies or devDependencies) to a temp folder,
-# install, typecheck, test. A leaf package must work alone; an assembly (@kit/map-view) works with the leaves it lists. Usage: scripts/standalone.sh [package ...]
+# install, typecheck, test. A leaf package must work alone; an assembly (@kit/peeps-creator) works with the leaves it lists. Usage: scripts/standalone.sh [package ...]
 set -e
 root=$(cd "$(dirname "$0")/.." && pwd)
 pkgs=${*:-$(ls "$root/packages")}

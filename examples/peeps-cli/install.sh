@@ -1,6 +1,6 @@
 #!/bin/sh
 # Installs the peep command on this computer only (the package is private: npm will not publish it), with tab completion.
-#   npm run install:peep        (from the kit root)
+#   npm run install:peep        (from the repository root)
 #   npm uninstall -g peepcraft  (to remove it; rm the completion file below too)
 set -e
 cd "$(dirname "$0")"

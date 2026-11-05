@@ -5,6 +5,10 @@
   "description": "Draw Open Peeps characters and scenes from a JSON document, and get the SVG and an editable link.",
   "version": "1.0.0",
   "websiteUrl": "https://peepcraft.jinnux.com/",
+  "repository": {
+    "url": "https://github.com/jinnux-td/peepcraft",
+    "source": "github"
+  },
   "remotes": [
     {
       "type": "streamable-http",

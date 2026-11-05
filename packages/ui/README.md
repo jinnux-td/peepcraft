@@ -1,6 +1,6 @@
 # @kit/ui
 
-The kit's shared controls (layer 2 of `~/services/docs/ui`): **CSS on native elements**, plus a few DOM helpers for what the browser
+The shared controls: **CSS on native elements**, plus a few DOM helpers for what the browser
 doesn't do. **Depends only on `@kit/tokens`** (`file:../tokens`, so a host that links kit packages by path never asks the npm registry). Every value is a kit token (`--k-*`, `@kit/tokens`), so light, dark and every brand theme work
 without extra CSS. The same classes work in plain DOM and in React (`className`).
 

@@ -1,7 +1,7 @@
 # @kit/tokens
 
 The kit's design tokens: **one set of `--k-*` CSS variables** for light, dark and brand themes, and the files generated from
-them. **No dependencies.** Layer 1 of the UI system (`~/services/docs/ui/tokens.md`); every other layer reads these names.
+them. **No dependencies.** Every other layer reads these names.
 
 ```
 src/tokens.ts ──npm run build──► css/tokens.css       --k-* for light, dark, each brand

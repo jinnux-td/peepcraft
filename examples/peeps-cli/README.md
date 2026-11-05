@@ -3,7 +3,7 @@
 Draw [Open Peeps](https://www.openpeeps.com/) characters and scenes from the terminal. One small JSON document describes a picture; `peep` checks it, draws it as SVG or PNG, and gives a link that opens it in [PeepCraft](https://peepcraft.jinnux.com/) to keep editing. It draws exactly what PeepCraft draws, and names files the way its Save button does.
 
 ```bash
-cd ~/services/kit && npm run install:peep   # this computer only; Node 22 or later
+npm run install:peep   # this computer only; Node 22 or later
 
 peep random --seed 7 > me.json             # a random peep (the same seed, the same peep)
 peep render me.json --save                 # ./standing-shaved-1-hectic-goatee-2-glasses-4-doctor-nurse-1.svg

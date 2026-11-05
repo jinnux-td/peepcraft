@@ -1,7 +1,7 @@
-// Rule 4 of ~/services/docs/ui/rules.md: no raw colour in a package's stylesheet outside @kit/tokens. Every stylesheet a package injects
+// No raw colour in a package's stylesheet outside @kit/tokens. Every stylesheet a package injects
 // (a template string assigned to a name with "css" in it) is found here, not listed, so a new package or a new rule is checked too.
 // Allowed: a colour as the last fallback of var(--token, …) (a package still draws alone, phase 2), and the exceptions below, each with
-// its reason. Colours of artwork and data (a heat map's ramp, a map's basemap, the peeps' ink) live outside stylesheets and are not checked.
+// its reason. Colours of artwork and data (the peeps' ink) live outside stylesheets and are not checked.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -12,7 +12,6 @@ const RAW = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|lab|lch)\([^)]*\)|(?<
 
 // [file, what may stay, why]
 const EXCEPTIONS: [string, RegExp, string][] = [
-  ['packages/folio/src/css.ts', /rgb\(0 0 0\/[^)]*\)\)?/g, 'the scrim and text shadow over a photo: black behind white text, the same in every theme'],
   ['packages/peeps-creator/src/styles.ts', /repeating-conic-gradient\(#d4d4d4 0 25%,#fff 0 50%\)/g, 'the checkerboard that shows a transparent background, as image editors draw it'],
   ['packages/peeps-creator/src/styles.ts', /\.pc-swatch\.pc-clear\{[^}]*\}/g, 'the "no colour" swatch: a red slash on the checkerboard'],
   ['packages/peeps-creator/src/styles.ts', /\.pc-selected\{[^}]*\}|\.pc-member-x[^{]*\{[^}]*\}|\.pc-remove[^{]*\{[^}]*\}|\.pc-handle[^{]*\{[^}]*\}/g,
@@ -62,8 +61,7 @@ test('the guard itself: a raw colour is caught, a fallback inside var() is allow
 
 test('every package stylesheet is found (the guard checks something)', () => {
   const files = new Set(stylesheets().map((s) => s.file));
-  for (const f of ['packages/ui/src/css.ts', 'packages/shell/src/css.ts', 'packages/folio/src/css.ts', 'packages/heatmap/src/css.ts', 'packages/panel/src/css.ts',
-    'packages/data-layer/src/panel/css.ts', 'packages/peeps-creator/src/styles.ts', 'packages/map-view/src/view.ts', 'packages/worldmap/src/renderer.ts'])
+  for (const f of ['packages/ui/src/css.ts', 'packages/peeps-creator/src/styles.ts'])
     assert.ok(files.has(f), f);
 });
 
