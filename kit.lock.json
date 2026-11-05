@@ -1,0 +1,19 @@
+{
+  "source": "https://github.com/jinnux-td/kit",
+  "packages": {
+    "@kit/tokens": {
+      "version": "1.0.0",
+      "tag": "@kit/tokens@1.0.0",
+      "commit": "373acf307fe1320d212a06efe0b5d5c90c479d48",
+      "hash": "sha256:3ce7cd6ccc37d927919ae2a058cddd2638175c4b7fec7460a02d2e5027fda907",
+      "path": "packages/tokens"
+    },
+    "@kit/ui": {
+      "version": "1.0.0",
+      "tag": "@kit/ui@1.0.0",
+      "commit": "373acf307fe1320d212a06efe0b5d5c90c479d48",
+      "hash": "sha256:392f3c86023b04fd1245d19cf3513220a21c11c1c9bac26e62938ce6f909642b",
+      "path": "packages/ui"
+    }
+  }
+}

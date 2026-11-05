@@ -64,5 +64,8 @@ Five packages make the peeps family: three leaves that draw, a headless assembly
 - **Try it:** `npm run example:peeps`, then open http://127.0.0.1:4183. Browser tests: `examples/peeps/e2e.test.ts`.
 - **Known gaps:** the faces "Smiling" and "Happy Grin" appear in templates but have no atom. A `Peep`'s viewBox is its canvas, not its drawn bounds, so the window on each look comes from a table measured once in Chromium (`packages/peeps-engine/src/boxes.ts`, `npm run measure:peeps`). Each atom's paths load on demand (its own chunk), so a page fetches only the parts it draws; await `peep.load()` or `pending()` before rendering to a string.
 
+## Versions
+`@kit/ui` and `@kit/tokens` are copies from a private repository, `jinnux-td/kit`; `kit.lock.json` records the version, commit and content hash of each, and `npm test` fails if a copy has been edited. The other five packages live here, and git history is their record.
+
 ## Licence
 MIT, see `LICENSE`. Bundled work keeps its own terms: Open Peeps and Transhumans by Pablo Stanley are CC0 (`packages/peeps/docs/art/README.md`), Inter is SIL OFL 1.1 (`examples/peeps/og/OFL-Inter.txt`).

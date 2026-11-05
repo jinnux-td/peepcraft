@@ -8,7 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "npm test --workspaces && node --test examples/*.test.ts examples/peeps-cli/*.test.ts examples/peeps-mcp/*.test.ts",
+    "test": "node scripts/kit-lock.ts --check && npm test --workspaces && node --test examples/*.test.ts examples/peeps-cli/*.test.ts examples/peeps-mcp/*.test.ts",
+    "kit:lock": "node scripts/kit-lock.ts",
+    "kit:verify": "node scripts/kit-lock.ts --verify",
     "typecheck": "npm run typecheck --workspaces && tsc -p examples",
     "e2e": "node --test examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts examples/ui/e2e.test.ts",
     "og:peeps": "node examples/peeps/og.ts",
@@ -33,5 +35,11 @@
     "esbuild": "0.28.2",
     "playwright-core": "1.64.1",
     "typescript": "5.9.3"
+  },
+  "kit": {
+    "vendored": [
+      "ui",
+      "tokens"
+    ]
   }
 }
