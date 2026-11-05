@@ -7,12 +7,15 @@
     "packages/*"
   ],
   "scripts": {
-    "test": "npm test --workspaces && node --test examples/*.test.ts examples/peeps-cli/*.test.ts examples/peeps-mcp/*.test.ts",
+    "test": "npm test --workspaces && node --test examples/*.test.ts examples/peeps-cli/*.test.ts examples/peeps-mcp/*.test.ts examples/now/model.test.ts",
     "typecheck": "npm run typecheck --workspaces && tsc -p examples",
-    "e2e": "node --test examples/world/e2e.test.ts examples/panel/e2e.test.ts examples/dashboard/e2e.test.ts examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts examples/ui/e2e.test.ts examples/carousel/e2e.test.ts examples/storybook/e2e.test.ts",
+    "e2e": "node --test examples/world/e2e.test.ts examples/panel/e2e.test.ts examples/dashboard/e2e.test.ts examples/peeps/e2e.test.ts examples/tokens/e2e.test.ts examples/ui/e2e.test.ts examples/carousel/e2e.test.ts examples/now/e2e.test.ts examples/storybook/e2e.test.ts",
     "example": "node examples/world/build.mjs && node examples/world/serve.ts",
     "example:panel": "node examples/panel/build.mjs && node examples/panel/serve.ts",
     "example:dashboard": "node examples/dashboard/build.mjs && node examples/dashboard/serve.ts",
+    "example:now": "node examples/now/build.mjs && node examples/now/serve.ts",
+    "og:peeps": "node examples/peeps/og.ts",
+    "now:data": "node examples/now/fetch.ts",
     "example:peeps": "node examples/peeps/build.mjs && node examples/peeps/serve.ts",
     "example:ui": "node examples/ui/build.mjs && node examples/ui/serve.ts",
     "storybook": "storybook dev -p 6006 -c examples/storybook/config --no-version-updates",
@@ -24,6 +27,8 @@
     "deploy:mcp": "node examples/peeps-mcp/build.mjs && npx wrangler@4 deploy -c examples/peeps-mcp/wrangler.jsonc",
     "peep": "node examples/peeps-cli/main.ts",
     "install:peep": "sh examples/peeps-cli/install.sh",
+    "deploy:now": "npm run now:data && node examples/now/build.mjs && npx -y wrangler@4 pages deploy examples/now/dist --project-name kit-now --branch main --commit-dirty=true",
+    "deploy:storybook": "npm run build:storybook && npx -y wrangler@4 pages deploy examples/storybook/dist --project-name kit-storybook --branch main --commit-dirty=true",
     "deploy:peeps": "node examples/peeps/build.mjs && npx -y wrangler@4 pages deploy examples/peeps/dist --project-name peepcraft --branch \"$(git branch --show-current)\" --commit-dirty=true"
   },
   "engines": {

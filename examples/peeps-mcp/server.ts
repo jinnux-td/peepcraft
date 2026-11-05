@@ -3,6 +3,7 @@
 //     the body and are checked; server/discover; results carry resultType and the server's identity.
 //   legacy (2025-03-26 to 2025-11-25): an initialize handshake, answered without a session (none is needed: nothing is kept between calls).
 // One JSON response per request; no SSE stream, no GET stream, no sessions.
+import { avatar } from './avatar.ts'
 import { photo, PHOTO_BODY } from './photo.ts'
 import { callTool, readResource, resources, toolsFor, type Perceive } from './tools.ts'
 
@@ -54,6 +55,7 @@ export async function handle(request: Request, options: Options): Promise<Respon
   const url = new URL(request.url)
   const origin = request.headers.get('Origin')
   const allowed = !origin || !options.origins || options.origins === '*' || options.origins.split(',').map((o) => o.trim()).includes(origin)
+  if (url.pathname.startsWith('/avatar/')) return avatar(request, url.pathname)
   if (url.pathname === '/photo') return photo(request, { perceive: options.perceive, origins: options.photoOrigins ?? '' })
   if (url.pathname !== '/mcp') {
     if (url.pathname === '/' && request.method === 'GET') return new Response('PeepCraft MCP server. Endpoint: POST /mcp (Streamable HTTP). https://peepcraft.jinnux.com/\n', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })

@@ -12,6 +12,8 @@ An MCP server that lets an AI agent draw PeepCraft pictures: the same document, 
 | `random` | a random document: only the open parts roll, the rest is PeepCraft's start unless `keep` sets it; a piece colour in `keep` rolls among the items that have it; contradictions are errors (`seed` repeats it) |
 | `from_image` | listed only with the `ANTHROPIC_API_KEY` secret: a photo (`url`, or `data` and `mediaType`) to a peep that looks like the person; the model picks trait words, `match` picks the parts; returns the SVG, the link and the reasons |
 
+**Avatars:** `GET /avatar/<seed>.svg` draws a peep for an `<img>`, no MCP needed. The same seed gives the same peep (until the art changes); a seed is 1 to 64 characters and is never written into the picture. Browsers and proxies may keep one for a day; the 60-a-minute limit applies.
+
 Resources: `peepcraft://catalog` (everything a document can name) and `peepcraft://doc-schema` (the document as JSON Schema). Every tool is marked read-only and idempotent.
 
 ## Protocol
@@ -29,6 +31,8 @@ npm run deploy:mcp     # build, then wrangler deploy (needs a Cloudflare login; 
 `wrangler.jsonc` sets the custom domain `peepcraft-mcp.jinnux.com` (one level under the zone, so Universal SSL covers it), `PEEPCRAFT_URL` (the page share links open), and a rate limit of 60 requests a minute per address (the `LIMITER` binding; over it, `429`).
 
 **Bot protection:** the `jinnux.com` zone challenges unknown clients (`403`, `cf-mitigated: challenge`), which MCP clients cannot pass, so they report `auth_required`. Either exempt `peepcraft-mcp.jinnux.com` (a WAF Skip rule; Bot Fight Mode on the Free plan applies to the whole zone) or use the `workers.dev` address, which `workers_dev: true` keeps on and which the zone's settings do not reach.
+
+**Listing:** `server.json` is the entry for the official MCP Registry, with the `workers.dev` address because clients must reach it whatever the zone's settings are. To publish: `brew install mcp-publisher`, `mcp-publisher login github` (as `jinnux-td`, which owns the `io.github.jinnux-td/*` names), then `mcp-publisher publish` from this folder.
 
 Connect Claude Code:
 ```bash

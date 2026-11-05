@@ -1,4 +1,4 @@
-// The Cloudflare Worker: rate limit (when the binding is there), then the MCP endpoint. Deploy: npm run deploy:mcp (from the kit root).
+// The Cloudflare Worker: rate limit (when the binding is there), then the MCP endpoint and the avatars. Deploy: npm run deploy:mcp (from the kit root).
 // With the ANTHROPIC_API_KEY secret set (npx wrangler secret put ANTHROPIC_API_KEY), from_image is listed and reads photos with Claude;
 // each photo also passes PHOTO_LIMITER, a tighter limit, because each one is a paid model call, then the daily cap (PHOTO_CAP, a Durable
 // Object, PHOTO_DAILY_LIMIT photos a UTC day for the whole server). Without the cap binding, photos are not offered: no cap, no spending.
@@ -57,7 +57,8 @@ function photoReader(env: Env, client: string): Perceive | undefined {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const client = request.headers.get('CF-Connecting-IP') ?? 'unknown'
-    if (env.LIMITER && request.method === 'POST') {
+    // A render is the costly call, and an avatar is a render.
+    if (env.LIMITER && (request.method === 'POST' || new URL(request.url).pathname.startsWith('/avatar/'))) {
       const { success } = await env.LIMITER.limit({ key: client })
       if (!success) return new Response(JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32000, message: 'Too many requests; try again in a minute' } }), { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60', 'Access-Control-Allow-Origin': '*' } })
     }

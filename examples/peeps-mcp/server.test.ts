@@ -260,3 +260,26 @@ test('render preview: a PNG only when asked; the SVG and the link as before', as
   const aura = await modern('tools/call', { name: 'render', arguments: { doc: doc('aura'), preview: true } })
   assert.ok(aura.body.result.content.some((c: any) => c.type === 'text' && /leaves out the aura/.test(c.text)), 'says what the preview cannot show')
 })
+
+test('avatar: a seed always draws the same SVG, another seed another one, and it is never written into the picture', async () => {
+  const get = (seed: string, method = 'GET') => handle(new Request(`https://peepcraft-mcp.jinnux.com/avatar/${seed}.svg`, { method }), options)
+  const res = await get('jinnux'), first = await res.text()
+  assert.equal(res.status, 200); assert.equal(res.headers.get('Content-Type'), 'image/svg+xml'); assert.equal(res.headers.get('Access-Control-Allow-Origin'), '*')
+  assert.match(first, /^<svg/)
+  assert.equal(await (await get('jinnux')).text(), first)
+  assert.notEqual(await (await get('another')).text(), first)
+  assert.ok(!first.includes('jinnux'))
+  assert.equal(await (await get('%3Cscript%3E')).text().then((svg) => svg.includes('script')), false)
+  assert.equal((await get('jinnux', 'HEAD')).status, 200)
+  assert.equal(await (await get('jinnux', 'HEAD')).text(), '')
+})
+
+test('avatar: a bad path or method is refused', async () => {
+  const get = (path: string, method = 'GET') => handle(new Request(`https://peepcraft-mcp.jinnux.com${path}`, { method }), options)
+  assert.equal((await get('/avatar/')).status, 404)
+  assert.equal((await get('/avatar/x')).status, 404)
+  assert.equal((await get('/avatar/a/b.svg')).status, 404)
+  assert.equal((await get(`/avatar/${'x'.repeat(65)}.svg`)).status, 404)
+  assert.equal((await get(`/avatar/${'x'.repeat(64)}.svg`)).status, 200)
+  assert.equal((await get('/avatar/x.svg', 'POST')).status, 405)
+})

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.jinnux-td/peepcraft",
+  "title": "PeepCraft",
+  "description": "Draw Open Peeps characters and scenes from a JSON document, and get the SVG and an editable link.",
+  "version": "1.0.0",
+  "websiteUrl": "https://peepcraft.jinnux.com/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://peepcraft-mcp.jinnux.workers.dev/mcp"
+    }
+  ]
+}

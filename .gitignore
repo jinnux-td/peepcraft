@@ -10,3 +10,4 @@ review/
 
 # Wrangler local secrets (ANTHROPIC_API_KEY for npm run dev:mcp)
 .dev.vars
+examples/now/dist/

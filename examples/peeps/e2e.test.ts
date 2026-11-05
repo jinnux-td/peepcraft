@@ -503,8 +503,11 @@ test('locks: Shuffle all keeps a locked background and a locked part', async () 
   const head = async () => full.getByRole('radiogroup', { name: 'Hair' }).getByRole('radio', { checked: true }).getAttribute('data-tip');
   const body = async () => { await full.getByRole('tab', { name: 'Body', exact: true }).click(); return full.getByRole('radiogroup', { name: 'Body' }).getByRole('radio', { checked: true }).getAttribute('data-tip'); };
   const before = await body();
-  for (let i = 0; i < 3; i++) await full.getByRole('button', { name: 'Shuffle all' }).click();
+  const shuffle = full.getByRole('button', { name: 'Shuffle all' });
+  await shuffle.click();
+  // After one press only: a press always changes an open part, but further presses can land back on the first (about 1 run in 30).
   assert.notEqual(await body(), before, 'the body is not locked');
+  for (let i = 0; i < 2; i++) await shuffle.click();
   await full.getByRole('tab', { name: 'Hair', exact: true }).click();
   assert.equal(await head(), 'Afro');
   assert.equal((await stage.locator('svg').first().innerHTML()).match(/<rect[^>]*>/)?.[0], bg.match(/<rect[^>]*>/)?.[0], 'the background stays');
