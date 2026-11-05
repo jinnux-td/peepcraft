@@ -69,15 +69,15 @@ function OwnKeyDialog({ open, onClose, onSave }: { open: boolean; onClose: () =>
     ev.preventDefault()
     const form = ev.currentTarget, key = String(new FormData(form).get('key') ?? '').trim()
     const { looksLikeKey } = await ownKeyCode()
-    if (!looksLikeKey(key)) return setError('That is not an Anthropic API key: those start with sk-ant-api. A Claude Code token (sk-ant-oat…) does not work here.')
+    if (!looksLikeKey(key)) return setError('That is not an Anthropic API key: those start with sk-ant-. A Claude Code token (sk-ant-oat…) or an Admin key (sk-ant-admin…) does not work here.')
     form.reset(); onSave(key); ref.current!.close()
   }
   return (
     <dialog ref={ref} className="k-dialog own-key">
       <form method="dialog" onSubmit={save}>
         <h2 className="k-dialog-title">Use your own Anthropic key</h2>
-        <p>From photo needs your own key. The photo and the key go straight to Anthropic, never to PeepCraft, and your Anthropic account pays. The key is kept in this tab only. Give it a key with a spend limit.</p>
-        <input className="k-input" name="key" type="password" autoComplete="off" spellCheck={false} required placeholder="sk-ant-api03-…"
+        <p>From photo needs your own key. The photo and the key go straight to Anthropic, never to PeepCraft, and your Anthropic account pays. The key is kept in this tab only. Use a key for one workspace, with a spend limit.</p>
+        <input className="k-input" name="key" type="password" autoComplete="off" spellCheck={false} required placeholder="sk-ant-…"
           aria-label="Anthropic API key" aria-invalid={!!error || undefined} aria-describedby={error ? 'own-key-error' : undefined} />
         {error && <p id="own-key-error" role="alert" data-warn="">{error}</p>}
         <div className="k-dialog-actions">

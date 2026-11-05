@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright-core';
 import type { Browser, Locator, Page } from 'playwright-core';
+import { looksLikeKey } from './own-key.ts';
 import { servePeeps } from './serve.ts';
 
 execFileSync('node', [new URL('build.mjs', import.meta.url).pathname], { stdio: 'pipe' });
@@ -654,7 +655,7 @@ const anthropicAnswers = (attributes: unknown) => ({ status: 200, contentType: '
   id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-opus-5-5', stop_reason: 'end_turn', stop_sequence: null,
   content: [{ type: 'text', text: JSON.stringify(attributes) }], usage: { input_tokens: 1, output_tokens: 1 } }) });
 const PREFLIGHT = { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST' } };
-const API_KEY = 'sk-ant-api03-' + 'k'.repeat(40);
+const API_KEY = 'sk-ant-usr-' + 'k'.repeat(40);   // a personal key, as the Console issues them now
 
 test('from photo: the photo goes to Anthropic shrunk, its peep replaces the one being built, errors are shown, undo takes it back', async () => {
   const page = await open(); const full = page.locator('#full');
@@ -773,4 +774,30 @@ test('on a laptop or larger the whole page fits the window, footer included, on 
     assert.ok(await page.locator('.made-by').evaluate((f) => f.getBoundingClientRect().bottom <= innerHeight), 'the footer is in view');
     await page.close();
   }
+});
+
+test('which keys the page takes: every kind of API key, not a Claude Code token or an Admin key', () => {
+  const tail = 'k'.repeat(40);
+  for (const k of [`sk-ant-api03-${tail}`, `sk-ant-usr-${tail}`, `sk-ant-usr01-${tail}`, `sk-ant-svc-${tail}`]) assert.ok(looksLikeKey(k), k.slice(0, 14));
+  for (const k of [`sk-ant-oat01-${tail}`, `sk-ant-admin01-${tail}`, 'sk-ant-usr-short', `ant-${tail}`, '']) assert.ok(!looksLikeKey(k), k.slice(0, 14));
+});
+
+for (const [status, error, says] of [
+  [400, { type: 'invalid_request_error', message: 'This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header with the ID of the workspace to use.' }, 'create a key for one workspace'],
+  [401, { type: 'authentication_error', message: 'CORS requests are not allowed for this Organization because of its settings.' }, 'does not allow calls from a browser'],
+  [401, { type: 'authentication_error', message: 'invalid x-api-key' }, 'did not accept your key'],
+] as const) test(`own key: Anthropic answers ${status} "${error.message.slice(0, 28)}…", and the page says what to do`, async () => {
+  const page = await open(); const full = page.locator('#full');
+  await page.evaluate((k) => sessionStorage.setItem('peeps-own-key', k), API_KEY);
+  await page.reload();
+  await page.route('https://api.anthropic.com/**', (r) => (r.request().method() === 'OPTIONS' ? r.fulfill(PREFLIGHT)
+    : r.fulfill({ status, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ type: 'error', error }) })));
+  await full.getByRole('button', { name: 'From photo' }).click();
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('menuitem', { name: 'Choose a photo…' }).click()]);
+  const photo = await page.evaluate(async () => { const c = document.createElement('canvas'); c.width = 40; c.height = 30; const b = await new Promise<Blob>((r) => c.toBlob((x) => r(x!), 'image/png')); return [...new Uint8Array(await b.arrayBuffer())]; });
+  await chooser.setFiles({ name: 'me.png', mimeType: 'image/png', buffer: Buffer.from(photo) });
+  await page.locator('.k-toast', { hasText: says }).waitFor();
+  // The browser logs the refused request itself; that one is expected.
+  errors.splice(0, errors.length, ...errors.filter((e) => !/status of 40[01]/.test(e)));
+  await page.close();
 });
